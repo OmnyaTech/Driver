@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/app_trip_expense.dart';
 import '../../services/journey_service.dart';
 import '../../services/trip_expense_service.dart';
+import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
 class TripExpensesScreen extends StatefulWidget {
@@ -10,10 +11,12 @@ class TripExpensesScreen extends StatefulWidget {
     super.key,
     this.showCreateButton = true,
     this.actionController,
+    this.embedded = false,
   });
 
   final bool showCreateButton;
   final ScreenActionController? actionController;
+  final bool embedded;
 
   @override
   State<TripExpensesScreen> createState() => _TripExpensesScreenState();
@@ -148,15 +151,19 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      const loading = Center(child: CircularProgressIndicator());
+      if (widget.embedded) {
+        return loading;
+      }
+      return const OmnyaSubPageScaffold(title: 'Despesas', body: loading);
     }
 
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _loadExpenses,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
+    final content = RefreshIndicator(
+      onRefresh: _loadExpenses,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          if (widget.embedded) ...[
             Row(
               children: [
                 Expanded(
@@ -174,83 +181,90 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            if (_expenses.isNotEmpty)
-              Card(
-                child: ListTile(
-                  title: const Text('Resumo'),
-                  subtitle: Text('${_expenses.length} despesas registradas'),
-                  trailing: Text(
-                    'R\$ ${_totalAmount.toStringAsFixed(2)}',
-                  ),
-                ),
+          ],
+          if (_expenses.isNotEmpty)
+            Card(
+              child: ListTile(
+                title: const Text('Resumo'),
+                subtitle: Text('${_expenses.length} despesas registradas'),
+                trailing: Text('R\$ ${_totalAmount.toStringAsFixed(2)}'),
               ),
-            if (_errorMessage != null)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    _errorMessage!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ),
-              ),
-            if (_expenses.isEmpty)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text(
-                    'Nenhuma despesa registrada ainda. Cadastre pedagio, estacionamento e outros custos de percurso.',
-                  ),
-                ),
-              ),
-            ..._expenses.map(
-              (expense) => Card(
-                child: ListTile(
-                  title: Text(_expenseLabel(expense.type)),
-                  subtitle: Text(
-                    [
-                      _formatDate(expense.occurredAt),
-                      if (expense.journeyLabel != null) expense.journeyLabel!,
-                      if (expense.description != null &&
-                          expense.description!.trim().isNotEmpty)
-                        expense.description!,
-                    ].join(' - '),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('R\$ ${expense.amount.toStringAsFixed(2)}'),
-                      PopupMenuButton<String>(
-                        onSelected: (value) async {
-                          if (value == 'edit') {
-                            await _openEditDialog(expense);
-                            return;
-                          }
-                          if (value == 'delete') {
-                            await _deleteExpense(expense);
-                          }
-                        },
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Text('Editar'),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Text('Excluir'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+            ),
+          if (_errorMessage != null)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
             ),
-          ],
-        ),
+          if (_expenses.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Nenhuma despesa registrada ainda. Cadastre pedagio, estacionamento e outros custos de percurso.',
+                ),
+              ),
+            ),
+          ..._expenses.map(
+            (expense) => Card(
+              child: ListTile(
+                title: Text(_expenseLabel(expense.type)),
+                subtitle: Text(
+                  [
+                    _formatDate(expense.occurredAt),
+                    if (expense.journeyLabel != null) expense.journeyLabel!,
+                    if (expense.description != null &&
+                        expense.description!.trim().isNotEmpty)
+                      expense.description!,
+                  ].join(' - '),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('R\$ ${expense.amount.toStringAsFixed(2)}'),
+                    PopupMenuButton<String>(
+                      onSelected: (value) async {
+                        if (value == 'edit') {
+                          await _openEditDialog(expense);
+                          return;
+                        }
+                        if (value == 'delete') {
+                          await _deleteExpense(expense);
+                        }
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: 'edit', child: Text('Editar')),
+                        PopupMenuItem(value: 'delete', child: Text('Excluir')),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+
+    if (widget.embedded) {
+      return content;
+    }
+
+    return OmnyaSubPageScaffold(
+      title: 'Despesas',
+      heroTagPrefix: 'expenses',
+      floatingActions: [
+        OmnyaFabAction(
+          label: 'Nova despesa',
+          icon: Icons.add,
+          onTap: _openCreateDialog,
+        ),
+      ],
+      body: content,
     );
   }
 
@@ -269,10 +283,8 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
     };
   }
 
-  double get _totalAmount => _expenses.fold<double>(
-    0,
-    (sum, item) => sum + item.amount,
-  );
+  double get _totalAmount =>
+      _expenses.fold<double>(0, (sum, item) => sum + item.amount);
 }
 
 class _TripExpenseFormDialog extends StatefulWidget {

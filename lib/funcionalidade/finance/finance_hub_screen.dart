@@ -49,14 +49,17 @@ class FinanceHubScreen extends StatelessWidget {
                 TripExpensesScreen(
                   showCreateButton: false,
                   actionController: expenseController,
+                  embedded: true,
                 ),
                 FuelingsScreen(
                   showCreateButton: false,
                   actionController: fuelingController,
+                  embedded: true,
                 ),
                 MaintenancesScreen(
                   showCreateButton: false,
                   actionController: maintenanceController,
+                  embedded: true,
                 ),
               ],
             ),

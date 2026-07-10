@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/app_subscription.dart';
 import '../../services/billing_service.dart';
 import '../../services/subscription_service.dart';
+import '../../utilities/ui/omnya_shell.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
   const SubscriptionsScreen({super.key});
@@ -57,10 +58,13 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const OmnyaSubPageScaffold(
+        title: 'Assinatura',
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
-    return RefreshIndicator(
+    final content = RefreshIndicator(
       onRefresh: _loadData,
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -99,10 +103,8 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                 subtitle: 'Recorrencia anual hospedada no Asaas.',
                 buttonLabel: 'Assinar anual',
                 busy: _creatingCheckout,
-                onTap: () => _startCheckout(
-                  planType: 'premium',
-                  billingCycle: 'YEARLY',
-                ),
+                onTap: () =>
+                    _startCheckout(planType: 'premium', billingCycle: 'YEARLY'),
               ),
             ],
           ),
@@ -177,6 +179,8 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         ],
       ),
     );
+
+    return OmnyaSubPageScaffold(title: 'Assinatura', body: content);
   }
 
   Future<void> _startCheckout({

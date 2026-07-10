@@ -5,6 +5,7 @@ import '../../models/app_vehicle.dart';
 import '../../services/plan_access_service.dart';
 import '../../services/vehicle_service.dart';
 import '../../utilities/state/app_session.dart';
+import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
 class VehiclesScreen extends StatefulWidget {
@@ -12,10 +13,12 @@ class VehiclesScreen extends StatefulWidget {
     super.key,
     this.showCreateButton = true,
     this.actionController,
+    this.embedded = false,
   });
 
   final bool showCreateButton;
   final ScreenActionController? actionController;
+  final bool embedded;
 
   @override
   State<VehiclesScreen> createState() => _VehiclesScreenState();
@@ -82,7 +85,8 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
       context: context,
       builder: (_) => _VehicleFormDialog(
         initialVehicle: initialVehicle,
-        canEditActiveState: canUseMultiple || activeVehicles <= editingActiveVehicle,
+        canEditActiveState:
+            canUseMultiple || activeVehicles <= editingActiveVehicle,
         onSubmit:
             ({
               required brand,
@@ -181,15 +185,19 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
         : _planAccessService.canUseMultipleVehicles(session.profile!.planType);
 
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      const loading = Center(child: CircularProgressIndicator());
+      if (widget.embedded) {
+        return loading;
+      }
+      return const OmnyaSubPageScaffold(title: 'Veiculos', body: loading);
     }
 
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _loadVehicles,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
+    final content = RefreshIndicator(
+      onRefresh: _loadVehicles,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          if (widget.embedded) ...[
             Row(
               children: [
                 Expanded(
@@ -207,72 +215,86 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            if (!canUseMultiple && activeVehicles >= 1)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    'Plano free: somente um veiculo ativo por conta. Assinatura, presente ou papel developer liberam multiplos veiculos.',
-                  ),
-                ),
-              ),
-            if (_vehicles.isEmpty)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text(
-                    'Nenhum veiculo cadastrado ainda. Adicione o primeiro para iniciar o controle.',
-                  ),
-                ),
-              ),
-            ..._vehicles.map(
-              (vehicle) => Card(
-                child: ListTile(
-                  title: Text('${vehicle.brand} ${vehicle.model}'),
-                  subtitle: Text(
-                    [
-                      if (vehicle.modelYear != null) 'Ano ${vehicle.modelYear}',
-                      if (vehicle.fuelType != null) vehicle.fuelType,
-                      if (vehicle.plate != null) vehicle.plate,
-                      vehicle.active ? 'Ativo' : 'Arquivado',
-                    ].join(' • '),
-                  ),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) async {
-                      if (value == 'edit') {
-                        await _openEditDialog(vehicle);
-                        return;
-                      }
-                      if (value == 'archive') {
-                        await _archiveVehicle(vehicle);
-                        return;
-                      }
-                      if (value == 'delete') {
-                        await _deleteVehicle(vehicle);
-                      }
-                    },
-                    itemBuilder: (_) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Text('Editar'),
-                      ),
-                      if (vehicle.active)
-                        const PopupMenuItem(
-                          value: 'archive',
-                          child: Text('Arquivar'),
-                        ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Text('Excluir'),
-                      ),
-                    ],
-                  ),
+          ],
+          if (!canUseMultiple && activeVehicles >= 1)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Plano free: somente um veiculo ativo por conta. Assinatura, presente ou papel developer liberam multiplos veiculos.',
                 ),
               ),
             ),
-          ],
-        ),
+          if (_vehicles.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Nenhum veiculo cadastrado ainda. Adicione o primeiro para iniciar o controle.',
+                ),
+              ),
+            ),
+          ..._vehicles.map(
+            (vehicle) => Card(
+              child: ListTile(
+                title: Text('${vehicle.brand} ${vehicle.model}'),
+                subtitle: Text(
+                  [
+                    if (vehicle.modelYear != null) 'Ano ${vehicle.modelYear}',
+                    if (vehicle.fuelType != null) vehicle.fuelType,
+                    if (vehicle.plate != null) vehicle.plate,
+                    vehicle.active ? 'Ativo' : 'Arquivado',
+                  ].join(' • '),
+                ),
+                trailing: PopupMenuButton<String>(
+                  onSelected: (value) async {
+                    if (value == 'edit') {
+                      await _openEditDialog(vehicle);
+                      return;
+                    }
+                    if (value == 'archive') {
+                      await _archiveVehicle(vehicle);
+                      return;
+                    }
+                    if (value == 'delete') {
+                      await _deleteVehicle(vehicle);
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(value: 'edit', child: Text('Editar')),
+                    if (vehicle.active)
+                      const PopupMenuItem(
+                        value: 'archive',
+                        child: Text('Arquivar'),
+                      ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Excluir'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+
+    if (widget.embedded) {
+      return content;
+    }
+
+    return OmnyaSubPageScaffold(
+      title: 'Veiculos',
+      heroTagPrefix: 'vehicles',
+      floatingActions: [
+        OmnyaFabAction(
+          label: 'Novo veiculo',
+          icon: Icons.add,
+          onTap: _openCreateDialog,
+        ),
+      ],
+      body: content,
     );
   }
 }

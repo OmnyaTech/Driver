@@ -6,6 +6,7 @@ import '../../models/app_vehicle.dart';
 import '../../services/journey_service.dart';
 import '../../services/platform_service.dart';
 import '../../services/vehicle_service.dart';
+import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
 class JourneysScreen extends StatefulWidget {
@@ -13,10 +14,12 @@ class JourneysScreen extends StatefulWidget {
     super.key,
     this.showCreateButton = true,
     this.actionController,
+    this.embedded = false,
   });
 
   final bool showCreateButton;
   final ScreenActionController? actionController;
+  final bool embedded;
 
   @override
   State<JourneysScreen> createState() => _JourneysScreenState();
@@ -164,15 +167,19 @@ class _JourneysScreenState extends State<JourneysScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      const loading = Center(child: CircularProgressIndicator());
+      if (widget.embedded) {
+        return loading;
+      }
+      return const OmnyaSubPageScaffold(title: 'Jornadas', body: loading);
     }
 
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _loadJourneys,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
+    final content = RefreshIndicator(
+      onRefresh: _loadJourneys,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          if (widget.embedded) ...[
             Row(
               children: [
                 Expanded(
@@ -190,105 +197,112 @@ class _JourneysScreenState extends State<JourneysScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            if (_errorMessage != null)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    _errorMessage!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ),
-              ),
-            if (_journeys.isEmpty)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text(
-                    'Nenhuma jornada registrada ainda. Crie a primeira para iniciar o controle operacional.',
-                  ),
-                ),
-              ),
-            ..._journeys.map(
-              (journey) => Card(
-                child: ExpansionTile(
-                  title: Row(
-                    children: [
-                      Expanded(child: Text(_formatJourneyTitle(journey))),
-                      PopupMenuButton<String>(
-                        onSelected: (value) async {
-                          if (value == 'edit') {
-                            await _openEditDialog(journey);
-                            return;
-                          }
-                          if (value == 'delete') {
-                            await _deleteJourney(journey);
-                          }
-                        },
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Text('Editar'),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Text('Excluir'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  subtitle: Text(
-                    [
-                      _formatDate(journey.startedAt),
-                      if (journey.vehicleLabel != null) journey.vehicleLabel!,
-                      '${journey.totalDeliveries} entregas',
-                      'R\$ ${journey.totalIncome.toStringAsFixed(2)}',
-                      journey.isFinished ? 'Finalizada' : 'Em aberto',
-                    ].join(' - '),
-                  ),
-                  children: [
-                    if (journey.distanceKm != null ||
-                        (journey.notes?.trim().isNotEmpty ?? false))
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (journey.distanceKm != null)
-                              Text(
-                                'Distancia: ${journey.distanceKm!.toStringAsFixed(1)} km',
-                              ),
-                            if (journey.notes?.trim().isNotEmpty ?? false)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 6),
-                                child: Text(journey.notes!.trim()),
-                              ),
-                          ],
-                        ),
-                      ),
-                    if (journey.platformBreakdown.isNotEmpty)
-                      ...journey.platformBreakdown.map(
-                        (platform) => ListTile(
-                          leading: const Icon(Icons.storefront_outlined),
-                          title: Text(platform.platformName),
-                          subtitle: Text(
-                            '${platform.deliveries} entregas',
-                          ),
-                          trailing: Text(
-                            'R\$ ${platform.income.toStringAsFixed(2)}',
-                          ),
-                        ),
-                      ),
-                  ],
+          ],
+          if (_errorMessage != null)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
             ),
-          ],
-        ),
+          if (_journeys.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Nenhuma jornada registrada ainda. Crie a primeira para iniciar o controle operacional.',
+                ),
+              ),
+            ),
+          ..._journeys.map(
+            (journey) => Card(
+              child: ExpansionTile(
+                title: Row(
+                  children: [
+                    Expanded(child: Text(_formatJourneyTitle(journey))),
+                    PopupMenuButton<String>(
+                      onSelected: (value) async {
+                        if (value == 'edit') {
+                          await _openEditDialog(journey);
+                          return;
+                        }
+                        if (value == 'delete') {
+                          await _deleteJourney(journey);
+                        }
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: 'edit', child: Text('Editar')),
+                        PopupMenuItem(value: 'delete', child: Text('Excluir')),
+                      ],
+                    ),
+                  ],
+                ),
+                subtitle: Text(
+                  [
+                    _formatDate(journey.startedAt),
+                    if (journey.vehicleLabel != null) journey.vehicleLabel!,
+                    '${journey.totalDeliveries} entregas',
+                    'R\$ ${journey.totalIncome.toStringAsFixed(2)}',
+                    journey.isFinished ? 'Finalizada' : 'Em aberto',
+                  ].join(' - '),
+                ),
+                children: [
+                  if (journey.distanceKm != null ||
+                      (journey.notes?.trim().isNotEmpty ?? false))
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (journey.distanceKm != null)
+                            Text(
+                              'Distancia: ${journey.distanceKm!.toStringAsFixed(1)} km',
+                            ),
+                          if (journey.notes?.trim().isNotEmpty ?? false)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(journey.notes!.trim()),
+                            ),
+                        ],
+                      ),
+                    ),
+                  if (journey.platformBreakdown.isNotEmpty)
+                    ...journey.platformBreakdown.map(
+                      (platform) => ListTile(
+                        leading: const Icon(Icons.storefront_outlined),
+                        title: Text(platform.platformName),
+                        subtitle: Text('${platform.deliveries} entregas'),
+                        trailing: Text(
+                          'R\$ ${platform.income.toStringAsFixed(2)}',
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+
+    if (widget.embedded) {
+      return content;
+    }
+
+    return OmnyaSubPageScaffold(
+      title: 'Jornadas',
+      heroTagPrefix: 'journeys',
+      floatingActions: [
+        OmnyaFabAction(
+          label: 'Nova jornada',
+          icon: Icons.add,
+          onTap: _openCreateDialog,
+        ),
+      ],
+      body: content,
     );
   }
 
@@ -360,9 +374,7 @@ class _JourneyFormDialogState extends State<_JourneyFormDialog> {
     _odometerEndController = TextEditingController(
       text: initialJourney?.odometerEnd?.toStringAsFixed(1) ?? '',
     );
-    _notesController = TextEditingController(
-      text: initialJourney?.notes ?? '',
-    );
+    _notesController = TextEditingController(text: initialJourney?.notes ?? '');
     _platformEntries = initialJourney == null
         ? [_PlatformIncomeEntry()]
         : (initialJourney.platformBreakdown.isEmpty
@@ -371,8 +383,12 @@ class _JourneyFormDialogState extends State<_JourneyFormDialog> {
                     .map(
                       (item) => _PlatformIncomeEntry.fromValues(
                         platformId: item.platformId ?? '',
-                        income: item.income == 0 ? '' : item.income.toStringAsFixed(2),
-                        deliveries: item.deliveries == 0 ? '' : '${item.deliveries}',
+                        income: item.income == 0
+                            ? ''
+                            : item.income.toStringAsFixed(2),
+                        deliveries: item.deliveries == 0
+                            ? ''
+                            : '${item.deliveries}',
                       ),
                     )
                     .toList());
@@ -706,10 +722,7 @@ class _DateTimeTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (onClear != null)
-            IconButton(
-              onPressed: onClear,
-              icon: const Icon(Icons.close),
-            ),
+            IconButton(onPressed: onClear, icon: const Icon(Icons.close)),
           const Icon(Icons.calendar_today_outlined),
         ],
       ),

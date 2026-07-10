@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/app_goal.dart';
 import '../../services/goal_service.dart';
 import '../../services/journey_service.dart';
+import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
 class GoalsScreen extends StatefulWidget {
@@ -10,10 +11,12 @@ class GoalsScreen extends StatefulWidget {
     super.key,
     this.showCreateButton = true,
     this.actionController,
+    this.embedded = false,
   });
 
   final bool showCreateButton;
   final ScreenActionController? actionController;
+  final bool embedded;
 
   @override
   State<GoalsScreen> createState() => _GoalsScreenState();
@@ -77,7 +80,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      const loading = Center(child: CircularProgressIndicator());
+      if (widget.embedded) {
+        return loading;
+      }
+      return const OmnyaSubPageScaffold(title: 'Objetivos', body: loading);
     }
 
     final summary =
@@ -88,12 +95,12 @@ class _GoalsScreenState extends State<GoalsScreen> {
           availableBalance: 0,
         );
 
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _loadData,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
+    final content = RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          if (widget.embedded) ...[
             Row(
               children: [
                 Expanded(
@@ -111,190 +118,200 @@ class _GoalsScreenState extends State<GoalsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Saldo do motorista',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      children: [
-                        _GoalSummaryTile(
-                          title: 'Resultado liquido',
-                          value: _currency(summary.netOperationalResult),
-                        ),
-                        _GoalSummaryTile(
-                          title: 'Ja destinado para objetivos',
-                          value: _currency(summary.allocatedToGoals),
-                        ),
-                        _GoalSummaryTile(
-                          title: 'Saldo disponivel',
-                          value: _currency(summary.availableBalance),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'O saldo so deixa de ficar disponivel quando voce faz um aporte em um objetivo. Retiradas devolvem esse valor para o saldo disponivel.',
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (_errorMessage != null) ...[
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    _errorMessage!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+          ],
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Saldo do motorista',
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            if (_goals.isEmpty)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text(
-                    'Nenhum objetivo cadastrado ainda. Crie objetivos para destinar parte do lucro e acompanhar seu progresso.',
-                  ),
-                ),
-              ),
-            ..._goals.map(
-              (goal) => Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  goal.title,
-                                  style: Theme.of(context).textTheme.titleMedium,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '${_currency(goal.currentAmount)} de ${_currency(goal.targetAmount)}',
-                                ),
-                                const SizedBox(height: 8),
-                                LinearProgressIndicator(value: goal.progress),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Faltam ${_currency(goal.remainingAmount)}${goal.deadline == null ? '' : ' ate ${_formatDate(goal.deadline!)}'}',
-                                ),
-                              ],
-                            ),
-                          ),
-                          PopupMenuButton<String>(
-                            onSelected: (value) async {
-                              switch (value) {
-                                case 'edit':
-                                  await _openEditGoalDialog(goal);
-                                case 'delete':
-                                  await _deleteGoal(goal);
-                              }
-                            },
-                            itemBuilder: (_) => const [
-                              PopupMenuItem(
-                                value: 'edit',
-                                child: Text('Editar'),
-                              ),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Text('Excluir'),
-                              ),
-                            ],
-                          ),
-                        ],
+                      _GoalSummaryTile(
+                        title: 'Resultado liquido',
+                        value: _currency(summary.netOperationalResult),
                       ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          FilledButton.icon(
-                            onPressed: () => _openTransactionDialog(
-                              goal: goal,
-                              mode: GoalTransactionMode.contribution,
-                            ),
-                            icon: const Icon(Icons.savings_outlined),
-                            label: const Text('Aportar'),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: goal.currentAmount <= 0
-                                ? null
-                                : () => _openTransactionDialog(
-                                    goal: goal,
-                                    mode: GoalTransactionMode.withdrawal,
-                                  ),
-                            icon: const Icon(Icons.outbox_outlined),
-                            label: const Text('Retirar'),
-                          ),
-                        ],
+                      _GoalSummaryTile(
+                        title: 'Ja destinado para objetivos',
+                        value: _currency(summary.allocatedToGoals),
+                      ),
+                      _GoalSummaryTile(
+                        title: 'Saldo disponivel',
+                        value: _currency(summary.availableBalance),
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'O saldo so deixa de ficar disponivel quando voce faz um aporte em um objetivo. Retiradas devolvem esse valor para o saldo disponivel.',
+                  ),
+                ],
               ),
             ),
+          ),
+          if (_errorMessage != null) ...[
             const SizedBox(height: 16),
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Historico de movimentacoes',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 12),
-                    if (_transactions.isEmpty)
-                      const Text('Nenhuma movimentacao registrada ainda.'),
-                    ..._transactions.map(
-                      (transaction) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(transaction.goalTitle),
-                        subtitle: Text(
-                          [
-                            transaction.isContribution
-                                ? 'Aporte'
-                                : 'Retirada',
-                            _formatDateTime(transaction.createdAt),
-                            if (transaction.journeyLabel != null)
-                              transaction.journeyLabel!,
-                          ].join(' - '),
-                        ),
-                        trailing: Text(
-                          '${transaction.isContribution ? '+' : '-'} ${_currency(transaction.amount.abs())}',
-                        ),
-                      ),
-                    ),
-                  ],
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
             ),
           ],
-        ),
+          const SizedBox(height: 16),
+          if (_goals.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Nenhum objetivo cadastrado ainda. Crie objetivos para destinar parte do lucro e acompanhar seu progresso.',
+                ),
+              ),
+            ),
+          ..._goals.map(
+            (goal) => Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                goal.title,
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '${_currency(goal.currentAmount)} de ${_currency(goal.targetAmount)}',
+                              ),
+                              const SizedBox(height: 8),
+                              LinearProgressIndicator(value: goal.progress),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Faltam ${_currency(goal.remainingAmount)}${goal.deadline == null ? '' : ' ate ${_formatDate(goal.deadline!)}'}',
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          onSelected: (value) async {
+                            switch (value) {
+                              case 'edit':
+                                await _openEditGoalDialog(goal);
+                              case 'delete':
+                                await _deleteGoal(goal);
+                            }
+                          },
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(value: 'edit', child: Text('Editar')),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Excluir'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        FilledButton.icon(
+                          onPressed: () => _openTransactionDialog(
+                            goal: goal,
+                            mode: GoalTransactionMode.contribution,
+                          ),
+                          icon: const Icon(Icons.savings_outlined),
+                          label: const Text('Aportar'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: goal.currentAmount <= 0
+                              ? null
+                              : () => _openTransactionDialog(
+                                  goal: goal,
+                                  mode: GoalTransactionMode.withdrawal,
+                                ),
+                          icon: const Icon(Icons.outbox_outlined),
+                          label: const Text('Retirar'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Historico de movimentacoes',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  if (_transactions.isEmpty)
+                    const Text('Nenhuma movimentacao registrada ainda.'),
+                  ..._transactions.map(
+                    (transaction) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(transaction.goalTitle),
+                      subtitle: Text(
+                        [
+                          transaction.isContribution ? 'Aporte' : 'Retirada',
+                          _formatDateTime(transaction.createdAt),
+                          if (transaction.journeyLabel != null)
+                            transaction.journeyLabel!,
+                        ].join(' - '),
+                      ),
+                      trailing: Text(
+                        '${transaction.isContribution ? '+' : '-'} ${_currency(transaction.amount.abs())}',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+
+    if (widget.embedded) {
+      return content;
+    }
+
+    return OmnyaSubPageScaffold(
+      title: 'Objetivos',
+      heroTagPrefix: 'goals',
+      floatingActions: [
+        OmnyaFabAction(
+          label: 'Novo objetivo',
+          icon: Icons.add,
+          onTap: _openCreateGoalDialog,
+        ),
+      ],
+      body: content,
     );
   }
 
@@ -397,7 +414,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
         onSubmit: ({required amount, required journeyId}) async {
           await _goalService.applyTransaction(
             goalId: goal.id,
-            amount: mode == GoalTransactionMode.withdrawal ? '-$amount' : amount,
+            amount: mode == GoalTransactionMode.withdrawal
+                ? '-$amount'
+                : amount,
             journeyId: journeyId,
           );
         },
@@ -445,10 +464,7 @@ class _GoalSummaryTile extends StatelessWidget {
 }
 
 class _GoalFormDialog extends StatefulWidget {
-  const _GoalFormDialog({
-    required this.onSubmit,
-    this.initialGoal,
-  });
+  const _GoalFormDialog({required this.onSubmit, this.initialGoal});
 
   final AppGoal? initialGoal;
   final Future<void> Function({
@@ -498,7 +514,9 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.initialGoal == null ? 'Novo objetivo' : 'Editar objetivo'),
+      title: Text(
+        widget.initialGoal == null ? 'Novo objetivo' : 'Editar objetivo',
+      ),
       content: SizedBox(
         width: 460,
         child: Form(
@@ -514,9 +532,7 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
                 ),
                 TextFormField(
                   controller: _targetAmountController,
-                  decoration: const InputDecoration(
-                    labelText: 'Valor alvo',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Valor alvo'),
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
@@ -670,7 +686,9 @@ class _GoalTransactionDialogState extends State<_GoalTransactionDialog> {
   Widget build(BuildContext context) {
     final isContribution = widget.mode == GoalTransactionMode.contribution;
     return AlertDialog(
-      title: Text(isContribution ? 'Aportar no objetivo' : 'Retirar do objetivo'),
+      title: Text(
+        isContribution ? 'Aportar no objetivo' : 'Retirar do objetivo',
+      ),
       content: SizedBox(
         width: 460,
         child: Form(
@@ -691,9 +709,13 @@ class _GoalTransactionDialogState extends State<_GoalTransactionDialog> {
                 TextFormField(
                   controller: _amountController,
                   decoration: InputDecoration(
-                    labelText: isContribution ? 'Valor do aporte' : 'Valor da retirada',
+                    labelText: isContribution
+                        ? 'Valor do aporte'
+                        : 'Valor da retirada',
                   ),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Informe o valor.';

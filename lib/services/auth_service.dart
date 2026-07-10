@@ -137,10 +137,13 @@ class AuthService {
       'email': user.email,
       'full_name': fullName.isEmpty ? null : fullName,
       'display_name': displayName,
-      'avatar_url': metadata['avatar_url'],
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     };
     final existing = await fetchProfile();
+
+    final avatarUrl = (existing?['avatar_url'] ?? metadata['avatar_url'])
+        ?.toString();
+    payload['avatar_url'] = avatarUrl;
 
     if (existing == null) {
       await activeClient.schema('driver').from('profiles').insert(payload);

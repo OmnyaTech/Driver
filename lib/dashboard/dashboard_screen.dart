@@ -11,6 +11,7 @@ import '../models/app_dashboard_metrics.dart';
 import '../services/dashboard_metrics_service.dart';
 import '../settings/settings_screen.dart';
 import '../utilities/state/app_session.dart';
+import '../utilities/ui/omnya_shell.dart';
 import '../utilities/ui/screen_action_controller.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -58,6 +59,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         page: JourneysScreen(
           showCreateButton: false,
           actionController: _journeyController,
+          embedded: true,
         ),
         destination: const NavigationDestination(
           icon: Icon(Icons.route_outlined),
@@ -70,6 +72,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         page: GoalsScreen(
           showCreateButton: false,
           actionController: _goalController,
+          embedded: true,
         ),
         destination: const NavigationDestination(
           icon: Icon(Icons.savings_outlined),
@@ -126,14 +129,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF070A12), Color(0xFF090D18), Color(0xFF05070D)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+      body: OmnyaPageBackground(
         child: IndexedStack(
           index: _currentIndex,
           children: tabs.map((tab) => tab.page).toList(),
@@ -141,7 +137,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       floatingActionButton: actions.isEmpty
           ? null
-          : _OmnyaFabMenu(actions: actions),
+          : OmnyaFloatingActionMenu(
+              actions: actions,
+              heroTagPrefix: 'dashboard',
+            ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           border: Border(
@@ -159,21 +158,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  List<_FabAction> _buildFabActions() {
+  List<OmnyaFabAction> _buildFabActions() {
     switch (_currentIndex) {
       case 0:
         return [
-          _FabAction(
+          OmnyaFabAction(
             label: 'Nova jornada',
             icon: Icons.route,
             onTap: _journeyController.openCreate,
           ),
-          _FabAction(
+          OmnyaFabAction(
             label: 'Novo objetivo',
             icon: Icons.savings,
             onTap: _goalController.openCreate,
           ),
-          _FabAction(
+          OmnyaFabAction(
             label: 'Nova despesa',
             icon: Icons.receipt_long,
             onTap: _expenseController.openCreate,
@@ -181,7 +180,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ];
       case 1:
         return [
-          _FabAction(
+          OmnyaFabAction(
             label: 'Nova jornada',
             icon: Icons.route,
             onTap: _journeyController.openCreate,
@@ -189,7 +188,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ];
       case 2:
         return [
-          _FabAction(
+          OmnyaFabAction(
             label: 'Novo objetivo',
             icon: Icons.savings,
             onTap: _goalController.openCreate,
@@ -197,17 +196,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ];
       case 3:
         return [
-          _FabAction(
+          OmnyaFabAction(
             label: 'Nova despesa',
             icon: Icons.receipt_long,
             onTap: _expenseController.openCreate,
           ),
-          _FabAction(
+          OmnyaFabAction(
             label: 'Novo abastecimento',
             icon: Icons.local_gas_station,
             onTap: _fuelingController.openCreate,
           ),
-          _FabAction(
+          OmnyaFabAction(
             label: 'Nova manutencao',
             icon: Icons.build,
             onTap: _maintenanceController.openCreate,
@@ -215,18 +214,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ];
       case 5:
         return [
-          _FabAction(
+          OmnyaFabAction(
             label: 'Novo veiculo',
             icon: Icons.two_wheeler,
             onTap: () => _pushManagedCreate(
-              (controller) => VehiclesScreen(actionController: controller),
+              (controller) => VehiclesScreen(
+                actionController: controller,
+                showCreateButton: false,
+              ),
             ),
           ),
-          _FabAction(
+          OmnyaFabAction(
             label: 'Nova plataforma',
             icon: Icons.storefront,
             onTap: () => _pushManagedCreate(
-              (controller) => PlatformsScreen(actionController: controller),
+              (controller) => PlatformsScreen(
+                actionController: controller,
+                showCreateButton: false,
+              ),
             ),
           ),
         ];
@@ -259,136 +264,6 @@ class _DashboardTab {
   final String title;
   final Widget page;
   final NavigationDestination destination;
-}
-
-class _FabAction {
-  const _FabAction({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-}
-
-class _OmnyaFabMenu extends StatefulWidget {
-  const _OmnyaFabMenu({required this.actions});
-
-  final List<_FabAction> actions;
-
-  @override
-  State<_OmnyaFabMenu> createState() => _OmnyaFabMenuState();
-}
-
-class _OmnyaFabMenuState extends State<_OmnyaFabMenu>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  bool _open = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 240),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        ...widget.actions.asMap().entries.map((entry) {
-          final index = entry.key;
-          final action = entry.value;
-          return AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              final curve = CurvedAnimation(
-                parent: _controller,
-                curve: Interval(
-                  0.0 + (index * 0.08),
-                  1.0,
-                  curve: Curves.easeOutBack,
-                ),
-              );
-              final value = curve.value;
-
-              return IgnorePointer(
-                ignoring: !_open,
-                child: Opacity(
-                  opacity: value,
-                  child: Transform.translate(
-                    offset: Offset(0, (1 - value) * 24),
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Theme.of(context).dividerColor,
-                              ),
-                            ),
-                            child: Text(action.label),
-                          ),
-                          const SizedBox(width: 10),
-                          FloatingActionButton.small(
-                            heroTag: 'fab-action-$index-${action.label}',
-                            onPressed: () {
-                              _toggle();
-                              action.onTap();
-                            },
-                            child: Icon(action.icon),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        }),
-        FloatingActionButton.extended(
-          heroTag: 'fab-main-dashboard',
-          onPressed: _toggle,
-          icon: AnimatedRotation(
-            turns: _open ? 0.125 : 0,
-            duration: const Duration(milliseconds: 240),
-            child: const Icon(Icons.add),
-          ),
-          label: Text(_open ? 'Fechar' : 'Novo'),
-        ),
-      ],
-    );
-  }
-
-  void _toggle() {
-    setState(() => _open = !_open);
-    if (_open) {
-      _controller.forward();
-      return;
-    }
-    _controller.reverse();
-  }
 }
 
 class _OverviewTab extends StatefulWidget {

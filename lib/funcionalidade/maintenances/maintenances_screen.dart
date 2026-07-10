@@ -4,6 +4,7 @@ import '../../models/app_maintenance.dart';
 import '../../models/app_vehicle.dart';
 import '../../services/maintenance_service.dart';
 import '../../services/vehicle_service.dart';
+import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
 class MaintenancesScreen extends StatefulWidget {
@@ -11,10 +12,12 @@ class MaintenancesScreen extends StatefulWidget {
     super.key,
     this.showCreateButton = true,
     this.actionController,
+    this.embedded = false,
   });
 
   final bool showCreateButton;
   final ScreenActionController? actionController;
+  final bool embedded;
 
   @override
   State<MaintenancesScreen> createState() => _MaintenancesScreenState();
@@ -157,15 +160,19 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      const loading = Center(child: CircularProgressIndicator());
+      if (widget.embedded) {
+        return loading;
+      }
+      return const OmnyaSubPageScaffold(title: 'Manutencoes', body: loading);
     }
 
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _loadMaintenances,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
+    final content = RefreshIndicator(
+      onRefresh: _loadMaintenances,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          if (widget.embedded) ...[
             Row(
               children: [
                 Expanded(
@@ -183,101 +190,108 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            if (_maintenances.isNotEmpty)
-              Card(
-                child: ListTile(
-                  title: const Text('Resumo'),
-                  subtitle: Text(
-                    '${_maintenances.length} manutencoes registradas',
-                  ),
-                  trailing: Text(
-                    'R\$ ${_totalAmount.toStringAsFixed(2)}',
-                  ),
+          ],
+          if (_maintenances.isNotEmpty)
+            Card(
+              child: ListTile(
+                title: const Text('Resumo'),
+                subtitle: Text(
+                  '${_maintenances.length} manutencoes registradas',
                 ),
+                trailing: Text('R\$ ${_totalAmount.toStringAsFixed(2)}'),
               ),
-            if (_errorMessage != null)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    _errorMessage!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ),
-              ),
-            if (_maintenances.isEmpty)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text(
-                    'Nenhuma manutencao registrada ainda. Cadastre oficina, motivo e valor para construir o historico do veiculo.',
-                  ),
-                ),
-              ),
-            ..._maintenances.map(
-              (maintenance) => Card(
-                child: ExpansionTile(
-                  title: Row(
-                    children: [
-                      Expanded(
-                        child: Text(maintenance.vehicleLabel ?? 'Veiculo'),
-                      ),
-                      PopupMenuButton<String>(
-                        onSelected: (value) async {
-                          if (value == 'edit') {
-                            await _openEditDialog(maintenance);
-                            return;
-                          }
-                          if (value == 'delete') {
-                            await _deleteMaintenance(maintenance);
-                          }
-                        },
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Text('Editar'),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Text('Excluir'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  subtitle: Text(
-                    [
-                      _formatDate(maintenance.maintenanceDate),
-                      if (maintenance.workshop != null) maintenance.workshop!,
-                      if (maintenance.reason != null) maintenance.reason!,
-                      'R\$ ${maintenance.totalAmount.toStringAsFixed(2)}',
-                    ].join(' - '),
-                  ),
-                  children: [
-                    if (maintenance.description != null &&
-                        maintenance.description!.trim().isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(maintenance.description!),
-                        ),
-                      ),
-                    ...maintenance.items.map(
-                      (item) => ListTile(
-                        title: Text(item.description),
-                        trailing: Text('R\$ ${item.amount.toStringAsFixed(2)}'),
-                      ),
-                    ),
-                  ],
+            ),
+          if (_errorMessage != null)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
             ),
-          ],
-        ),
+          if (_maintenances.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Nenhuma manutencao registrada ainda. Cadastre oficina, motivo e valor para construir o historico do veiculo.',
+                ),
+              ),
+            ),
+          ..._maintenances.map(
+            (maintenance) => Card(
+              child: ExpansionTile(
+                title: Row(
+                  children: [
+                    Expanded(
+                      child: Text(maintenance.vehicleLabel ?? 'Veiculo'),
+                    ),
+                    PopupMenuButton<String>(
+                      onSelected: (value) async {
+                        if (value == 'edit') {
+                          await _openEditDialog(maintenance);
+                          return;
+                        }
+                        if (value == 'delete') {
+                          await _deleteMaintenance(maintenance);
+                        }
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: 'edit', child: Text('Editar')),
+                        PopupMenuItem(value: 'delete', child: Text('Excluir')),
+                      ],
+                    ),
+                  ],
+                ),
+                subtitle: Text(
+                  [
+                    _formatDate(maintenance.maintenanceDate),
+                    if (maintenance.workshop != null) maintenance.workshop!,
+                    if (maintenance.reason != null) maintenance.reason!,
+                    'R\$ ${maintenance.totalAmount.toStringAsFixed(2)}',
+                  ].join(' - '),
+                ),
+                children: [
+                  if (maintenance.description != null &&
+                      maintenance.description!.trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(maintenance.description!),
+                      ),
+                    ),
+                  ...maintenance.items.map(
+                    (item) => ListTile(
+                      title: Text(item.description),
+                      trailing: Text('R\$ ${item.amount.toStringAsFixed(2)}'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+
+    if (widget.embedded) {
+      return content;
+    }
+
+    return OmnyaSubPageScaffold(
+      title: 'Manutencoes',
+      heroTagPrefix: 'maintenances',
+      floatingActions: [
+        OmnyaFabAction(
+          label: 'Nova manutencao',
+          icon: Icons.add,
+          onTap: _openCreateDialog,
+        ),
+      ],
+      body: content,
     );
   }
 
@@ -286,10 +300,8 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  double get _totalAmount => _maintenances.fold<double>(
-    0,
-    (sum, item) => sum + item.totalAmount,
-  );
+  double get _totalAmount =>
+      _maintenances.fold<double>(0, (sum, item) => sum + item.totalAmount);
 }
 
 class _MaintenanceFormDialog extends StatefulWidget {
@@ -592,10 +604,7 @@ class _MaintenanceItemEntry {
     required String description,
     required String amount,
   }) {
-    return _MaintenanceItemEntry(
-      description: description,
-      amount: amount,
-    );
+    return _MaintenanceItemEntry(description: description, amount: amount);
   }
 
   final TextEditingController descriptionController;

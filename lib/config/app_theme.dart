@@ -232,6 +232,41 @@ final class AppTheme {
           ),
         ),
       ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return Colors.white;
+          }
+          return isDark ? const Color(0xFFB8C0FF) : const Color(0xFF3C4560);
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return brandBlue;
+          }
+          return isDark ? const Color(0xFF26304A) : const Color(0xFFD7DDF0);
+        }),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: surfaceColor,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: cardBorder),
+        ),
+        textStyle: textTheme.bodyMedium,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: surfaceColor,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+          side: BorderSide(color: cardBorder),
+        ),
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: base.colorScheme.onSurface,
+        textColor: base.colorScheme.onSurface,
+      ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
           textStyle: WidgetStatePropertyAll(

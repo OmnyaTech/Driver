@@ -1,0 +1,196 @@
+import 'package:flutter/material.dart';
+
+class OmnyaFabAction {
+  const OmnyaFabAction({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+}
+
+BoxDecoration omnyaBackgroundDecoration(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return BoxDecoration(
+    gradient: LinearGradient(
+      colors: isDark
+          ? const [Color(0xFF070A12), Color(0xFF090D18), Color(0xFF05070D)]
+          : const [Color(0xFFF8FAFF), Color(0xFFF0F4FF), Color(0xFFE9EEFF)],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    ),
+  );
+}
+
+class OmnyaPageBackground extends StatelessWidget {
+  const OmnyaPageBackground({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: omnyaBackgroundDecoration(context),
+      child: child,
+    );
+  }
+}
+
+class OmnyaSubPageScaffold extends StatelessWidget {
+  const OmnyaSubPageScaffold({
+    super.key,
+    required this.title,
+    required this.body,
+    this.floatingActions = const [],
+    this.actions,
+    this.heroTagPrefix,
+  });
+
+  final String title;
+  final Widget body;
+  final List<OmnyaFabAction> floatingActions;
+  final List<Widget>? actions;
+  final String? heroTagPrefix;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: Navigator.of(context).canPop() ? const BackButton() : null,
+        title: Text(title),
+        actions: actions,
+      ),
+      body: OmnyaPageBackground(child: body),
+      floatingActionButton: floatingActions.isEmpty
+          ? null
+          : OmnyaFloatingActionMenu(
+              actions: floatingActions,
+              heroTagPrefix: heroTagPrefix ?? title.toLowerCase(),
+            ),
+    );
+  }
+}
+
+class OmnyaFloatingActionMenu extends StatefulWidget {
+  const OmnyaFloatingActionMenu({
+    super.key,
+    required this.actions,
+    required this.heroTagPrefix,
+  });
+
+  final List<OmnyaFabAction> actions;
+  final String heroTagPrefix;
+
+  @override
+  State<OmnyaFloatingActionMenu> createState() =>
+      _OmnyaFloatingActionMenuState();
+}
+
+class _OmnyaFloatingActionMenuState extends State<OmnyaFloatingActionMenu>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  bool _open = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 240),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        ...widget.actions.asMap().entries.map((entry) {
+          final index = entry.key;
+          final action = entry.value;
+          return AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final curve = CurvedAnimation(
+                parent: _controller,
+                curve: Interval(index * 0.08, 1, curve: Curves.easeOutBack),
+              );
+              final value = curve.value;
+
+              return IgnorePointer(
+                ignoring: !_open,
+                child: Opacity(
+                  opacity: value,
+                  child: Transform.translate(
+                    offset: Offset(0, (1 - value) * 24),
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Theme.of(context).dividerColor,
+                              ),
+                            ),
+                            child: Text(action.label),
+                          ),
+                          const SizedBox(width: 10),
+                          FloatingActionButton.small(
+                            heroTag:
+                                '${widget.heroTagPrefix}-action-$index-${action.label}',
+                            onPressed: () {
+                              _toggle();
+                              action.onTap();
+                            },
+                            child: Icon(action.icon),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        }),
+        FloatingActionButton.extended(
+          heroTag: '${widget.heroTagPrefix}-main-fab',
+          onPressed: _toggle,
+          icon: AnimatedRotation(
+            turns: _open ? 0.125 : 0,
+            duration: const Duration(milliseconds: 240),
+            child: const Icon(Icons.add),
+          ),
+          label: Text(_open ? 'Fechar' : 'Novo'),
+        ),
+      ],
+    );
+  }
+
+  void _toggle() {
+    setState(() => _open = !_open);
+    if (_open) {
+      _controller.forward();
+      return;
+    }
+    _controller.reverse();
+  }
+}

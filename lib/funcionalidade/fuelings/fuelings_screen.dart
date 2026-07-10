@@ -5,6 +5,7 @@ import '../../models/app_vehicle.dart';
 import '../../services/fueling_service.dart';
 import '../../services/journey_service.dart';
 import '../../services/vehicle_service.dart';
+import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
 class FuelingsScreen extends StatefulWidget {
@@ -12,10 +13,12 @@ class FuelingsScreen extends StatefulWidget {
     super.key,
     this.showCreateButton = true,
     this.actionController,
+    this.embedded = false,
   });
 
   final bool showCreateButton;
   final ScreenActionController? actionController;
+  final bool embedded;
 
   @override
   State<FuelingsScreen> createState() => _FuelingsScreenState();
@@ -164,15 +167,19 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      const loading = Center(child: CircularProgressIndicator());
+      if (widget.embedded) {
+        return loading;
+      }
+      return const OmnyaSubPageScaffold(title: 'Abastecimentos', body: loading);
     }
 
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _loadFuelings,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
+    final content = RefreshIndicator(
+      onRefresh: _loadFuelings,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          if (widget.embedded) ...[
             Row(
               children: [
                 Expanded(
@@ -190,86 +197,91 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            if (_fuelings.isNotEmpty)
-              Card(
-                child: ListTile(
-                  title: const Text('Resumo'),
-                  subtitle: Text(
-                    '${_fuelings.length} abastecimentos registrados',
-                  ),
-                  trailing: Text(
-                    'R\$ ${_totalAmount.toStringAsFixed(2)}',
-                  ),
+          ],
+          if (_fuelings.isNotEmpty)
+            Card(
+              child: ListTile(
+                title: const Text('Resumo'),
+                subtitle: Text(
+                  '${_fuelings.length} abastecimentos registrados',
                 ),
+                trailing: Text('R\$ ${_totalAmount.toStringAsFixed(2)}'),
               ),
-            if (_errorMessage != null)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    _errorMessage!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ),
-              ),
-            if (_fuelings.isEmpty)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text(
-                    'Nenhum abastecimento registrado ainda. Cadastre litros, valor por litro e veiculo para iniciar o historico.',
-                  ),
-                ),
-              ),
-            ..._fuelings.map(
-              (fueling) => Card(
-                child: ListTile(
-                  title: Text(fueling.vehicleLabel ?? 'Veiculo'),
-                  subtitle: Text(
-                    [
-                      _formatDate(fueling.fueledAt),
-                      if (fueling.stationName != null) fueling.stationName!,
-                      '${fueling.liters.toStringAsFixed(2)} L',
-                      'R\$ ${fueling.pricePerLiter.toStringAsFixed(3)}/L',
-                    ].join(' - '),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'R\$ ${fueling.totalAmount.toStringAsFixed(2)}',
-                      ),
-                      PopupMenuButton<String>(
-                        onSelected: (value) async {
-                          if (value == 'edit') {
-                            await _openEditDialog(fueling);
-                            return;
-                          }
-                          if (value == 'delete') {
-                            await _deleteFueling(fueling);
-                          }
-                        },
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Text('Editar'),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Text('Excluir'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+            ),
+          if (_errorMessage != null)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
             ),
-          ],
-        ),
+          if (_fuelings.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Nenhum abastecimento registrado ainda. Cadastre litros, valor por litro e veiculo para iniciar o historico.',
+                ),
+              ),
+            ),
+          ..._fuelings.map(
+            (fueling) => Card(
+              child: ListTile(
+                title: Text(fueling.vehicleLabel ?? 'Veiculo'),
+                subtitle: Text(
+                  [
+                    _formatDate(fueling.fueledAt),
+                    if (fueling.stationName != null) fueling.stationName!,
+                    '${fueling.liters.toStringAsFixed(2)} L',
+                    'R\$ ${fueling.pricePerLiter.toStringAsFixed(3)}/L',
+                  ].join(' - '),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('R\$ ${fueling.totalAmount.toStringAsFixed(2)}'),
+                    PopupMenuButton<String>(
+                      onSelected: (value) async {
+                        if (value == 'edit') {
+                          await _openEditDialog(fueling);
+                          return;
+                        }
+                        if (value == 'delete') {
+                          await _deleteFueling(fueling);
+                        }
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: 'edit', child: Text('Editar')),
+                        PopupMenuItem(value: 'delete', child: Text('Excluir')),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+
+    if (widget.embedded) {
+      return content;
+    }
+
+    return OmnyaSubPageScaffold(
+      title: 'Abastecimentos',
+      heroTagPrefix: 'fuelings',
+      floatingActions: [
+        OmnyaFabAction(
+          label: 'Novo abastecimento',
+          icon: Icons.add,
+          onTap: _openCreateDialog,
+        ),
+      ],
+      body: content,
     );
   }
 
@@ -278,10 +290,8 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
-  double get _totalAmount => _fuelings.fold<double>(
-    0,
-    (sum, item) => sum + item.totalAmount,
-  );
+  double get _totalAmount =>
+      _fuelings.fold<double>(0, (sum, item) => sum + item.totalAmount);
 }
 
 class _FuelingFormDialog extends StatefulWidget {

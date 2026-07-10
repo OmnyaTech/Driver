@@ -5,9 +5,11 @@ import '../funcionalidade/developer/developer_access_screen.dart';
 import '../funcionalidade/platforms/platforms_screen.dart';
 import '../funcionalidade/subscriptions/subscriptions_screen.dart';
 import '../funcionalidade/vehicles/vehicles_screen.dart';
+import '../services/avatar_service.dart';
 import '../services/profile_service.dart';
 import '../utilities/guards/developer_guard.dart';
 import '../utilities/state/app_session.dart';
+import '../utilities/ui/profile_avatar.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -152,24 +154,11 @@ class _SettingsHeroCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.16),
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    _initial(profile?.displayName),
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+              ProfileAvatar(
+                displayName: profile?.displayName ?? 'Omnya Driver',
+                avatarUrl: profile?.avatarUrl,
+                radius: 28,
+                showBorder: true,
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -211,12 +200,6 @@ class _SettingsHeroCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _initial(String? value) {
-    final normalized = value?.trim();
-    if (normalized == null || normalized.isEmpty) return 'O';
-    return normalized[0].toUpperCase();
   }
 }
 
@@ -314,10 +297,12 @@ class _ProfileSheet extends StatefulWidget {
 class _ProfileSheetState extends State<_ProfileSheet> {
   final _formKey = GlobalKey<FormState>();
   final _profileService = ProfileService();
+  final _avatarService = AvatarService();
   late final TextEditingController _displayNameController;
   late final TextEditingController _fullNameController;
   late final TextEditingController _phoneController;
   bool _saving = false;
+  bool _uploadingAvatar = false;
   String? _errorMessage;
 
   @override
@@ -343,6 +328,7 @@ class _ProfileSheetState extends State<_ProfileSheet> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final theme = Theme.of(context);
+    final profile = context.watch<AppSession>().profile;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(12, 0, 12, bottomInset + 12),
@@ -384,6 +370,52 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 20),
+                  Center(
+                    child: Column(
+                      children: [
+                        ProfileAvatar(
+                          displayName:
+                              _displayNameController.text.trim().isEmpty
+                              ? 'Motorista'
+                              : _displayNameController.text.trim(),
+                          avatarUrl: profile?.avatarUrl,
+                          radius: 42,
+                          showBorder: true,
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: (_saving || _uploadingAvatar)
+                                  ? null
+                                  : _pickAvatar,
+                              icon: _uploadingAvatar
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.photo_camera_outlined),
+                              label: const Text('Alterar foto'),
+                            ),
+                            if ((profile?.avatarUrl ?? '').trim().isNotEmpty)
+                              TextButton(
+                                onPressed: (_saving || _uploadingAvatar)
+                                    ? null
+                                    : _removeAvatar,
+                                child: const Text('Remover foto'),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   TextFormField(
                     controller: _displayNameController,
                     decoration: const InputDecoration(
@@ -475,6 +507,57 @@ class _ProfileSheetState extends State<_ProfileSheet> {
     } finally {
       if (mounted) {
         setState(() => _saving = false);
+      }
+    }
+  }
+
+  Future<void> _pickAvatar() async {
+    final session = context.read<AppSession>();
+    setState(() {
+      _uploadingAvatar = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final url = await _avatarService.pickAndUploadProfileAvatar();
+      if (url == null) {
+        return;
+      }
+      await session.refreshProfile();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Foto de perfil atualizada com sucesso.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingAvatar = false);
+      }
+    }
+  }
+
+  Future<void> _removeAvatar() async {
+    final session = context.read<AppSession>();
+    setState(() {
+      _uploadingAvatar = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _avatarService.removeProfileAvatar();
+      await session.refreshProfile();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Foto de perfil removida com sucesso.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingAvatar = false);
       }
     }
   }

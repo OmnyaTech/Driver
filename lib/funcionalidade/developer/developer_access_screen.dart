@@ -3,9 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../../models/app_admin_audit_log.dart';
 import '../../models/app_subscription.dart';
-import '../../utilities/state/app_session.dart';
 import '../../services/developer_admin_service.dart';
 import '../../services/subscription_service.dart';
+import '../../utilities/state/app_session.dart';
+import '../../utilities/ui/omnya_shell.dart';
 
 class DeveloperAccessScreen extends StatefulWidget {
   const DeveloperAccessScreen({super.key});
@@ -62,10 +63,13 @@ class _DeveloperAccessScreenState extends State<DeveloperAccessScreen> {
     final profile = session.profile;
 
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const OmnyaSubPageScaffold(
+        title: 'Developer',
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
-    return RefreshIndicator(
+    final content = RefreshIndicator(
       onRefresh: _loadData,
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -134,7 +138,8 @@ class _DeveloperAccessScreenState extends State<DeveloperAccessScreen> {
                       title: Text(log.action),
                       subtitle: Text(
                         [
-                          if (log.summary != null && log.summary!.trim().isNotEmpty)
+                          if (log.summary != null &&
+                              log.summary!.trim().isNotEmpty)
                             log.summary!,
                           if (log.actorEmail != null) 'ator: ${log.actorEmail}',
                           if (log.targetEmail != null)
@@ -189,6 +194,8 @@ class _DeveloperAccessScreenState extends State<DeveloperAccessScreen> {
         ],
       ),
     );
+
+    return OmnyaSubPageScaffold(title: 'Developer', body: content);
   }
 
   String _formatDate(DateTime value) {
@@ -258,7 +265,9 @@ class _LookupProfileCardState extends State<_LookupProfileCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Nome: ${_profile!.displayName ?? _profile!.fullName ?? '-'}'),
+                    Text(
+                      'Nome: ${_profile!.displayName ?? _profile!.fullName ?? '-'}',
+                    ),
                     Text('Plano: ${_profile!.planType}'),
                     Text('Papel: ${_profile!.role}'),
                     Text('Status: ${_profile!.subscriptionStatus}'),
@@ -362,10 +371,7 @@ class _GrantAccessCardState extends State<_GrantAccessCard> {
               decoration: const InputDecoration(labelText: 'Papel'),
               items: const [
                 DropdownMenuItem(value: 'user', child: Text('User')),
-                DropdownMenuItem(
-                  value: 'developer',
-                  child: Text('Developer'),
-                ),
+                DropdownMenuItem(value: 'developer', child: Text('Developer')),
               ],
               onChanged: (value) => setState(() => _role = value ?? 'user'),
             ),
@@ -414,7 +420,8 @@ class _GrantAccessCardState extends State<_GrantAccessCard> {
   }
 
   Future<void> _pickDate() async {
-    final initialDate = _expiresAt ?? DateTime.now().add(const Duration(days: 30));
+    final initialDate =
+        _expiresAt ?? DateTime.now().add(const Duration(days: 30));
     final date = await showDatePicker(
       context: context,
       initialDate: initialDate,

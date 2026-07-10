@@ -5,6 +5,7 @@ import '../../models/app_platform.dart';
 import '../../services/plan_access_service.dart';
 import '../../services/platform_service.dart';
 import '../../utilities/state/app_session.dart';
+import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
 class PlatformsScreen extends StatefulWidget {
@@ -12,10 +13,12 @@ class PlatformsScreen extends StatefulWidget {
     super.key,
     this.showCreateButton = true,
     this.actionController,
+    this.embedded = false,
   });
 
   final bool showCreateButton;
   final ScreenActionController? actionController;
+  final bool embedded;
 
   @override
   State<PlatformsScreen> createState() => _PlatformsScreenState();
@@ -173,20 +176,22 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
     final activePlatforms = _platforms.where((item) => item.active).length;
     final canUseMultiple = session.profile == null
         ? false
-        : _planAccessService.canUseMultiplePlatforms(
-            session.profile!.planType,
-          );
+        : _planAccessService.canUseMultiplePlatforms(session.profile!.planType);
 
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      const loading = Center(child: CircularProgressIndicator());
+      if (widget.embedded) {
+        return loading;
+      }
+      return const OmnyaSubPageScaffold(title: 'Plataformas', body: loading);
     }
 
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _loadPlatforms,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
+    final content = RefreshIndicator(
+      onRefresh: _loadPlatforms,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          if (widget.embedded) ...[
             Row(
               children: [
                 Expanded(
@@ -204,74 +209,88 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            if (!canUseMultiple && activePlatforms >= 1)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    'Plano free: somente uma plataforma ativa por conta. Assinatura, presente ou papel developer liberam multiplas plataformas.',
-                  ),
-                ),
-              ),
-            if (_platforms.isEmpty)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text(
-                    'Nenhuma plataforma cadastrada ainda. Adicione ifood, 99, restaurantes e outras fontes de corrida.',
-                  ),
-                ),
-              ),
-            ..._platforms.map(
-              (platform) => Card(
-                child: ListTile(
-                  title: Text(platform.name),
-                  subtitle: Text(
-                    [
-                      platform.type,
-                      if (platform.averageIncome != null)
-                        'R\$ ${platform.averageIncome!.toStringAsFixed(2)}',
-                      if (platform.averageDeliveries != null)
-                        '${platform.averageDeliveries} entregas',
-                      platform.active ? 'Ativa' : 'Arquivada',
-                    ].join(' • '),
-                  ),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) async {
-                      if (value == 'edit') {
-                        await _openEditDialog(platform);
-                        return;
-                      }
-                      if (value == 'archive') {
-                        await _archivePlatform(platform);
-                        return;
-                      }
-                      if (value == 'delete') {
-                        await _deletePlatform(platform);
-                      }
-                    },
-                    itemBuilder: (_) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Text('Editar'),
-                      ),
-                      if (platform.active)
-                        const PopupMenuItem(
-                          value: 'archive',
-                          child: Text('Arquivar'),
-                        ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Text('Excluir'),
-                      ),
-                    ],
-                  ),
+          ],
+          if (!canUseMultiple && activePlatforms >= 1)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Plano free: somente uma plataforma ativa por conta. Assinatura, presente ou papel developer liberam multiplas plataformas.',
                 ),
               ),
             ),
-          ],
-        ),
+          if (_platforms.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Nenhuma plataforma cadastrada ainda. Adicione ifood, 99, restaurantes e outras fontes de corrida.',
+                ),
+              ),
+            ),
+          ..._platforms.map(
+            (platform) => Card(
+              child: ListTile(
+                title: Text(platform.name),
+                subtitle: Text(
+                  [
+                    platform.type,
+                    if (platform.averageIncome != null)
+                      'R\$ ${platform.averageIncome!.toStringAsFixed(2)}',
+                    if (platform.averageDeliveries != null)
+                      '${platform.averageDeliveries} entregas',
+                    platform.active ? 'Ativa' : 'Arquivada',
+                  ].join(' • '),
+                ),
+                trailing: PopupMenuButton<String>(
+                  onSelected: (value) async {
+                    if (value == 'edit') {
+                      await _openEditDialog(platform);
+                      return;
+                    }
+                    if (value == 'archive') {
+                      await _archivePlatform(platform);
+                      return;
+                    }
+                    if (value == 'delete') {
+                      await _deletePlatform(platform);
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(value: 'edit', child: Text('Editar')),
+                    if (platform.active)
+                      const PopupMenuItem(
+                        value: 'archive',
+                        child: Text('Arquivar'),
+                      ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Excluir'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+
+    if (widget.embedded) {
+      return content;
+    }
+
+    return OmnyaSubPageScaffold(
+      title: 'Plataformas',
+      heroTagPrefix: 'platforms',
+      floatingActions: [
+        OmnyaFabAction(
+          label: 'Nova plataforma',
+          icon: Icons.add,
+          onTap: _openCreateDialog,
+        ),
+      ],
+      body: content,
     );
   }
 }
@@ -312,9 +331,7 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
   void initState() {
     super.initState();
     final initialPlatform = widget.initialPlatform;
-    _nameController = TextEditingController(
-      text: initialPlatform?.name ?? '',
-    );
+    _nameController = TextEditingController(text: initialPlatform?.name ?? '');
     _incomeController = TextEditingController(
       text: initialPlatform?.averageIncome?.toStringAsFixed(2) ?? '',
     );

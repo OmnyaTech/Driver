@@ -6,6 +6,7 @@ class AppProfile {
     required this.id,
     required this.email,
     required this.displayName,
+    required this.avatarUrl,
     required this.fullName,
     required this.phone,
     required this.role,
@@ -16,6 +17,7 @@ class AppProfile {
   final String id;
   final String email;
   final String displayName;
+  final String? avatarUrl;
   final String? fullName;
   final String? phone;
   final UserRole role;

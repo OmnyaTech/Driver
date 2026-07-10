@@ -180,6 +180,7 @@ class AppSession extends ChangeNotifier {
       email: (data['email'] ?? '').toString(),
       displayName: (data['display_name'] ?? data['full_name'] ?? 'Motorista')
           .toString(),
+      avatarUrl: data['avatar_url'] as String?,
       fullName: data['full_name'] as String?,
       phone: data['phone'] as String?,
       role: _parseRole((data['role'] ?? 'user').toString()),
@@ -227,6 +228,7 @@ class AppSession extends ChangeNotifier {
       id: user.id,
       email: user.email ?? '',
       displayName: displayName,
+      avatarUrl: metadata['avatar_url']?.toString(),
       fullName: fullName,
       phone: metadata['phone']?.toString(),
       role: UserRole.user,
