@@ -60,21 +60,39 @@ const buildPaymentLinkPayload = (
   billingCycle: string,
   value: number,
   externalReference: string,
-  successUrl: string,
-) => ({
-  name: `Omnya Driver ${billingCycle === "YEARLY" ? "Premium Anual" : "Premium Mensal"}`,
-  description: "Plano pago do Omnya Driver.",
-  value,
-  billingType: "CREDIT_CARD",
-  chargeType: "RECURRENT",
-  subscriptionCycle: billingCycle,
-  externalReference,
-  callback: {
-    successUrl,
-    autoRedirect: false,
-  },
-  notificationEnabled: true,
-});
+  successUrl?: string | null,
+) => {
+  const payload: Record<string, unknown> = {
+    name: `Omnya Driver ${billingCycle === "YEARLY" ? "Premium Anual" : "Premium Mensal"}`,
+    description: "Plano pago do Omnya Driver.",
+    value,
+    billingType: "CREDIT_CARD",
+    chargeType: "RECURRENT",
+    subscriptionCycle: billingCycle,
+    externalReference,
+    notificationEnabled: true,
+  };
+
+  if (successUrl && successUrl.trim().isNotEmpty) {
+    payload.callback = {
+      successUrl,
+      autoRedirect: false,
+    };
+  }
+
+  return payload;
+};
+
+const isDomainValidationError = (payload: unknown) => {
+  if (!payload || typeof payload !== "object") return false;
+  const errors = (payload as { errors?: Array<{ description?: string }> }).errors;
+  if (!Array.isArray(errors)) return false;
+
+  return errors.some((error) =>
+    (error.description ?? "").toLowerCase().includes("mesmo domínio") ||
+    (error.description ?? "").toLowerCase().includes("mesmo dominio")
+  );
+};
 
 Deno.serve(async (req) => {
   if (!isAllowedOrigin(req.headers.get("origin"))) {
@@ -167,16 +185,44 @@ Deno.serve(async (req) => {
       successUrl,
     );
 
-    const asaasResponse = await fetch(`${resolveAsaasBaseUrl()}/v3/paymentLinks`, {
+    const headers = {
+      "Content-Type": "application/json",
+      access_token: apiKey,
+    };
+
+    let asaasResponse = await fetch(`${resolveAsaasBaseUrl()}/v3/paymentLinks`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        access_token: apiKey,
-      },
+      headers,
       body: JSON.stringify(payload),
     });
 
-    const asaasData = await asaasResponse.json();
+    let asaasData = await asaasResponse.json();
+
+    if (!asaasResponse.ok && isDomainValidationError(asaasData)) {
+      const fallbackPayload = buildPaymentLinkPayload(
+        billingCycle,
+        value,
+        externalReference,
+        null,
+      );
+
+      safeLog("[driver-create-asaas-checkout]", {
+        success: false,
+        reason: "callback_domain_rejected_retrying_without_callback",
+        userId: user.id,
+        planType,
+        billingCycle,
+        timestamp: new Date().toISOString(),
+      });
+
+      asaasResponse = await fetch(`${resolveAsaasBaseUrl()}/v3/paymentLinks`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(fallbackPayload),
+      });
+      asaasData = await asaasResponse.json();
+    }
+
     if (!asaasResponse.ok) {
       safeLog("[driver-create-asaas-checkout]", {
         success: false,
