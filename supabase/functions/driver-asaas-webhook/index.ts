@@ -68,7 +68,6 @@ const mapEventToStatus = (eventType: string) => {
 };
 
 const mapPlanType = (planType?: string | null) => {
-  if (planType === "lifetime") return "lifetime";
   return "premium";
 };
 

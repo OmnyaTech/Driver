@@ -51,61 +51,32 @@ const resolvePrice = (planType: string, billingCycle: string) => {
       return Number(
         Deno.env.get("DRIVER_PREMIUM_YEARLY_PRICE") ?? "299.90",
       );
-    case "lifetime:ONCE":
-      return Number(Deno.env.get("DRIVER_LIFETIME_PRICE") ?? "799.90");
     default:
       return null;
   }
 };
 
 const buildPaymentLinkPayload = (
-  planType: string,
   billingCycle: string,
   value: number,
   externalReference: string,
   successUrl: string,
-) => {
-  if (planType === "premium") {
-    return {
-      name: `Omnya Driver ${billingCycle === "YEARLY" ? "Premium Anual" : "Premium Mensal"}`,
-      description: "Plano pago do Omnya Driver.",
-      value,
-      billingType: "CREDIT_CARD",
-      chargeType: "RECURRENT",
-      subscriptionCycle: billingCycle,
-      externalReference,
-      callback: {
-        successUrl,
-        autoRedirect: false,
-      },
-      notificationEnabled: true,
-    };
-  }
-
-  return {
-    name: "Omnya Driver Lifetime",
-    description: "Acesso vitalicio do Omnya Driver.",
-    value,
-    billingType: "UNDEFINED",
-    chargeType: "DETACHED",
-    dueDateLimitDays: 3,
-    externalReference,
-    callback: {
-      successUrl,
-      autoRedirect: false,
-    },
-    notificationEnabled: true,
-  };
-};
+) => ({
+  name: `Omnya Driver ${billingCycle === "YEARLY" ? "Premium Anual" : "Premium Mensal"}`,
+  description: "Plano pago do Omnya Driver.",
+  value,
+  billingType: "CREDIT_CARD",
+  chargeType: "RECURRENT",
+  subscriptionCycle: billingCycle,
+  externalReference,
+  callback: {
+    successUrl,
+    autoRedirect: false,
+  },
+  notificationEnabled: true,
+});
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      status: 200,
-      headers: buildCorsHeaders(req.headers.get("origin")),
-    });
-  }
-
   if (!isAllowedOrigin(req.headers.get("origin"))) {
     return jsonSecurityResponse(
       req,
@@ -115,6 +86,13 @@ Deno.serve(async (req) => {
       },
       403,
     );
+  }
+
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      status: 200,
+      headers: buildCorsHeaders(req.headers.get("origin")),
+    });
   }
 
   if (req.method !== "POST") {
@@ -165,7 +143,7 @@ Deno.serve(async (req) => {
     const billingCycle = (body.billingCycle ?? "").trim().toUpperCase();
     const value = resolvePrice(planType, billingCycle);
 
-    if (!value || !["premium", "lifetime"].includes(planType)) {
+    if (!value || planType !== "premium") {
       return jsonSecurityResponse(
         req,
         {
@@ -183,7 +161,6 @@ Deno.serve(async (req) => {
     const externalReference =
       `driver:${user.id}:${planType}:${billingCycle}:${Date.now()}`;
     const payload = buildPaymentLinkPayload(
-      planType,
       billingCycle,
       value,
       externalReference,
