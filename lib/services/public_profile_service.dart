@@ -1,3 +1,4 @@
+import '../models/app_public_driver.dart';
 import 'auth_service.dart';
 
 class PublicProfileSettings {
@@ -96,4 +97,109 @@ class PublicProfileService {
     final trimmed = value?.trim();
     return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
   }
+
+  Future<AppPublicDriverProfile?> loadPublicProfile(String slug) async {
+    final client = _authService.requireClient();
+    final response = await client
+        .schema('driver')
+        .rpc('get_public_driver_profile', params: {'p_slug': slug});
+
+    if (response == null) {
+      return null;
+    }
+
+    final data = Map<String, dynamic>.from(response as Map);
+    final records = Map<String, dynamic>.from(
+      (data['records'] as Map?) ?? const <String, dynamic>{},
+    );
+
+    return AppPublicDriverProfile(
+      displayName: data['display_name']?.toString() ?? 'Motorista',
+      avatarUrl: data['avatar_url']?.toString(),
+      publicSlug: data['public_slug']?.toString() ?? slug,
+      publicBio: data['public_bio']?.toString(),
+      publicCity: data['public_city']?.toString(),
+      level: _toInt(data['level']),
+      levelTitle: data['level_title']?.toString() ?? 'Motorista',
+      xp: _toInt(data['xp']),
+      medalsCount: _toInt(data['medals_count']),
+      currentStreakDays: _toInt(data['current_streak_days']),
+      bestStreakDays: _toInt(data['best_streak_days']),
+      bestFridayDate: _parseDate(records['best_friday']?['date']),
+      highestRevenueDayDate: _parseDate(
+        records['highest_revenue_day']?['date'],
+      ),
+      highestProfitPerHourStartedAt: _parseDate(
+        records['highest_profit_per_hour']?['started_at'],
+      ),
+      highestDeliveriesDayDate: _parseDate(
+        records['highest_deliveries_day']?['date'],
+      ),
+      highestDeliveriesCount: _toInt(
+        records['highest_deliveries_day']?['deliveries'],
+      ),
+    );
+  }
+
+  Future<List<AppPublicDriverPreview>> listRankingPreview({
+    int limit = 20,
+  }) async {
+    final client = _authService.requireClient();
+    final rows = await client
+        .schema('driver')
+        .rpc('get_public_ranking_preview', params: {'p_limit': limit});
+
+    return (rows as List)
+        .map<AppPublicDriverPreview>(
+          (item) => AppPublicDriverPreview(
+            rankPosition: _toInt((item as Map)['rank_position']),
+            publicSlug: item['public_slug']?.toString() ?? '',
+            displayName: item['display_name']?.toString() ?? 'Motorista',
+            avatarUrl: item['avatar_url']?.toString(),
+            publicCity: null,
+            level: _toInt(item['level']),
+            levelTitle: item['level_title']?.toString() ?? 'Motorista',
+            medalsCount: _toInt(item['medals_count']),
+            publicScore: _toInt(item['public_score']),
+            bestStreakDays: _toInt(item['best_streak_days']),
+          ),
+        )
+        .toList();
+  }
+
+  Future<List<AppPublicDriverPreview>> searchDrivers(
+    String query, {
+    int limit = 20,
+  }) async {
+    final client = _authService.requireClient();
+    final rows = await client
+        .schema('driver')
+        .rpc(
+          'list_public_driver_profiles',
+          params: {
+            'p_query': query.trim().isEmpty ? null : query.trim(),
+            'p_limit': limit,
+          },
+        );
+
+    return (rows as List)
+        .map<AppPublicDriverPreview>(
+          (item) => AppPublicDriverPreview(
+            publicSlug: (item as Map)['public_slug']?.toString() ?? '',
+            displayName: item['display_name']?.toString() ?? 'Motorista',
+            avatarUrl: item['avatar_url']?.toString(),
+            publicCity: item['public_city']?.toString(),
+            level: _toInt(item['level']),
+            levelTitle: item['level_title']?.toString() ?? 'Motorista',
+            medalsCount: _toInt(item['medals_count']),
+            publicScore: _toInt(item['public_score']),
+            bestStreakDays: _toInt(item['best_streak_days']),
+          ),
+        )
+        .toList();
+  }
+
+  int _toInt(Object? value) => int.tryParse('$value') ?? 0;
+  DateTime? _parseDate(Object? value) =>
+      value == null ? null : DateTime.tryParse(value.toString());
 }

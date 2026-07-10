@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../funcionalidade/community/community_hub_screen.dart';
 import '../funcionalidade/finance/finance_hub_screen.dart';
+import '../funcionalidade/gamification/gamification_screen.dart';
 import '../funcionalidade/goals/goals_screen.dart';
 import '../funcionalidade/journeys/journeys_screen.dart';
+import '../funcionalidade/notifications/notifications_screen.dart';
 import '../funcionalidade/platforms/platforms_screen.dart';
 import '../funcionalidade/reports/reports_screen.dart';
 import '../funcionalidade/vehicles/vehicles_screen.dart';
 import '../models/app_dashboard_metrics.dart';
-import '../services/dashboard_metrics_service.dart';
+import '../models/app_gamification.dart';
+import '../models/app_operational_intelligence.dart';
+import '../services/engagement_notification_service.dart';
+import '../services/gamification_service.dart';
+import '../services/operational_intelligence_service.dart';
 import '../settings/settings_screen.dart';
 import '../utilities/state/app_session.dart';
 import '../utilities/ui/omnya_shell.dart';
@@ -24,13 +31,22 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  final EngagementNotificationService _notificationService =
+      EngagementNotificationService();
   int _currentIndex = 0;
+  int _unreadNotifications = 0;
   final ScreenActionController _journeyController = ScreenActionController();
   final ScreenActionController _goalController = ScreenActionController();
   final ScreenActionController _expenseController = ScreenActionController();
   final ScreenActionController _fuelingController = ScreenActionController();
   final ScreenActionController _maintenanceController =
       ScreenActionController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnreadNotifications();
+  }
 
   @override
   void dispose() {
@@ -50,10 +66,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final tabs = [
       _DashboardTab(
         title: 'Visao geral',
-        page: _OverviewTab(session: session),
+        page: _OverviewTab(
+          session: session,
+          onNotificationsChanged: _loadUnreadNotifications,
+        ),
         icon: Icons.dashboard_outlined,
         selectedIcon: Icons.dashboard,
-        label: compactNavigation ? 'Home' : 'Home',
+        label: 'Home',
       ),
       _DashboardTab(
         title: 'Jornadas',
@@ -116,6 +135,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Notificacoes',
+            onPressed: _openNotifications,
+            icon: Badge(
+              isLabelVisible: _unreadNotifications > 0,
+              label: Text('$_unreadNotifications'),
+              child: const Icon(Icons.notifications_outlined),
+            ),
+          ),
           Container(
             margin: const EdgeInsets.only(right: 12),
             child: IconButton(
@@ -241,6 +269,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
     await future;
   }
+
+  Future<void> _loadUnreadNotifications() async {
+    try {
+      await _notificationService.syncSmartNotifications();
+      final unread = await _notificationService.unreadCount();
+      if (!mounted) return;
+      setState(() => _unreadNotifications = unread);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _unreadNotifications = 0);
+    }
+  }
+
+  Future<void> _openNotifications() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+    await _loadUnreadNotifications();
+  }
 }
 
 class _DashboardTab {
@@ -349,19 +396,27 @@ class _OmnyaBottomTabBar extends StatelessWidget {
 }
 
 class _OverviewTab extends StatefulWidget {
-  const _OverviewTab({required this.session});
+  const _OverviewTab({
+    required this.session,
+    required this.onNotificationsChanged,
+  });
 
   final AppSession session;
+  final Future<void> Function() onNotificationsChanged;
 
   @override
   State<_OverviewTab> createState() => _OverviewTabState();
 }
 
 class _OverviewTabState extends State<_OverviewTab> {
-  final DashboardMetricsService _metricsService = DashboardMetricsService();
+  final OperationalIntelligenceService _intelligenceService =
+      OperationalIntelligenceService();
+  final GamificationService _gamificationService = GamificationService();
   bool _loading = true;
-  AppDashboardMetrics? _metrics;
+  AppOperationalIntelligence? _intelligence;
+  AppGamificationSummary? _gamification;
   String? _errorMessage;
+  OperationalRangePreset _preset = OperationalRangePreset.today;
   DateTimeRange? _range;
 
   @override
@@ -377,12 +432,17 @@ class _OverviewTabState extends State<_OverviewTab> {
     });
 
     try {
-      final metrics = await _metricsService.loadMetrics(
-        startAt: _range?.start,
-        endAt: _range?.end,
+      final intelligence = await _intelligenceService.load(
+        preset: _preset,
+        customRange: _range,
       );
+      final gamification = await _gamificationService.loadSummary();
       if (!mounted) return;
-      setState(() => _metrics = metrics);
+      setState(() {
+        _intelligence = intelligence;
+        _gamification = gamification;
+      });
+      await widget.onNotificationsChanged();
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -404,23 +464,70 @@ class _OverviewTabState extends State<_OverviewTab> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final metrics =
-        _metrics ??
-        const AppDashboardMetrics(
-          totalIncome: 0,
-          totalOperationalCosts: 0,
-          netResult: 0,
-          allocatedToGoals: 0,
-          availableBalance: 0,
-          totalJourneys: 0,
-          openJourneys: 0,
-          totalDeliveries: 0,
-          totalDistanceKm: 0,
-          activeVehicles: 0,
-          activePlatforms: 0,
-          totalFuelings: 0,
-          totalMaintenances: 0,
-          totalTripExpenses: 0,
+    final intelligence =
+        _intelligence ??
+        AppOperationalIntelligence(
+          periodLabel: 'Hoje',
+          periodStart: DateTime.now(),
+          periodEnd: DateTime.now(),
+          currentMetrics: const AppDashboardMetrics(
+            totalIncome: 0,
+            totalOperationalCosts: 0,
+            netResult: 0,
+            allocatedToGoals: 0,
+            availableBalance: 0,
+            totalJourneys: 0,
+            openJourneys: 0,
+            totalDeliveries: 0,
+            totalDistanceKm: 0,
+            activeVehicles: 0,
+            activePlatforms: 0,
+            totalFuelings: 0,
+            totalMaintenances: 0,
+            totalTripExpenses: 0,
+          ),
+          previousMetrics: const AppDashboardMetrics(
+            totalIncome: 0,
+            totalOperationalCosts: 0,
+            netResult: 0,
+            allocatedToGoals: 0,
+            availableBalance: 0,
+            totalJourneys: 0,
+            openJourneys: 0,
+            totalDeliveries: 0,
+            totalDistanceKm: 0,
+            activeVehicles: 0,
+            activePlatforms: 0,
+            totalFuelings: 0,
+            totalMaintenances: 0,
+            totalTripExpenses: 0,
+          ),
+          trend: const [],
+          insights: const [],
+          suggestedReserve: 0,
+          suggestedReserveLabel: 'Sem reserva sugerida agora',
+        );
+    final metrics = intelligence.currentMetrics;
+    final gamification =
+        _gamification ??
+        const AppGamificationSummary(
+          xp: 0,
+          level: 1,
+          levelTitle: 'Motorista iniciante',
+          nextLevelXp: 250,
+          currentStreakDays: 0,
+          bestStreakDays: 0,
+          medalsCount: 0,
+          rankingOptIn: false,
+          publicScore: 0,
+          records: AppDriverRecords(
+            bestFridayDate: null,
+            highestRevenueDayDate: null,
+            highestProfitPerHourStartedAt: null,
+            highestDeliveriesDayDate: null,
+            highestDeliveriesCount: 0,
+          ),
+          medals: [],
         );
 
     return RefreshIndicator(
@@ -432,14 +539,47 @@ class _OverviewTabState extends State<_OverviewTab> {
             children: [
               Expanded(
                 child: Text(
-                  'Painel OmnyaTech',
+                  'Painel operacional',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
-              OutlinedButton.icon(
-                onPressed: _pickRange,
-                icon: const Icon(Icons.date_range_outlined),
-                label: Text(_rangeLabel),
+              if (_preset == OperationalRangePreset.custom)
+                OutlinedButton.icon(
+                  onPressed: _pickRange,
+                  icon: const Icon(Icons.date_range_outlined),
+                  label: Text(_rangeLabel),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _RangeChip(
+                label: 'Hoje',
+                selected: _preset == OperationalRangePreset.today,
+                onTap: () => _changePreset(OperationalRangePreset.today),
+              ),
+              _RangeChip(
+                label: 'Semana',
+                selected: _preset == OperationalRangePreset.week,
+                onTap: () => _changePreset(OperationalRangePreset.week),
+              ),
+              _RangeChip(
+                label: 'Mes',
+                selected: _preset == OperationalRangePreset.month,
+                onTap: () => _changePreset(OperationalRangePreset.month),
+              ),
+              _RangeChip(
+                label: _preset == OperationalRangePreset.custom
+                    ? _rangeLabel
+                    : 'Personalizado',
+                selected: _preset == OperationalRangePreset.custom,
+                onTap: () async {
+                  setState(() => _preset = OperationalRangePreset.custom);
+                  await _pickRange();
+                },
               ),
             ],
           ),
@@ -474,7 +614,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Visao consolidada',
+                        'Visao de ${intelligence.periodLabel.toLowerCase()}',
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(color: Colors.white),
                       ),
@@ -507,6 +647,13 @@ class _OverviewTabState extends State<_OverviewTab> {
                     context,
                   ).textTheme.titleLarge?.copyWith(color: Colors.white),
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  'Receita ${_formatDelta(intelligence.incomeDeltaPct())} vs periodo anterior',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.82),
+                  ),
+                ),
               ],
             ),
           ),
@@ -523,12 +670,66 @@ class _OverviewTabState extends State<_OverviewTab> {
             ),
           ],
           const SizedBox(height: 18),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Pulso da operacao',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                      Text(
+                        intelligence.periodLabel,
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    height: 96,
+                    child: _SparklineChart(points: intelligence.trend),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
           _MetricGrid(
             metrics: [
               _MetricData(
-                title: 'Receita',
+                title: 'Receita atual',
                 value: _currency(metrics.totalIncome),
-                detail: '${metrics.totalDeliveries} entregas',
+                detail: _deltaLabel(
+                  intelligence.incomeDeltaPct(),
+                  '${metrics.totalDeliveries} entregas',
+                ),
+              ),
+              _MetricData(
+                title: 'Liquido',
+                value: _currency(metrics.netResult),
+                detail: _deltaLabel(
+                  intelligence.netDeltaPct(),
+                  '${metrics.totalJourneys} jornadas',
+                ),
+              ),
+              _MetricData(
+                title: 'Entregas',
+                value: '${metrics.totalDeliveries}',
+                detail: _deltaLabel(
+                  intelligence.deliveryDeltaPct(),
+                  '${metrics.averageDeliveriesPerJourney.toStringAsFixed(1)} por jornada',
+                ),
+              ),
+              _MetricData(
+                title: 'Saldo livre',
+                value: _currency(metrics.availableBalance),
+                detail: 'Objetivos ${_currency(metrics.allocatedToGoals)}',
               ),
               _MetricData(
                 title: 'Custos',
@@ -537,48 +738,103 @@ class _OverviewTabState extends State<_OverviewTab> {
                     '${metrics.totalTripExpenses + metrics.totalFuelings + metrics.totalMaintenances} lancamentos',
               ),
               _MetricData(
-                title: 'Liquido',
-                value: _currency(metrics.netResult),
-                detail: '${metrics.totalJourneys} jornadas',
-              ),
-              _MetricData(
-                title: 'Saldo',
-                value: _currency(metrics.availableBalance),
-                detail: 'Objetivos ${_currency(metrics.allocatedToGoals)}',
-              ),
-              _MetricData(
                 title: 'Distancia',
                 value: '${metrics.totalDistanceKm.toStringAsFixed(1)} km',
-                detail: 'km rodados',
-              ),
-              _MetricData(
-                title: 'Ticket',
-                value: _currency(metrics.incomePerDelivery),
-                detail: 'por entrega',
+                detail: 'custo/km ${_currency(metrics.costPerKm)}',
               ),
             ],
           ),
           const SizedBox(height: 18),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Leituras rapidas do negocio',
-                    style: Theme.of(context).textTheme.titleMedium,
+          _InsightBoard(intelligence: intelligence),
+          const SizedBox(height: 18),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final vertical = constraints.maxWidth < 840;
+              final children = [
+                Expanded(
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Reserva sugerida',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            _currency(intelligence.suggestedReserve),
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(intelligence.suggestedReserveLabel),
+                        ],
+                      ),
+                    ),
                   ),
+                ),
+                if (!vertical)
+                  const SizedBox(width: 12)
+                else
                   const SizedBox(height: 12),
-                  Text('- Jornadas em aberto: ${metrics.openJourneys}'),
-                  Text('- Veiculos ativos: ${metrics.activeVehicles}'),
-                  Text('- Plataformas ativas: ${metrics.activePlatforms}'),
-                  Text(
-                    '- Receita media por jornada: ${_currency(metrics.averageIncomePerJourney)}',
+                Expanded(
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Gamificacao visivel',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Nivel ${gamification.level}',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '${gamification.xp} XP • ${gamification.medalsCount} medalhas',
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              FilledButton.tonal(
+                                onPressed: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const GamificationScreen(),
+                                  ),
+                                ),
+                                child: const Text('Ver progresso'),
+                              ),
+                              OutlinedButton(
+                                onPressed: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const CommunityHubScreen(),
+                                  ),
+                                ),
+                                child: const Text('Comunidade'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ],
-              ),
-            ),
+                ),
+              ];
+
+              return vertical
+                  ? Column(children: children)
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: children,
+                    );
+            },
           ),
         ],
       ),
@@ -602,6 +858,11 @@ class _OverviewTabState extends State<_OverviewTab> {
     await _loadMetrics();
   }
 
+  Future<void> _changePreset(OperationalRangePreset preset) async {
+    setState(() => _preset = preset);
+    await _loadMetrics();
+  }
+
   String get _rangeLabel {
     if (_range == null) return 'Periodo';
     return '${_formatDate(_range!.start)} - ${_formatDate(_range!.end)}';
@@ -610,6 +871,16 @@ class _OverviewTabState extends State<_OverviewTab> {
   String _formatDate(DateTime value) {
     final date = value.toLocal();
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
+  }
+
+  String _formatDelta(double value) {
+    final prefix = value >= 0 ? '+' : '';
+    return '$prefix${value.toStringAsFixed(0)}%';
+  }
+
+  String _deltaLabel(double delta, String fallback) {
+    final prefix = delta >= 0 ? '+' : '';
+    return '$prefix${delta.toStringAsFixed(0)}% vs anterior • $fallback';
   }
 }
 
@@ -706,6 +977,216 @@ class _MetricCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _RangeChip extends StatelessWidget {
+  const _RangeChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFF0000CD).withValues(alpha: 0.18)
+              : Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected
+                ? const Color(0xFF0000CD)
+                : Theme.of(context).dividerColor,
+          ),
+        ),
+        child: Text(label),
+      ),
+    );
+  }
+}
+
+class _SparklineChart extends StatelessWidget {
+  const _SparklineChart({required this.points});
+
+  final List<OperationalTrendPoint> points;
+
+  @override
+  Widget build(BuildContext context) {
+    if (points.isEmpty) {
+      return const Center(child: Text('Sem tendencia suficiente no periodo.'));
+    }
+
+    return CustomPaint(
+      painter: _SparklinePainter(
+        values: points.map((item) => item.value).toList(),
+        color: const Color(0xFF4E63FF),
+        gridColor: Theme.of(context).dividerColor,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: points
+            .map(
+              (point) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 72),
+                  child: Text(
+                    point.label,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _SparklinePainter extends CustomPainter {
+  _SparklinePainter({
+    required this.values,
+    required this.color,
+    required this.gridColor,
+  });
+
+  final List<double> values;
+  final Color color;
+  final Color gridColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = gridColor.withValues(alpha: 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final linePaint = Paint()
+      ..shader = LinearGradient(
+        colors: [color.withValues(alpha: 0.35), color],
+      ).createShader(Offset.zero & size)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+
+    for (var i = 1; i <= 3; i++) {
+      final y = (size.height - 26) * (i / 4);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    if (values.length < 2) return;
+    final max = values
+        .reduce((a, b) => a > b ? a : b)
+        .clamp(1, double.infinity);
+    final min = values.reduce((a, b) => a < b ? a : b);
+    final range = (max - min).abs() < 0.001 ? 1.0 : (max - min);
+
+    final path = Path();
+    for (var i = 0; i < values.length; i++) {
+      final x = (size.width / (values.length - 1)) * i;
+      final normalized = (values[i] - min) / range;
+      final y = ((size.height - 34) * (1 - normalized)) + 4;
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+      canvas.drawCircle(Offset(x, y), 3.5, Paint()..color = color);
+    }
+    canvas.drawPath(path, linePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SparklinePainter oldDelegate) {
+    return oldDelegate.values != values ||
+        oldDelegate.color != color ||
+        oldDelegate.gridColor != gridColor;
+  }
+}
+
+class _InsightBoard extends StatelessWidget {
+  const _InsightBoard({required this.intelligence});
+
+  final AppOperationalIntelligence intelligence;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Inteligencia operacional',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth < 720 ? 2 : 4;
+                final spacing = 12.0;
+                final itemWidth =
+                    (constraints.maxWidth - (spacing * (columns - 1))) /
+                    columns;
+                return Wrap(
+                  spacing: spacing,
+                  runSpacing: spacing,
+                  children: intelligence.insights
+                      .map(
+                        (insight) => SizedBox(
+                          width: itemWidth,
+                          child: _InsightCard(insight: insight),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InsightCard extends StatelessWidget {
+  const _InsightCard({required this.insight});
+
+  final OperationalInsight insight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(insight.title, style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 10),
+          Text(insight.value, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          Text(
+            insight.description,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
       ),
     );
   }

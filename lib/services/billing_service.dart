@@ -16,10 +16,7 @@ class BillingService {
     final client = _authService.requireClient();
     final response = await client.functions.invoke(
       'driver-create-asaas-checkout',
-      body: {
-        'planType': planType,
-        'billingCycle': billingCycle,
-      },
+      body: {'planType': planType, 'billingCycle': billingCycle},
     );
 
     final data = Map<String, dynamic>.from(response.data as Map);

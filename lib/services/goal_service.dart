@@ -14,10 +14,12 @@ class GoalService {
     FuelingService? fuelingService,
     MaintenanceService? maintenanceService,
   }) : _authService = authService ?? const AuthService(),
-       _journeyService = journeyService ?? JourneyService(authService: authService),
+       _journeyService =
+           journeyService ?? JourneyService(authService: authService),
        _tripExpenseService =
            tripExpenseService ?? TripExpenseService(authService: authService),
-       _fuelingService = fuelingService ?? FuelingService(authService: authService),
+       _fuelingService =
+           fuelingService ?? FuelingService(authService: authService),
        _maintenanceService =
            maintenanceService ?? MaintenanceService(authService: authService);
 
@@ -69,11 +71,7 @@ class GoalService {
         .schema('driver')
         .from('goal_transactions')
         .select('id, goal_id, journey_id, amount, created_at')
-        .filter(
-          'goal_id',
-          'in',
-          '(${goalIds.map((id) => '"$id"').join(',')})',
-        )
+        .filter('goal_id', 'in', '(${goalIds.map((id) => '"$id"').join(',')})')
         .order('created_at', ascending: false);
 
     final journeyLabels = await _loadJourneyLabels();
@@ -156,14 +154,16 @@ class GoalService {
     final client = _authService.requireClient();
 
     try {
-      await client.schema('driver').rpc(
-        'apply_goal_transaction',
-        params: {
-          'p_goal_id': goalId,
-          'p_amount': value,
-          'p_journey_id': normalizedJourneyId,
-        },
-      );
+      await client
+          .schema('driver')
+          .rpc(
+            'apply_goal_transaction',
+            params: {
+              'p_goal_id': goalId,
+              'p_amount': value,
+              'p_journey_id': normalizedJourneyId,
+            },
+          );
       return;
     } catch (_) {
       await _applyTransactionClientSide(
@@ -195,10 +195,10 @@ class GoalService {
     try {
       final response = await client
           .schema('driver')
-          .rpc('get_dashboard_metrics', params: {
-            'p_start_at': null,
-            'p_end_at': null,
-          })
+          .rpc(
+            'get_dashboard_metrics',
+            params: {'p_start_at': null, 'p_end_at': null},
+          )
           .single();
 
       return AppDashboardMetrics(
@@ -295,7 +295,9 @@ class GoalService {
     }
 
     if (amount < 0 && amount.abs() > goal.currentAmount) {
-      throw StateError('Nao e possivel retirar mais do que o saldo do objetivo.');
+      throw StateError(
+        'Nao e possivel retirar mais do que o saldo do objetivo.',
+      );
     }
 
     final nextAmount = goal.currentAmount + amount;

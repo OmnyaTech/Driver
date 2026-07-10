@@ -36,7 +36,8 @@ class JourneyService {
         .select('id, name')
         .eq('user_id', user.id);
     final platformLabels = {
-      for (final row in platformRows) row['id'].toString(): row['name'].toString(),
+      for (final row in platformRows)
+        row['id'].toString(): row['name'].toString(),
     };
 
     final journeyIds = journeys.map((row) => row['id'].toString()).toList();

@@ -139,7 +139,10 @@ class MaintenanceService {
         .from('maintenances')
         .update({
           'vehicle_id': vehicleId,
-          'maintenance_date': maintenanceDate.toIso8601String().split('T').first,
+          'maintenance_date': maintenanceDate
+              .toIso8601String()
+              .split('T')
+              .first,
           'workshop': _normalizeString(workshop),
           'reason': _normalizeString(reason),
           'description': _normalizeString(description),

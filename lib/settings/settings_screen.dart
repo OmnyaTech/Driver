@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../funcionalidade/community/community_hub_screen.dart';
 import '../funcionalidade/developer/developer_access_screen.dart';
+import '../funcionalidade/gamification/gamification_screen.dart';
+import '../funcionalidade/notifications/notifications_screen.dart';
 import '../funcionalidade/platforms/platforms_screen.dart';
+import '../funcionalidade/community/ranking_screen.dart';
 import '../funcionalidade/subscriptions/subscriptions_screen.dart';
 import '../funcionalidade/vehicles/vehicles_screen.dart';
+import '../models/driver_reserve_preference.dart';
 import '../services/avatar_service.dart';
+import '../services/driver_preference_service.dart';
 import '../services/profile_service.dart';
 import '../services/public_profile_service.dart';
 import '../utilities/guards/developer_guard.dart';
@@ -56,6 +62,14 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (_) => session.toggleThemeMode(),
               ),
             ),
+            _SettingsTile(
+              icon: Icons.savings_outlined,
+              title: 'Reserva automatica',
+              subtitle:
+                  profile?.reservePreference.summaryLabel ??
+                  '30% do liquido do periodo',
+              onTap: () => _openReservePreferenceSheet(context),
+            ),
           ],
         ),
         const SizedBox(height: 18),
@@ -73,6 +87,36 @@ class SettingsScreen extends StatelessWidget {
               title: 'Plataformas',
               subtitle: 'Cadastre apps, restaurantes e fontes de receita',
               onTap: () => _pushPage(context, const PlatformsScreen()),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        _SettingsSection(
+          title: 'Comunidade e progresso',
+          children: [
+            _SettingsTile(
+              icon: Icons.workspace_premium_outlined,
+              title: 'Progresso do motorista',
+              subtitle: 'XP, nivel, medalhas e proximas conquistas',
+              onTap: () => _pushPage(context, const GamificationScreen()),
+            ),
+            _SettingsTile(
+              icon: Icons.groups_outlined,
+              title: 'Comunidade',
+              subtitle: 'Buscar motoristas, gerar convite e explorar perfis',
+              onTap: () => _pushPage(context, const CommunityHubScreen()),
+            ),
+            _SettingsTile(
+              icon: Icons.emoji_events_outlined,
+              title: 'Ranking',
+              subtitle: 'Score publico, medalhas e destaque entre motoristas',
+              onTap: () => _pushPage(context, const RankingScreen()),
+            ),
+            _SettingsTile(
+              icon: Icons.notifications_outlined,
+              title: 'Notificacoes',
+              subtitle: 'Lembretes de jornada, metas e desempenho',
+              onTap: () => _pushPage(context, const NotificationsScreen()),
             ),
           ],
         ),
@@ -124,6 +168,15 @@ class SettingsScreen extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _PublicProfileSheet(),
+    );
+  }
+
+  Future<void> _openReservePreferenceSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _ReservePreferenceSheet(),
     );
   }
 }
@@ -825,6 +878,263 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
       if (!mounted) return;
       setState(() {
         _errorMessage = 'Nao foi possivel salvar as configuracoes agora.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
+  }
+}
+
+class _ReservePreferenceSheet extends StatefulWidget {
+  const _ReservePreferenceSheet();
+
+  @override
+  State<_ReservePreferenceSheet> createState() =>
+      _ReservePreferenceSheetState();
+}
+
+class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
+  final _service = DriverPreferenceService();
+  late DriverReserveMode _mode;
+  late TextEditingController _percentageController;
+  late TextEditingController _perDeliveryController;
+  bool _saving = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    final preference =
+        context.read<AppSession>().profile?.reservePreference ??
+        const DriverReservePreference(
+          mode: DriverReserveMode.dailyPercent,
+          dailyPercentage: 30,
+          amountPerDelivery: 0,
+        );
+    _mode = preference.mode;
+    _percentageController = TextEditingController(
+      text: preference.dailyPercentage.toStringAsFixed(
+        preference.dailyPercentage.truncateToDouble() ==
+                preference.dailyPercentage
+            ? 0
+            : 1,
+      ),
+    );
+    _perDeliveryController = TextEditingController(
+      text: preference.amountPerDelivery <= 0
+          ? ''
+          : preference.amountPerDelivery.toStringAsFixed(2),
+    );
+  }
+
+  @override
+  void dispose() {
+    _percentageController.dispose();
+    _perDeliveryController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(12, 0, 12, bottomInset + 12),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 720),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: theme.dividerColor),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: theme.dividerColor,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text('Reserva automatica', style: theme.textTheme.titleLarge),
+                const SizedBox(height: 6),
+                Text(
+                  'Defina como voce separa parte do resultado para custos, disciplina financeira ou objetivos.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Sem reserva'),
+                      selected: _mode == DriverReserveMode.none,
+                      onSelected: (_) =>
+                          setState(() => _mode = DriverReserveMode.none),
+                    ),
+                    ChoiceChip(
+                      label: const Text('% do liquido'),
+                      selected: _mode == DriverReserveMode.dailyPercent,
+                      onSelected: (_) => setState(
+                        () => _mode = DriverReserveMode.dailyPercent,
+                      ),
+                    ),
+                    ChoiceChip(
+                      label: const Text('Valor por entrega'),
+                      selected: _mode == DriverReserveMode.perDeliveryFixed,
+                      onSelected: (_) => setState(
+                        () => _mode = DriverReserveMode.perDeliveryFixed,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                if (_mode == DriverReserveMode.dailyPercent) ...[
+                  TextFormField(
+                    controller: _percentageController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Percentual do liquido',
+                      hintText: 'Ex: 30',
+                      suffixText: '%',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'A sugestao de aporte considera o resultado liquido positivo do periodo atual.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+                if (_mode == DriverReserveMode.perDeliveryFixed) ...[
+                  TextFormField(
+                    controller: _perDeliveryController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Valor reservado por entrega',
+                      hintText: 'Ex: 2.50',
+                      prefixText: 'R\$ ',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Cada entrega concluida gera uma sugestao proporcional ao valor definido por voce.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+                if (_mode == DriverReserveMode.none)
+                  Text(
+                    'Nenhuma reserva automatica sera sugerida no painel ou nas notificacoes.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _errorMessage!,
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                ],
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _saving
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        child: const Text('Cancelar'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _saving ? null : _save,
+                        child: _saving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Salvar regra'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    final session = context.read<AppSession>();
+    final percentage = double.tryParse(
+      _percentageController.text.replaceAll(',', '.'),
+    );
+    final perDelivery = double.tryParse(
+      _perDeliveryController.text.replaceAll(',', '.'),
+    );
+
+    if (_mode == DriverReserveMode.dailyPercent &&
+        (percentage == null || percentage < 0 || percentage > 100)) {
+      setState(() {
+        _errorMessage = 'Informe um percentual valido entre 0 e 100.';
+      });
+      return;
+    }
+
+    if (_mode == DriverReserveMode.perDeliveryFixed &&
+        (perDelivery == null || perDelivery < 0)) {
+      setState(() {
+        _errorMessage = 'Informe um valor valido por entrega.';
+      });
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _service.updateReservePreference(
+        mode: _mode,
+        dailyPercentage: percentage ?? 30,
+        amountPerDelivery: perDelivery ?? 0,
+      );
+      await session.refreshProfile();
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Preferencia de reserva atualizada com sucesso.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = error.toString();
       });
     } finally {
       if (mounted) {

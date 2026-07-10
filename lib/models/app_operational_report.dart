@@ -37,10 +37,7 @@ class PlatformPerformance {
 }
 
 class ExpenseBreakdownItem {
-  const ExpenseBreakdownItem({
-    required this.label,
-    required this.amount,
-  });
+  const ExpenseBreakdownItem({required this.label, required this.amount});
 
   final String label;
   final double amount;

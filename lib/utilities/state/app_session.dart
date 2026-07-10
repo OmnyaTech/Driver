@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/supabase_config.dart';
 import '../../models/app_profile.dart';
+import '../../models/driver_reserve_preference.dart';
 import '../../models/oauth_provider_option.dart';
 import '../../models/plan_type.dart';
 import '../../models/user_role.dart';
@@ -186,6 +187,16 @@ class AppSession extends ChangeNotifier {
       role: _parseRole((data['role'] ?? 'user').toString()),
       planType: _parsePlanType((data['plan_type'] ?? 'free').toString()),
       onboardingCompletedAt: _parseDate(data['onboarding_completed_at']),
+      reservePreference: DriverReservePreference(
+        mode: _parseReserveMode(
+          (data['reserve_mode'] ?? 'daily_percent').toString(),
+        ),
+        dailyPercentage: _parseDouble(data['reserve_percentage'], fallback: 30),
+        amountPerDelivery: _parseDouble(
+          data['reserve_amount_per_delivery'],
+          fallback: 0,
+        ),
+      ),
     );
   }
 
@@ -234,6 +245,25 @@ class AppSession extends ChangeNotifier {
       role: UserRole.user,
       planType: PlanType.free,
       onboardingCompletedAt: null,
+      reservePreference: const DriverReservePreference(
+        mode: DriverReserveMode.dailyPercent,
+        dailyPercentage: 30,
+        amountPerDelivery: 0,
+      ),
     );
+  }
+
+  DriverReserveMode _parseReserveMode(String raw) {
+    return switch (raw) {
+      'none' => DriverReserveMode.none,
+      'per_delivery_fixed' => DriverReserveMode.perDeliveryFixed,
+      _ => DriverReserveMode.dailyPercent,
+    };
+  }
+
+  double _parseDouble(Object? value, {required double fallback}) {
+    if (value == null) return fallback;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? fallback;
   }
 }

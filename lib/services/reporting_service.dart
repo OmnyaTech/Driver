@@ -25,10 +25,10 @@ class ReportingService {
         );
 
     final data = Map<String, dynamic>.from(response as Map);
-    final topPlatformsRaw =
-        (data['top_platforms'] as List? ?? const []).cast<dynamic>();
-    final expenseBreakdownRaw =
-        (data['expense_breakdown'] as List? ?? const []).cast<dynamic>();
+    final topPlatformsRaw = (data['top_platforms'] as List? ?? const [])
+        .cast<dynamic>();
+    final expenseBreakdownRaw = (data['expense_breakdown'] as List? ?? const [])
+        .cast<dynamic>();
 
     return AppOperationalReport(
       startAt: _parseDate(data['start_at']),

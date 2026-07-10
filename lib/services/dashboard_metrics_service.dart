@@ -59,9 +59,7 @@ class DashboardMetricsService {
 
       return AppDashboardMetrics(
         totalIncome: _toDouble(response['total_income']),
-        totalOperationalCosts: _toDouble(
-          response['total_operational_costs'],
-        ),
+        totalOperationalCosts: _toDouble(response['total_operational_costs']),
         netResult: _toDouble(response['net_result']),
         allocatedToGoals: goalSummary.allocatedToGoals,
         availableBalance: goalSummary.availableBalance,

@@ -15,10 +15,9 @@ class DeveloperAdminService {
     if (normalized.isEmpty) return null;
 
     final client = _authService.requireClient();
-    final response = await client.schema('driver').rpc(
-      'admin_lookup_profile',
-      params: {'p_email': normalized},
-    );
+    final response = await client
+        .schema('driver')
+        .rpc('admin_lookup_profile', params: {'p_email': normalized});
 
     if (response is! List || response.isEmpty) return null;
     final row = Map<String, dynamic>.from(response.first as Map);
@@ -46,15 +45,17 @@ class DeveloperAdminService {
     }
 
     final client = _authService.requireClient();
-    final response = await client.schema('driver').rpc(
-      'admin_grant_access',
-      params: {
-        'p_email': normalized,
-        'p_plan_type': planType,
-        'p_role': role,
-        'p_expires_at': expiresAt?.toUtc().toIso8601String(),
-      },
-    );
+    final response = await client
+        .schema('driver')
+        .rpc(
+          'admin_grant_access',
+          params: {
+            'p_email': normalized,
+            'p_plan_type': planType,
+            'p_role': role,
+            'p_expires_at': expiresAt?.toUtc().toIso8601String(),
+          },
+        );
 
     if (response is Map<String, dynamic>) {
       return (response['message'] ?? 'Acesso atualizado com sucesso.')
@@ -68,10 +69,7 @@ class DeveloperAdminService {
     final client = _authService.requireClient();
     final response = await client
         .schema('driver')
-        .rpc(
-          'admin_list_audit_logs',
-          params: {'p_limit': limit},
-        );
+        .rpc('admin_list_audit_logs', params: {'p_limit': limit});
 
     if (response is! List) return const [];
 
