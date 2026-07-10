@@ -60,6 +60,33 @@ class VehicleService {
     });
   }
 
+  Future<void> updateVehicle({
+    required String id,
+    required String brand,
+    required String model,
+    String? year,
+    String? plate,
+    String? fuelType,
+    String? averageConsumption,
+    required bool active,
+  }) async {
+    final client = _authService.requireClient();
+    await client
+        .schema('driver')
+        .from('vehicles')
+        .update({
+          'brand': brand.trim(),
+          'model': model.trim(),
+          'model_year': _stringToInt(year),
+          'plate': _normalizeString(plate),
+          'fuel_type': _normalizeString(fuelType),
+          'average_consumption': _stringToDouble(averageConsumption),
+          'active': active,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', id);
+  }
+
   Future<void> archiveVehicle(String id) async {
     final client = _authService.requireClient();
     await client
@@ -70,6 +97,11 @@ class VehicleService {
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('id', id);
+  }
+
+  Future<void> deleteVehicle(String id) async {
+    final client = _authService.requireClient();
+    await client.schema('driver').from('vehicles').delete().eq('id', id);
   }
 
   String? _normalizeString(String? value) {

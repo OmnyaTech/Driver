@@ -47,12 +47,21 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
   }
 
   Future<void> _openCreateDialog() async {
+    await _openExpenseDialog();
+  }
+
+  Future<void> _openEditDialog(AppTripExpense expense) async {
+    await _openExpenseDialog(initialExpense: expense);
+  }
+
+  Future<void> _openExpenseDialog({AppTripExpense? initialExpense}) async {
     final journeys = await JourneyService().listJourneyOptions();
     if (!mounted) return;
 
-    final created = await showDialog<bool>(
+    final saved = await showDialog<bool>(
       context: context,
       builder: (_) => _TripExpenseFormDialog(
+        initialExpense: initialExpense,
         journeys: journeys,
         onSubmit:
             ({
@@ -62,7 +71,19 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
               required description,
               required journeyId,
             }) async {
-              await _expenseService.createExpense(
+              if (initialExpense == null) {
+                await _expenseService.createExpense(
+                  type: type,
+                  amount: amount,
+                  occurredAt: occurredAt,
+                  description: description,
+                  journeyId: journeyId,
+                );
+                return;
+              }
+
+              await _expenseService.updateExpense(
+                id: initialExpense.id,
                 type: type,
                 amount: amount,
                 occurredAt: occurredAt,
@@ -73,9 +94,40 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
       ),
     );
 
-    if (created == true) {
+    if (saved == true) {
       await _loadExpenses();
     }
+  }
+
+  Future<void> _deleteExpense(AppTripExpense expense) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Excluir despesa'),
+        content: Text(
+          'Deseja excluir a despesa de ${_expenseLabel(expense.type)} no valor de R\$ ${expense.amount.toStringAsFixed(2)}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await _expenseService.deleteExpense(expense.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Despesa removida com sucesso.')),
+    );
+    await _loadExpenses();
   }
 
   @override
@@ -150,7 +202,33 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                         expense.description!,
                     ].join(' - '),
                   ),
-                  trailing: Text('R\$ ${expense.amount.toStringAsFixed(2)}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('R\$ ${expense.amount.toStringAsFixed(2)}'),
+                      PopupMenuButton<String>(
+                        onSelected: (value) async {
+                          if (value == 'edit') {
+                            await _openEditDialog(expense);
+                            return;
+                          }
+                          if (value == 'delete') {
+                            await _deleteExpense(expense);
+                          }
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Text('Editar'),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Text('Excluir'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -183,10 +261,12 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
 
 class _TripExpenseFormDialog extends StatefulWidget {
   const _TripExpenseFormDialog({
+    this.initialExpense,
     required this.journeys,
     required this.onSubmit,
   });
 
+  final AppTripExpense? initialExpense;
   final List<JourneyOption> journeys;
   final Future<void> Function({
     required String type,
@@ -203,13 +283,29 @@ class _TripExpenseFormDialog extends StatefulWidget {
 
 class _TripExpenseFormDialogState extends State<_TripExpenseFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _amountController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  String _type = 'other';
+  late final TextEditingController _amountController;
+  late final TextEditingController _descriptionController;
+  late String _type;
   String? _journeyId;
-  DateTime _occurredAt = DateTime.now();
+  late DateTime _occurredAt;
   bool _saving = false;
   String? _submitError;
+
+  @override
+  void initState() {
+    super.initState();
+    _amountController = TextEditingController(
+      text: widget.initialExpense == null
+          ? ''
+          : widget.initialExpense!.amount.toStringAsFixed(2),
+    );
+    _descriptionController = TextEditingController(
+      text: widget.initialExpense?.description ?? '',
+    );
+    _type = widget.initialExpense?.type ?? 'other';
+    _journeyId = widget.initialExpense?.journeyId;
+    _occurredAt = widget.initialExpense?.occurredAt.toLocal() ?? DateTime.now();
+  }
 
   @override
   void dispose() {
@@ -221,7 +317,9 @@ class _TripExpenseFormDialogState extends State<_TripExpenseFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Nova despesa'),
+      title: Text(
+        widget.initialExpense == null ? 'Nova despesa' : 'Editar despesa',
+      ),
       content: SizedBox(
         width: 460,
         child: Form(

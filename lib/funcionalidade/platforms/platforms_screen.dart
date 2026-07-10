@@ -36,14 +36,23 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
   }
 
   Future<void> _openCreateDialog() async {
+    await _openPlatformDialog();
+  }
+
+  Future<void> _openEditDialog(AppPlatform platform) async {
+    await _openPlatformDialog(initialPlatform: platform);
+  }
+
+  Future<void> _openPlatformDialog({AppPlatform? initialPlatform}) async {
     final session = context.read<AppSession>();
     final profile = session.profile;
     final activePlatforms = _platforms.where((item) => item.active).length;
+    final editingActivePlatform = initialPlatform?.active == true ? 1 : 0;
     final canUseMultiple = profile != null
         ? _planAccessService.canUseMultiplePlatforms(profile.planType)
         : false;
 
-    if (activePlatforms >= 1 && !canUseMultiple) {
+    if (initialPlatform == null && activePlatforms >= 1 && !canUseMultiple) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -54,29 +63,93 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
       return;
     }
 
-    final created = await showDialog<bool>(
+    final saved = await showDialog<bool>(
       context: context,
       builder: (_) => _PlatformFormDialog(
+        initialPlatform: initialPlatform,
+        canEditActiveState:
+            canUseMultiple || activePlatforms <= editingActivePlatform,
         onSubmit:
             ({
               required name,
               required type,
               required averageIncome,
               required averageDeliveries,
+              required active,
             }) async {
-              await _platformService.createPlatform(
+              if (active && !canUseMultiple) {
+                final wouldHaveActive =
+                    _platforms.where((item) => item.active).length -
+                    editingActivePlatform +
+                    1;
+                if (wouldHaveActive > 1) {
+                  throw StateError(
+                    'O plano atual permite apenas uma plataforma ativa.',
+                  );
+                }
+              }
+
+              if (initialPlatform == null) {
+                await _platformService.createPlatform(
+                  name: name,
+                  type: type,
+                  averageIncome: averageIncome,
+                  averageDeliveries: averageDeliveries,
+                );
+                return;
+              }
+
+              await _platformService.updatePlatform(
+                id: initialPlatform.id,
                 name: name,
                 type: type,
                 averageIncome: averageIncome,
                 averageDeliveries: averageDeliveries,
+                active: active,
               );
             },
       ),
     );
 
-    if (created == true) {
+    if (saved == true) {
       await _loadPlatforms();
     }
+  }
+
+  Future<void> _archivePlatform(AppPlatform platform) async {
+    await _platformService.archivePlatform(platform.id);
+    await _loadPlatforms();
+  }
+
+  Future<void> _deletePlatform(AppPlatform platform) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Excluir plataforma'),
+        content: Text(
+          'Deseja excluir "${platform.name}"? Vinculos de jornadas com essa plataforma serao removidos.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await _platformService.deletePlatform(platform.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Plataforma removida com sucesso.')),
+    );
+    await _loadPlatforms();
   }
 
   @override
@@ -147,15 +220,36 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
                       platform.active ? 'Ativa' : 'Arquivada',
                     ].join(' • '),
                   ),
-                  trailing: platform.active
-                      ? IconButton(
-                          onPressed: () async {
-                            await _platformService.archivePlatform(platform.id);
-                            await _loadPlatforms();
-                          },
-                          icon: const Icon(Icons.archive_outlined),
-                        )
-                      : null,
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        await _openEditDialog(platform);
+                        return;
+                      }
+                      if (value == 'archive') {
+                        await _archivePlatform(platform);
+                        return;
+                      }
+                      if (value == 'delete') {
+                        await _deletePlatform(platform);
+                      }
+                    },
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Text('Editar'),
+                      ),
+                      if (platform.active)
+                        const PopupMenuItem(
+                          value: 'archive',
+                          child: Text('Arquivar'),
+                        ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Excluir'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -167,13 +261,20 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
 }
 
 class _PlatformFormDialog extends StatefulWidget {
-  const _PlatformFormDialog({required this.onSubmit});
+  const _PlatformFormDialog({
+    this.initialPlatform,
+    required this.canEditActiveState,
+    required this.onSubmit,
+  });
 
+  final AppPlatform? initialPlatform;
+  final bool canEditActiveState;
   final Future<void> Function({
     required String name,
     required String type,
     required String averageIncome,
     required String averageDeliveries,
+    required bool active,
   })
   onSubmit;
 
@@ -183,11 +284,30 @@ class _PlatformFormDialog extends StatefulWidget {
 
 class _PlatformFormDialogState extends State<_PlatformFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _incomeController = TextEditingController();
-  final _deliveriesController = TextEditingController();
-  String _type = 'platform';
+  late final TextEditingController _nameController;
+  late final TextEditingController _incomeController;
+  late final TextEditingController _deliveriesController;
+  late String _type;
+  late bool _active;
   bool _saving = false;
+  String? _submitError;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialPlatform = widget.initialPlatform;
+    _nameController = TextEditingController(
+      text: initialPlatform?.name ?? '',
+    );
+    _incomeController = TextEditingController(
+      text: initialPlatform?.averageIncome?.toStringAsFixed(2) ?? '',
+    );
+    _deliveriesController = TextEditingController(
+      text: initialPlatform?.averageDeliveries?.toString() ?? '',
+    );
+    _type = initialPlatform?.type ?? 'platform';
+    _active = initialPlatform?.active ?? true;
+  }
 
   @override
   void dispose() {
@@ -200,7 +320,11 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Nova plataforma'),
+      title: Text(
+        widget.initialPlatform == null
+            ? 'Nova plataforma'
+            : 'Editar plataforma',
+      ),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -246,6 +370,29 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
                 ),
                 keyboardType: TextInputType.number,
               ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Plataforma ativa'),
+                subtitle: Text(
+                  widget.canEditActiveState
+                      ? 'Quando desligada, a plataforma fica arquivada.'
+                      : 'O plano atual nao permite ativar mais plataformas.',
+                ),
+                value: _active,
+                onChanged: (_saving || (!widget.canEditActiveState && !_active))
+                    ? null
+                    : (value) => setState(() => _active = value),
+              ),
+              if (_submitError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    _submitError!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -261,15 +408,28 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
               : () async {
                   if (!_formKey.currentState!.validate()) return;
                   final navigator = Navigator.of(context);
-                  setState(() => _saving = true);
-                  await widget.onSubmit(
-                    name: _nameController.text,
-                    type: _type,
-                    averageIncome: _incomeController.text,
-                    averageDeliveries: _deliveriesController.text,
-                  );
-                  if (!mounted) return;
-                  navigator.pop(true);
+                  setState(() {
+                    _saving = true;
+                    _submitError = null;
+                  });
+                  try {
+                    await widget.onSubmit(
+                      name: _nameController.text,
+                      type: _type,
+                      averageIncome: _incomeController.text,
+                      averageDeliveries: _deliveriesController.text,
+                      active: _active,
+                    );
+                    if (!mounted) return;
+                    navigator.pop(true);
+                  } catch (error) {
+                    if (!mounted) return;
+                    setState(() => _submitError = error.toString());
+                  } finally {
+                    if (mounted) {
+                      setState(() => _saving = false);
+                    }
+                  }
                 },
           child: const Text('Salvar'),
         ),

@@ -79,6 +79,41 @@ class FuelingService {
     });
   }
 
+  Future<void> updateFueling({
+    required String id,
+    required String vehicleId,
+    required DateTime fueledAt,
+    required String liters,
+    required String pricePerLiter,
+    required String totalAmount,
+    String? odometer,
+    String? journeyId,
+    String? stationName,
+    String? fuelType,
+  }) async {
+    final client = _authService.requireClient();
+    await client
+        .schema('driver')
+        .from('fuelings')
+        .update({
+          'vehicle_id': vehicleId,
+          'journey_id': _normalizeString(journeyId),
+          'fueled_at': fueledAt.toUtc().toIso8601String(),
+          'odometer': _stringToDouble(odometer),
+          'station_name': _normalizeString(stationName),
+          'fuel_type': _normalizeString(fuelType),
+          'liters': _stringToDouble(liters),
+          'price_per_liter': _stringToDouble(pricePerLiter),
+          'total_amount': _stringToDouble(totalAmount),
+        })
+        .eq('id', id);
+  }
+
+  Future<void> deleteFueling(String id) async {
+    final client = _authService.requireClient();
+    await client.schema('driver').from('fuelings').delete().eq('id', id);
+  }
+
   String? _normalizeString(String? value) {
     final normalized = value?.trim();
     return (normalized == null || normalized.isEmpty) ? null : normalized;

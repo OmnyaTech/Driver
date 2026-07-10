@@ -150,6 +150,62 @@ class JourneyService {
     }
   }
 
+  Future<void> updateJourney({
+    required String id,
+    required String mode,
+    required DateTime startedAt,
+    DateTime? endedAt,
+    String? vehicleId,
+    String? odometerStart,
+    String? odometerEnd,
+    String? notes,
+    required List<JourneyPlatformDraft> platforms,
+  }) async {
+    final client = _authService.requireClient();
+
+    await client
+        .schema('driver')
+        .from('journeys')
+        .update({
+          'vehicle_id': _normalizeString(vehicleId),
+          'mode': mode,
+          'started_at': startedAt.toUtc().toIso8601String(),
+          'ended_at': endedAt?.toUtc().toIso8601String(),
+          'odometer_start': _stringToDouble(odometerStart),
+          'odometer_end': _stringToDouble(odometerEnd),
+          'notes': _normalizeString(notes),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', id);
+
+    await client
+        .schema('driver')
+        .from('journey_platforms')
+        .delete()
+        .eq('journey_id', id);
+
+    final rows = platforms
+        .where((item) => item.platformId.isNotEmpty)
+        .map(
+          (item) => {
+            'journey_id': id,
+            'platform_id': item.platformId,
+            'deliveries': _stringToInt(item.deliveries) ?? 0,
+            'income': _stringToDouble(item.income) ?? 0,
+          },
+        )
+        .toList();
+
+    if (rows.isNotEmpty) {
+      await client.schema('driver').from('journey_platforms').insert(rows);
+    }
+  }
+
+  Future<void> deleteJourney(String id) async {
+    final client = _authService.requireClient();
+    await client.schema('driver').from('journeys').delete().eq('id', id);
+  }
+
   Future<List<JourneyOption>> listJourneyOptions() async {
     final journeys = await listJourneys();
     return journeys

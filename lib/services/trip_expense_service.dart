@@ -62,6 +62,33 @@ class TripExpenseService {
     });
   }
 
+  Future<void> updateExpense({
+    required String id,
+    required String type,
+    required String amount,
+    required DateTime occurredAt,
+    String? description,
+    String? journeyId,
+  }) async {
+    final client = _authService.requireClient();
+    await client
+        .schema('driver')
+        .from('trip_expenses')
+        .update({
+          'journey_id': _normalizeString(journeyId),
+          'type': type,
+          'description': _normalizeString(description),
+          'amount': _stringToDouble(amount),
+          'occurred_at': occurredAt.toUtc().toIso8601String(),
+        })
+        .eq('id', id);
+  }
+
+  Future<void> deleteExpense(String id) async {
+    final client = _authService.requireClient();
+    await client.schema('driver').from('trip_expenses').delete().eq('id', id);
+  }
+
   String? _normalizeString(String? value) {
     final normalized = value?.trim();
     return (normalized == null || normalized.isEmpty) ? null : normalized;

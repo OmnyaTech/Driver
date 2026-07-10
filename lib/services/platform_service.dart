@@ -54,6 +54,29 @@ class PlatformService {
     });
   }
 
+  Future<void> updatePlatform({
+    required String id,
+    required String name,
+    required String type,
+    String? averageIncome,
+    String? averageDeliveries,
+    required bool active,
+  }) async {
+    final client = _authService.requireClient();
+    await client
+        .schema('driver')
+        .from('platforms')
+        .update({
+          'name': name.trim(),
+          'type': type,
+          'average_income': _stringToDouble(averageIncome),
+          'average_deliveries': _stringToInt(averageDeliveries),
+          'active': active,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', id);
+  }
+
   Future<void> archivePlatform(String id) async {
     final client = _authService.requireClient();
     await client
@@ -64,6 +87,11 @@ class PlatformService {
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('id', id);
+  }
+
+  Future<void> deletePlatform(String id) async {
+    final client = _authService.requireClient();
+    await client.schema('driver').from('platforms').delete().eq('id', id);
   }
 
   double? _parseDouble(Object? value) {

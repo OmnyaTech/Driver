@@ -49,13 +49,22 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
   }
 
   Future<void> _openCreateDialog() async {
+    await _openFuelingDialog();
+  }
+
+  Future<void> _openEditDialog(AppFueling fueling) async {
+    await _openFuelingDialog(initialFueling: fueling);
+  }
+
+  Future<void> _openFuelingDialog({AppFueling? initialFueling}) async {
     final vehicles = await VehicleService().listVehicles();
     final journeys = await JourneyService().listJourneyOptions();
     if (!mounted) return;
 
-    final created = await showDialog<bool>(
+    final saved = await showDialog<bool>(
       context: context,
       builder: (_) => _FuelingFormDialog(
+        initialFueling: initialFueling,
         vehicles: vehicles.where((item) => item.active).toList(),
         journeys: journeys,
         onSubmit:
@@ -70,7 +79,23 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
               required stationName,
               required fuelType,
             }) async {
-              await _fuelingService.createFueling(
+              if (initialFueling == null) {
+                await _fuelingService.createFueling(
+                  vehicleId: vehicleId,
+                  fueledAt: fueledAt,
+                  liters: liters,
+                  pricePerLiter: pricePerLiter,
+                  totalAmount: totalAmount,
+                  odometer: odometer,
+                  journeyId: journeyId,
+                  stationName: stationName,
+                  fuelType: fuelType,
+                );
+                return;
+              }
+
+              await _fuelingService.updateFueling(
+                id: initialFueling.id,
                 vehicleId: vehicleId,
                 fueledAt: fueledAt,
                 liters: liters,
@@ -85,9 +110,40 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
       ),
     );
 
-    if (created == true) {
+    if (saved == true) {
       await _loadFuelings();
     }
+  }
+
+  Future<void> _deleteFueling(AppFueling fueling) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Excluir abastecimento'),
+        content: Text(
+          'Deseja excluir este abastecimento de R\$ ${fueling.totalAmount.toStringAsFixed(2)}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await _fuelingService.deleteFueling(fueling.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Abastecimento removido com sucesso.')),
+    );
+    await _loadFuelings();
   }
 
   @override
@@ -163,8 +219,34 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
                       'R\$ ${fueling.pricePerLiter.toStringAsFixed(3)}/L',
                     ].join(' - '),
                   ),
-                  trailing: Text(
-                    'R\$ ${fueling.totalAmount.toStringAsFixed(2)}',
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'R\$ ${fueling.totalAmount.toStringAsFixed(2)}',
+                      ),
+                      PopupMenuButton<String>(
+                        onSelected: (value) async {
+                          if (value == 'edit') {
+                            await _openEditDialog(fueling);
+                            return;
+                          }
+                          if (value == 'delete') {
+                            await _deleteFueling(fueling);
+                          }
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Text('Editar'),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Text('Excluir'),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -188,11 +270,13 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
 
 class _FuelingFormDialog extends StatefulWidget {
   const _FuelingFormDialog({
+    this.initialFueling,
     required this.vehicles,
     required this.journeys,
     required this.onSubmit,
   });
 
+  final AppFueling? initialFueling;
   final List<AppVehicle> vehicles;
   final List<JourneyOption> journeys;
   final Future<void> Function({
@@ -214,17 +298,50 @@ class _FuelingFormDialog extends StatefulWidget {
 
 class _FuelingFormDialogState extends State<_FuelingFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _odometerController = TextEditingController();
-  final _stationController = TextEditingController();
-  final _fuelTypeController = TextEditingController();
-  final _litersController = TextEditingController();
-  final _priceController = TextEditingController();
-  final _totalController = TextEditingController();
+  late final TextEditingController _odometerController;
+  late final TextEditingController _stationController;
+  late final TextEditingController _fuelTypeController;
+  late final TextEditingController _litersController;
+  late final TextEditingController _priceController;
+  late final TextEditingController _totalController;
   String? _vehicleId;
   String? _journeyId;
-  DateTime _fueledAt = DateTime.now();
+  late DateTime _fueledAt;
   bool _saving = false;
   String? _submitError;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialFueling = widget.initialFueling;
+    _odometerController = TextEditingController(
+      text: initialFueling?.odometer?.toStringAsFixed(1) ?? '',
+    );
+    _stationController = TextEditingController(
+      text: initialFueling?.stationName ?? '',
+    );
+    _fuelTypeController = TextEditingController(
+      text: initialFueling?.fuelType ?? '',
+    );
+    _litersController = TextEditingController(
+      text: initialFueling == null
+          ? ''
+          : initialFueling.liters.toStringAsFixed(2),
+    );
+    _priceController = TextEditingController(
+      text: initialFueling == null
+          ? ''
+          : initialFueling.pricePerLiter.toStringAsFixed(3),
+    );
+    _totalController = TextEditingController(
+      text: initialFueling == null
+          ? ''
+          : initialFueling.totalAmount.toStringAsFixed(2),
+    );
+    _vehicleId = initialFueling?.vehicleId;
+    _journeyId = initialFueling?.journeyId;
+    _fueledAt = initialFueling?.fueledAt.toLocal() ?? DateTime.now();
+  }
 
   @override
   void dispose() {
@@ -242,7 +359,11 @@ class _FuelingFormDialogState extends State<_FuelingFormDialog> {
     final calculatedTotal = _calculateTotal();
 
     return AlertDialog(
-      title: const Text('Novo abastecimento'),
+      title: Text(
+        widget.initialFueling == null
+            ? 'Novo abastecimento'
+            : 'Editar abastecimento',
+      ),
       content: SizedBox(
         width: 460,
         child: Form(

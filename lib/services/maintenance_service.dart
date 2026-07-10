@@ -122,6 +122,59 @@ class MaintenanceService {
     }
   }
 
+  Future<void> updateMaintenance({
+    required String id,
+    required String vehicleId,
+    required DateTime maintenanceDate,
+    required String totalAmount,
+    String? workshop,
+    String? reason,
+    String? description,
+    required List<MaintenanceItemDraft> items,
+  }) async {
+    final client = _authService.requireClient();
+
+    await client
+        .schema('driver')
+        .from('maintenances')
+        .update({
+          'vehicle_id': vehicleId,
+          'maintenance_date': maintenanceDate.toIso8601String().split('T').first,
+          'workshop': _normalizeString(workshop),
+          'reason': _normalizeString(reason),
+          'description': _normalizeString(description),
+          'total_amount': _stringToDouble(totalAmount) ?? 0,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', id);
+
+    await client
+        .schema('driver')
+        .from('maintenance_items')
+        .delete()
+        .eq('maintenance_id', id);
+
+    final rows = items
+        .where((item) => item.description.trim().isNotEmpty)
+        .map(
+          (item) => {
+            'maintenance_id': id,
+            'description': item.description.trim(),
+            'amount': _stringToDouble(item.amount) ?? 0,
+          },
+        )
+        .toList();
+
+    if (rows.isNotEmpty) {
+      await client.schema('driver').from('maintenance_items').insert(rows);
+    }
+  }
+
+  Future<void> deleteMaintenance(String id) async {
+    final client = _authService.requireClient();
+    await client.schema('driver').from('maintenances').delete().eq('id', id);
+  }
+
   String? _normalizeString(String? value) {
     final normalized = value?.trim();
     return (normalized == null || normalized.isEmpty) ? null : normalized;

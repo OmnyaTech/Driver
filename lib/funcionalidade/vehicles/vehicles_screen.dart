@@ -36,14 +36,23 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
   }
 
   Future<void> _openCreateDialog() async {
+    await _openVehicleDialog();
+  }
+
+  Future<void> _openEditDialog(AppVehicle vehicle) async {
+    await _openVehicleDialog(initialVehicle: vehicle);
+  }
+
+  Future<void> _openVehicleDialog({AppVehicle? initialVehicle}) async {
     final session = context.read<AppSession>();
     final profile = session.profile;
     final activeVehicles = _vehicles.where((item) => item.active).length;
+    final editingActiveVehicle = initialVehicle?.active == true ? 1 : 0;
     final canUseMultiple = profile != null
         ? _planAccessService.canUseMultipleVehicles(profile.planType)
         : false;
 
-    if (activeVehicles >= 1 && !canUseMultiple) {
+    if (initialVehicle == null && activeVehicles >= 1 && !canUseMultiple) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -54,9 +63,11 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
       return;
     }
 
-    final created = await showDialog<bool>(
+    final saved = await showDialog<bool>(
       context: context,
       builder: (_) => _VehicleFormDialog(
+        initialVehicle: initialVehicle,
+        canEditActiveState: canUseMultiple || activeVehicles <= editingActiveVehicle,
         onSubmit:
             ({
               required brand,
@@ -65,22 +76,85 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
               required plate,
               required fuelType,
               required averageConsumption,
+              required active,
             }) async {
-              await _vehicleService.createVehicle(
+              if (active && !canUseMultiple) {
+                final wouldHaveActive =
+                    _vehicles.where((item) => item.active).length -
+                    editingActiveVehicle +
+                    1;
+                if (wouldHaveActive > 1) {
+                  throw StateError(
+                    'O plano atual permite apenas um veiculo ativo.',
+                  );
+                }
+              }
+
+              if (initialVehicle == null) {
+                await _vehicleService.createVehicle(
+                  brand: brand,
+                  model: model,
+                  year: year,
+                  plate: plate,
+                  fuelType: fuelType,
+                  averageConsumption: averageConsumption,
+                );
+                return;
+              }
+
+              await _vehicleService.updateVehicle(
+                id: initialVehicle.id,
                 brand: brand,
                 model: model,
                 year: year,
                 plate: plate,
                 fuelType: fuelType,
                 averageConsumption: averageConsumption,
+                active: active,
               );
             },
       ),
     );
 
-    if (created == true) {
+    if (saved == true) {
       await _loadVehicles();
     }
+  }
+
+  Future<void> _archiveVehicle(AppVehicle vehicle) async {
+    await _vehicleService.archiveVehicle(vehicle.id);
+    await _loadVehicles();
+  }
+
+  Future<void> _deleteVehicle(AppVehicle vehicle) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Excluir veiculo'),
+        content: Text(
+          'Deseja excluir "${vehicle.brand} ${vehicle.model}"? Abastecimentos e manutencoes vinculados a este veiculo tambem serao removidos.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await _vehicleService.deleteVehicle(vehicle.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Veiculo removido com sucesso.')),
+    );
+    await _loadVehicles();
   }
 
   @override
@@ -147,15 +221,36 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                       vehicle.active ? 'Ativo' : 'Arquivado',
                     ].join(' • '),
                   ),
-                  trailing: vehicle.active
-                      ? IconButton(
-                          onPressed: () async {
-                            await _vehicleService.archiveVehicle(vehicle.id);
-                            await _loadVehicles();
-                          },
-                          icon: const Icon(Icons.archive_outlined),
-                        )
-                      : null,
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        await _openEditDialog(vehicle);
+                        return;
+                      }
+                      if (value == 'archive') {
+                        await _archiveVehicle(vehicle);
+                        return;
+                      }
+                      if (value == 'delete') {
+                        await _deleteVehicle(vehicle);
+                      }
+                    },
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Text('Editar'),
+                      ),
+                      if (vehicle.active)
+                        const PopupMenuItem(
+                          value: 'archive',
+                          child: Text('Arquivar'),
+                        ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Excluir'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -167,8 +262,14 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
 }
 
 class _VehicleFormDialog extends StatefulWidget {
-  const _VehicleFormDialog({required this.onSubmit});
+  const _VehicleFormDialog({
+    this.initialVehicle,
+    required this.canEditActiveState,
+    required this.onSubmit,
+  });
 
+  final AppVehicle? initialVehicle;
+  final bool canEditActiveState;
   final Future<void> Function({
     required String brand,
     required String model,
@@ -176,6 +277,7 @@ class _VehicleFormDialog extends StatefulWidget {
     required String plate,
     required String fuelType,
     required String averageConsumption,
+    required bool active,
   })
   onSubmit;
 
@@ -185,13 +287,34 @@ class _VehicleFormDialog extends StatefulWidget {
 
 class _VehicleFormDialogState extends State<_VehicleFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _brandController = TextEditingController();
-  final _modelController = TextEditingController();
-  final _yearController = TextEditingController();
-  final _plateController = TextEditingController();
-  final _fuelTypeController = TextEditingController();
-  final _consumptionController = TextEditingController();
+  late final TextEditingController _brandController;
+  late final TextEditingController _modelController;
+  late final TextEditingController _yearController;
+  late final TextEditingController _plateController;
+  late final TextEditingController _fuelTypeController;
+  late final TextEditingController _consumptionController;
+  late bool _active;
   bool _saving = false;
+  String? _submitError;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialVehicle = widget.initialVehicle;
+    _brandController = TextEditingController(text: initialVehicle?.brand ?? '');
+    _modelController = TextEditingController(text: initialVehicle?.model ?? '');
+    _yearController = TextEditingController(
+      text: initialVehicle?.modelYear?.toString() ?? '',
+    );
+    _plateController = TextEditingController(text: initialVehicle?.plate ?? '');
+    _fuelTypeController = TextEditingController(
+      text: initialVehicle?.fuelType ?? '',
+    );
+    _consumptionController = TextEditingController(
+      text: initialVehicle?.averageConsumption?.toStringAsFixed(2) ?? '',
+    );
+    _active = initialVehicle?.active ?? true;
+  }
 
   @override
   void dispose() {
@@ -207,7 +330,9 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Novo veiculo'),
+      title: Text(
+        widget.initialVehicle == null ? 'Novo veiculo' : 'Editar veiculo',
+      ),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -246,6 +371,29 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
                   decimal: true,
                 ),
               ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Veiculo ativo'),
+                subtitle: Text(
+                  widget.canEditActiveState
+                      ? 'Quando desligado, o veiculo fica arquivado.'
+                      : 'O plano atual nao permite ativar mais veiculos.',
+                ),
+                value: _active,
+                onChanged: (_saving || (!widget.canEditActiveState && !_active))
+                    ? null
+                    : (value) => setState(() => _active = value),
+              ),
+              if (_submitError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    _submitError!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -261,17 +409,30 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
               : () async {
                   if (!_formKey.currentState!.validate()) return;
                   final navigator = Navigator.of(context);
-                  setState(() => _saving = true);
-                  await widget.onSubmit(
-                    brand: _brandController.text,
-                    model: _modelController.text,
-                    year: _yearController.text,
-                    plate: _plateController.text,
-                    fuelType: _fuelTypeController.text,
-                    averageConsumption: _consumptionController.text,
-                  );
-                  if (!mounted) return;
-                  navigator.pop(true);
+                  setState(() {
+                    _saving = true;
+                    _submitError = null;
+                  });
+                  try {
+                    await widget.onSubmit(
+                      brand: _brandController.text,
+                      model: _modelController.text,
+                      year: _yearController.text,
+                      plate: _plateController.text,
+                      fuelType: _fuelTypeController.text,
+                      averageConsumption: _consumptionController.text,
+                      active: _active,
+                    );
+                    if (!mounted) return;
+                    navigator.pop(true);
+                  } catch (error) {
+                    if (!mounted) return;
+                    setState(() => _submitError = error.toString());
+                  } finally {
+                    if (mounted) {
+                      setState(() => _saving = false);
+                    }
+                  }
                 },
           child: const Text('Salvar'),
         ),

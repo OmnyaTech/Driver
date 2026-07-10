@@ -52,13 +52,22 @@ class _JourneysScreenState extends State<JourneysScreen> {
   }
 
   Future<void> _openCreateDialog() async {
+    await _openJourneyDialog();
+  }
+
+  Future<void> _openEditDialog(AppJourney journey) async {
+    await _openJourneyDialog(initialJourney: journey);
+  }
+
+  Future<void> _openJourneyDialog({AppJourney? initialJourney}) async {
     final vehicles = await VehicleService().listVehicles();
     final platforms = await PlatformService().listPlatforms();
     if (!mounted) return;
 
-    final created = await showDialog<bool>(
+    final saved = await showDialog<bool>(
       context: context,
       builder: (_) => _JourneyFormDialog(
+        initialJourney: initialJourney,
         vehicles: vehicles.where((item) => item.active).toList(),
         platforms: platforms.where((item) => item.active).toList(),
         onSubmit:
@@ -72,7 +81,22 @@ class _JourneysScreenState extends State<JourneysScreen> {
               required notes,
               required platforms,
             }) async {
-              await _journeyService.createJourney(
+              if (initialJourney == null) {
+                await _journeyService.createJourney(
+                  mode: mode,
+                  startedAt: startedAt,
+                  endedAt: endedAt,
+                  vehicleId: vehicleId,
+                  odometerStart: odometerStart,
+                  odometerEnd: odometerEnd,
+                  notes: notes,
+                  platforms: platforms,
+                );
+                return;
+              }
+
+              await _journeyService.updateJourney(
+                id: initialJourney.id,
                 mode: mode,
                 startedAt: startedAt,
                 endedAt: endedAt,
@@ -86,9 +110,40 @@ class _JourneysScreenState extends State<JourneysScreen> {
       ),
     );
 
-    if (created == true) {
+    if (saved == true) {
       await _loadJourneys();
     }
+  }
+
+  Future<void> _deleteJourney(AppJourney journey) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Excluir jornada'),
+        content: Text(
+          'Deseja excluir a jornada "${_formatJourneyTitle(journey)}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await _journeyService.deleteJourney(journey.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Jornada removida com sucesso.')),
+    );
+    await _loadJourneys();
   }
 
   @override
@@ -143,7 +198,32 @@ class _JourneysScreenState extends State<JourneysScreen> {
             ..._journeys.map(
               (journey) => Card(
                 child: ExpansionTile(
-                  title: Text(_formatJourneyTitle(journey)),
+                  title: Row(
+                    children: [
+                      Expanded(child: Text(_formatJourneyTitle(journey))),
+                      PopupMenuButton<String>(
+                        onSelected: (value) async {
+                          if (value == 'edit') {
+                            await _openEditDialog(journey);
+                            return;
+                          }
+                          if (value == 'delete') {
+                            await _deleteJourney(journey);
+                          }
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Text('Editar'),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Text('Excluir'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                   subtitle: Text(
                     [
                       _formatDate(journey.startedAt),
@@ -216,11 +296,13 @@ class _JourneysScreenState extends State<JourneysScreen> {
 
 class _JourneyFormDialog extends StatefulWidget {
   const _JourneyFormDialog({
+    this.initialJourney,
     required this.vehicles,
     required this.platforms,
     required this.onSubmit,
   });
 
+  final AppJourney? initialJourney;
   final List<AppVehicle> vehicles;
   final List<AppPlatform> platforms;
   final Future<void> Function({
@@ -241,16 +323,48 @@ class _JourneyFormDialog extends StatefulWidget {
 
 class _JourneyFormDialogState extends State<_JourneyFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _odometerStartController = TextEditingController();
-  final _odometerEndController = TextEditingController();
-  final _notesController = TextEditingController();
-  final List<_PlatformIncomeEntry> _platformEntries = [_PlatformIncomeEntry()];
-  String _mode = 'manual';
+  late final TextEditingController _odometerStartController;
+  late final TextEditingController _odometerEndController;
+  late final TextEditingController _notesController;
+  late final List<_PlatformIncomeEntry> _platformEntries;
+  late String _mode;
   String? _vehicleId;
-  DateTime _startedAt = DateTime.now();
+  late DateTime _startedAt;
   DateTime? _endedAt;
   bool _saving = false;
   String? _submitError;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialJourney = widget.initialJourney;
+    _odometerStartController = TextEditingController(
+      text: initialJourney?.odometerStart?.toStringAsFixed(1) ?? '',
+    );
+    _odometerEndController = TextEditingController(
+      text: initialJourney?.odometerEnd?.toStringAsFixed(1) ?? '',
+    );
+    _notesController = TextEditingController(
+      text: initialJourney?.notes ?? '',
+    );
+    _platformEntries = initialJourney == null
+        ? [_PlatformIncomeEntry()]
+        : (initialJourney.platformBreakdown.isEmpty
+              ? [_PlatformIncomeEntry()]
+              : initialJourney.platformBreakdown
+                    .map(
+                      (item) => _PlatformIncomeEntry.fromValues(
+                        platformId: item.platformId ?? '',
+                        income: item.income == 0 ? '' : item.income.toStringAsFixed(2),
+                        deliveries: item.deliveries == 0 ? '' : '${item.deliveries}',
+                      ),
+                    )
+                    .toList());
+    _mode = initialJourney?.mode ?? 'manual';
+    _vehicleId = initialJourney?.vehicleId;
+    _startedAt = initialJourney?.startedAt.toLocal() ?? DateTime.now();
+    _endedAt = initialJourney?.endedAt?.toLocal();
+  }
 
   @override
   void dispose() {
@@ -266,7 +380,9 @@ class _JourneyFormDialogState extends State<_JourneyFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Nova jornada'),
+      title: Text(
+        widget.initialJourney == null ? 'Nova jornada' : 'Editar jornada',
+      ),
       content: SizedBox(
         width: 520,
         child: Form(
@@ -317,6 +433,9 @@ class _JourneyFormDialogState extends State<_JourneyFormDialog> {
                   value: _endedAt,
                   emptyLabel: 'Em aberto',
                   onChanged: (value) => setState(() => _endedAt = value),
+                  onClear: _endedAt == null
+                      ? null
+                      : () => setState(() => _endedAt = null),
                 ),
                 TextFormField(
                   controller: _odometerStartController,
@@ -513,11 +632,28 @@ class _JourneyFormDialogState extends State<_JourneyFormDialog> {
 }
 
 class _PlatformIncomeEntry {
-  _PlatformIncomeEntry();
+  _PlatformIncomeEntry({
+    this.platformId = '',
+    String income = '',
+    String deliveries = '',
+  }) : incomeController = TextEditingController(text: income),
+       deliveriesController = TextEditingController(text: deliveries);
 
-  String platformId = '';
-  final incomeController = TextEditingController();
-  final deliveriesController = TextEditingController();
+  factory _PlatformIncomeEntry.fromValues({
+    required String platformId,
+    required String income,
+    required String deliveries,
+  }) {
+    return _PlatformIncomeEntry(
+      platformId: platformId,
+      income: income,
+      deliveries: deliveries,
+    );
+  }
+
+  String platformId;
+  final TextEditingController incomeController;
+  final TextEditingController deliveriesController;
 
   void dispose() {
     incomeController.dispose();
@@ -531,12 +667,14 @@ class _DateTimeTile extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.emptyLabel,
+    this.onClear,
   });
 
   final String label;
   final DateTime? value;
   final String? emptyLabel;
   final ValueChanged<DateTime> onChanged;
+  final VoidCallback? onClear;
 
   @override
   Widget build(BuildContext context) {
@@ -548,7 +686,17 @@ class _DateTimeTile extends StatelessWidget {
             ? (emptyLabel ?? 'Nao definido')
             : _format(value!.toLocal()),
       ),
-      trailing: const Icon(Icons.calendar_today_outlined),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (onClear != null)
+            IconButton(
+              onPressed: onClear,
+              icon: const Icon(Icons.close),
+            ),
+          const Icon(Icons.calendar_today_outlined),
+        ],
+      ),
       onTap: () async {
         final now = value ?? DateTime.now();
         final date = await showDatePicker(

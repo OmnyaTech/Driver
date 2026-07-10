@@ -48,12 +48,23 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
   }
 
   Future<void> _openCreateDialog() async {
+    await _openMaintenanceDialog();
+  }
+
+  Future<void> _openEditDialog(AppMaintenance maintenance) async {
+    await _openMaintenanceDialog(initialMaintenance: maintenance);
+  }
+
+  Future<void> _openMaintenanceDialog({
+    AppMaintenance? initialMaintenance,
+  }) async {
     final vehicles = await VehicleService().listVehicles();
     if (!mounted) return;
 
-    final created = await showDialog<bool>(
+    final saved = await showDialog<bool>(
       context: context,
       builder: (_) => _MaintenanceFormDialog(
+        initialMaintenance: initialMaintenance,
         vehicles: vehicles.where((item) => item.active).toList(),
         onSubmit:
             ({
@@ -65,7 +76,21 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
               required description,
               required items,
             }) async {
-              await _maintenanceService.createMaintenance(
+              if (initialMaintenance == null) {
+                await _maintenanceService.createMaintenance(
+                  vehicleId: vehicleId,
+                  maintenanceDate: maintenanceDate,
+                  totalAmount: totalAmount,
+                  workshop: workshop,
+                  reason: reason,
+                  description: description,
+                  items: items,
+                );
+                return;
+              }
+
+              await _maintenanceService.updateMaintenance(
+                id: initialMaintenance.id,
                 vehicleId: vehicleId,
                 maintenanceDate: maintenanceDate,
                 totalAmount: totalAmount,
@@ -78,9 +103,40 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
       ),
     );
 
-    if (created == true) {
+    if (saved == true) {
       await _loadMaintenances();
     }
+  }
+
+  Future<void> _deleteMaintenance(AppMaintenance maintenance) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Excluir manutencao'),
+        content: Text(
+          'Deseja excluir esta manutencao de R\$ ${maintenance.totalAmount.toStringAsFixed(2)}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await _maintenanceService.deleteMaintenance(maintenance.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Manutencao removida com sucesso.')),
+    );
+    await _loadMaintenances();
   }
 
   @override
@@ -147,16 +203,41 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
             ..._maintenances.map(
               (maintenance) => Card(
                 child: ExpansionTile(
-                  title: Text(maintenance.vehicleLabel ?? 'Veiculo'),
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(maintenance.vehicleLabel ?? 'Veiculo'),
+                      ),
+                      PopupMenuButton<String>(
+                        onSelected: (value) async {
+                          if (value == 'edit') {
+                            await _openEditDialog(maintenance);
+                            return;
+                          }
+                          if (value == 'delete') {
+                            await _deleteMaintenance(maintenance);
+                          }
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Text('Editar'),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Text('Excluir'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                   subtitle: Text(
                     [
                       _formatDate(maintenance.maintenanceDate),
                       if (maintenance.workshop != null) maintenance.workshop!,
                       if (maintenance.reason != null) maintenance.reason!,
+                      'R\$ ${maintenance.totalAmount.toStringAsFixed(2)}',
                     ].join(' - '),
-                  ),
-                  trailing: Text(
-                    'R\$ ${maintenance.totalAmount.toStringAsFixed(2)}',
                   ),
                   children: [
                     if (maintenance.description != null &&
@@ -197,10 +278,12 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
 
 class _MaintenanceFormDialog extends StatefulWidget {
   const _MaintenanceFormDialog({
+    this.initialMaintenance,
     required this.vehicles,
     required this.onSubmit,
   });
 
+  final AppMaintenance? initialMaintenance;
   final List<AppVehicle> vehicles;
   final Future<void> Function({
     required String vehicleId,
@@ -219,15 +302,52 @@ class _MaintenanceFormDialog extends StatefulWidget {
 
 class _MaintenanceFormDialogState extends State<_MaintenanceFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _workshopController = TextEditingController();
-  final _reasonController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _totalController = TextEditingController();
-  final List<_MaintenanceItemEntry> _items = [_MaintenanceItemEntry()];
+  late final TextEditingController _workshopController;
+  late final TextEditingController _reasonController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _totalController;
+  late final List<_MaintenanceItemEntry> _items;
   String? _vehicleId;
-  DateTime _maintenanceDate = DateTime.now();
+  late DateTime _maintenanceDate;
   bool _saving = false;
   String? _submitError;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialMaintenance = widget.initialMaintenance;
+    _workshopController = TextEditingController(
+      text: initialMaintenance?.workshop ?? '',
+    );
+    _reasonController = TextEditingController(
+      text: initialMaintenance?.reason ?? '',
+    );
+    _descriptionController = TextEditingController(
+      text: initialMaintenance?.description ?? '',
+    );
+    _totalController = TextEditingController(
+      text: initialMaintenance == null
+          ? ''
+          : initialMaintenance.totalAmount.toStringAsFixed(2),
+    );
+    _items = initialMaintenance == null
+        ? [_MaintenanceItemEntry()]
+        : (initialMaintenance.items.isEmpty
+              ? [_MaintenanceItemEntry()]
+              : initialMaintenance.items
+                    .map(
+                      (item) => _MaintenanceItemEntry.fromValues(
+                        description: item.description,
+                        amount: item.amount == 0
+                            ? ''
+                            : item.amount.toStringAsFixed(2),
+                      ),
+                    )
+                    .toList());
+    _vehicleId = initialMaintenance?.vehicleId;
+    _maintenanceDate =
+        initialMaintenance?.maintenanceDate.toLocal() ?? DateTime.now();
+  }
 
   @override
   void dispose() {
@@ -251,7 +371,11 @@ class _MaintenanceFormDialogState extends State<_MaintenanceFormDialog> {
     });
 
     return AlertDialog(
-      title: const Text('Nova manutencao'),
+      title: Text(
+        widget.initialMaintenance == null
+            ? 'Nova manutencao'
+            : 'Editar manutencao',
+      ),
       content: SizedBox(
         width: 520,
         child: Form(
@@ -444,10 +568,22 @@ class _MaintenanceFormDialogState extends State<_MaintenanceFormDialog> {
 }
 
 class _MaintenanceItemEntry {
-  _MaintenanceItemEntry();
+  _MaintenanceItemEntry({String description = '', String amount = ''})
+    : descriptionController = TextEditingController(text: description),
+      amountController = TextEditingController(text: amount);
 
-  final descriptionController = TextEditingController();
-  final amountController = TextEditingController();
+  factory _MaintenanceItemEntry.fromValues({
+    required String description,
+    required String amount,
+  }) {
+    return _MaintenanceItemEntry(
+      description: description,
+      amount: amount,
+    );
+  }
+
+  final TextEditingController descriptionController;
+  final TextEditingController amountController;
 
   void dispose() {
     descriptionController.dispose();
