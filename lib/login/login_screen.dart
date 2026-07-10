@@ -8,6 +8,8 @@ import '../models/oauth_provider_option.dart';
 import '../models/turnstile_flow.dart';
 import '../utilities/state/app_session.dart';
 
+const _driverLogoAsset = 'src/driver_icon/driver_icon.png';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -86,6 +88,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              Image.asset(
+                                _driverLogoAsset,
+                                width: 72,
+                                height: 72,
+                              ),
+                              const SizedBox(height: 18),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 14,

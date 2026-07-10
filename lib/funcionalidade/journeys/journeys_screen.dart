@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/app_journey.dart';
 import '../../models/app_platform.dart';
 import '../../models/app_vehicle.dart';
+import '../finance/widgets/financial_filter_toolbar.dart';
 import '../../services/journey_service.dart';
 import '../../services/platform_service.dart';
 import '../../services/vehicle_service.dart';
@@ -27,21 +28,34 @@ class JourneysScreen extends StatefulWidget {
 
 class _JourneysScreenState extends State<JourneysScreen> {
   final JourneyService _journeyService = JourneyService();
+  final TextEditingController _searchController = TextEditingController();
   bool _loading = true;
   List<AppJourney> _journeys = const [];
   String? _errorMessage;
+  late DateTimeRange _range;
 
   @override
   void initState() {
     super.initState();
+    _range = _currentMonthRange();
     widget.actionController?.bindCreate(_openCreateDialog);
+    _searchController.addListener(_handleFilterChange);
     _loadJourneys();
   }
 
   @override
   void dispose() {
+    _searchController
+      ..removeListener(_handleFilterChange)
+      ..dispose();
     widget.actionController?.clear();
     super.dispose();
+  }
+
+  void _handleFilterChange() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _loadJourneys() async {
@@ -198,6 +212,24 @@ class _JourneysScreenState extends State<JourneysScreen> {
             ),
             const SizedBox(height: 16),
           ],
+          FinancialFilterToolbar(
+            searchController: _searchController,
+            range: _range,
+            hintText: 'Buscar veiculo, plataforma, status ou anotacao',
+            onPickRange: _pickRange,
+            onClear: _clearFilters,
+          ),
+          const SizedBox(height: 16),
+          if (_filteredJourneys.isNotEmpty)
+            Card(
+              child: ListTile(
+                title: const Text('Resumo'),
+                subtitle: Text(
+                  '${_filteredJourneys.length} jornadas no filtro atual',
+                ),
+                trailing: Text('R\$ ${_filteredIncome.toStringAsFixed(2)}'),
+              ),
+            ),
           if (_errorMessage != null)
             Card(
               child: Padding(
@@ -217,7 +249,16 @@ class _JourneysScreenState extends State<JourneysScreen> {
                 ),
               ),
             ),
-          ..._journeys.map(
+          if (_journeys.isNotEmpty && _filteredJourneys.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Nenhuma jornada encontrada para os filtros informados.',
+                ),
+              ),
+            ),
+          ..._filteredJourneys.map(
             (journey) => Card(
               child: ExpansionTile(
                 title: Row(
@@ -321,6 +362,68 @@ class _JourneysScreenState extends State<JourneysScreen> {
   String _formatDate(DateTime value) {
     final date = value.toLocal();
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
+  }
+
+  List<AppJourney> get _filteredJourneys {
+    final query = _searchController.text.trim().toLowerCase();
+    return _journeys.where((journey) {
+      if (!_isWithinRange(journey.startedAt)) return false;
+      if (query.isEmpty) return true;
+      final platforms = journey.platformBreakdown
+          .map((item) => item.platformName)
+          .join(' ');
+      final haystack = [
+        journey.vehicleLabel,
+        journey.notes,
+        platforms,
+        journey.isFinished ? 'finalizada' : 'em aberto',
+      ].whereType<String>().join(' ').toLowerCase();
+      return haystack.contains(query);
+    }).toList();
+  }
+
+  double get _filteredIncome =>
+      _filteredJourneys.fold<double>(0, (sum, item) => sum + item.totalIncome);
+
+  bool _isWithinRange(DateTime value) {
+    final local = value.toLocal();
+    final start = DateTime(
+      _range.start.year,
+      _range.start.month,
+      _range.start.day,
+    );
+    final end = DateTime(
+      _range.end.year,
+      _range.end.month,
+      _range.end.day,
+      23,
+      59,
+      59,
+    );
+    return !local.isBefore(start) && !local.isAfter(end);
+  }
+
+  Future<void> _pickRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: _range,
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _range = picked);
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _searchController.clear();
+      _range = _currentMonthRange();
+    });
+  }
+
+  DateTimeRange _currentMonthRange() {
+    final now = DateTime.now();
+    return DateTimeRange(start: DateTime(now.year, now.month, 1), end: now);
   }
 }
 

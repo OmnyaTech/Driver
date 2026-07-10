@@ -2,6 +2,8 @@
 -- Platform logo storage bucket and policies.
 -- Date: 2026-07-10
 -- Execute manually in Supabase SQL Editor.
+-- If Supabase reports deadlock, run the ALTER TABLE first, wait a few seconds,
+-- then run the bucket/policy section below in a second execution.
 
 alter table driver.platforms
   add column if not exists logo_url text;

@@ -14,6 +14,8 @@ import '../utilities/state/app_session.dart';
 import '../utilities/ui/omnya_shell.dart';
 import '../utilities/ui/screen_action_controller.dart';
 
+const _driverLogoAsset = 'src/driver_icon/driver_icon.png';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -106,7 +108,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(tabs[_currentIndex].title),
+        title: Row(
+          children: [
+            Image.asset(_driverLogoAsset, width: 26, height: 26),
+            const SizedBox(width: 10),
+            Text(tabs[_currentIndex].title),
+          ],
+        ),
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 12),
@@ -130,47 +138,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               actions: actions,
               heroTagPrefix: 'dashboard',
             ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(color: Theme.of(context).dividerColor),
-          ),
-        ),
-        child: compactNavigation
-            ? BottomNavigationBar(
-                currentIndex: _currentIndex,
-                onTap: (index) {
-                  setState(() => _currentIndex = index);
-                },
-                type: BottomNavigationBarType.fixed,
-                iconSize: 22,
-                selectedFontSize: 10,
-                unselectedFontSize: 10,
-                items: tabs
-                    .map(
-                      (tab) => BottomNavigationBarItem(
-                        icon: Icon(tab.icon),
-                        activeIcon: Icon(tab.selectedIcon),
-                        label: tab.label,
-                      ),
-                    )
-                    .toList(),
-              )
-            : NavigationBar(
-                selectedIndex: _currentIndex,
-                onDestinationSelected: (index) {
-                  setState(() => _currentIndex = index);
-                },
-                destinations: tabs
-                    .map(
-                      (tab) => NavigationDestination(
-                        icon: Icon(tab.icon),
-                        selectedIcon: Icon(tab.selectedIcon),
-                        label: tab.label,
-                      ),
-                    )
-                    .toList(),
-              ),
+      bottomNavigationBar: _OmnyaBottomTabBar(
+        currentIndex: _currentIndex,
+        compact: compactNavigation,
+        tabs: tabs,
+        onSelected: (index) => setState(() => _currentIndex = index),
       ),
     );
   }
@@ -285,6 +257,95 @@ class _DashboardTab {
   final IconData icon;
   final IconData selectedIcon;
   final String label;
+}
+
+class _OmnyaBottomTabBar extends StatelessWidget {
+  const _OmnyaBottomTabBar({
+    required this.currentIndex,
+    required this.compact,
+    required this.tabs,
+    required this.onSelected,
+  });
+
+  final int currentIndex;
+  final bool compact;
+  final List<_DashboardTab> tabs;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        border: Border(top: BorderSide(color: theme.dividerColor)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(8, 8, 8, compact ? 8 : 10),
+          child: Row(
+            children: List.generate(tabs.length, (index) {
+              final tab = tabs[index];
+              final selected = currentIndex == index;
+              final activeColor = const Color(0xFF7582FF);
+              final inactiveColor = theme.colorScheme.onSurfaceVariant;
+
+              return Expanded(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () => onSelected(index),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOutCubic,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: compact ? 12 : 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? const Color(
+                                    0xFF0000CD,
+                                  ).withValues(alpha: isDark ? 0.32 : 0.16)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            selected ? tab.selectedIcon : tab.icon,
+                            size: compact ? 19 : 21,
+                            color: selected ? activeColor : inactiveColor,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          tab.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontSize: compact ? 10 : 11,
+                            color: selected
+                                ? theme.colorScheme.onSurface
+                                : inactiveColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _OverviewTab extends StatefulWidget {
@@ -407,11 +468,18 @@ class _OverviewTabState extends State<_OverviewTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Visao consolidada',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.headlineSmall?.copyWith(color: Colors.white),
+                Row(
+                  children: [
+                    Image.asset(_driverLogoAsset, width: 40, height: 40),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Visao consolidada',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(color: Colors.white),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 14),
                 Wrap(

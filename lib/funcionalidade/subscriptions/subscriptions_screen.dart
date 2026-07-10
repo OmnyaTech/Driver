@@ -603,7 +603,7 @@ const List<_DriverPlanCardData> _monthlyPlans = [
     title: 'Premium mensal',
     description:
         'Para ganhar ritmo com historico, multiplas fontes e mais controle.',
-    price: 'R\$ 19,90',
+    price: 'R\$ 14,90',
     caption: 'cobranca mensal',
     features: [
       'Multiplas plataformas ativas',
@@ -616,21 +616,6 @@ const List<_DriverPlanCardData> _monthlyPlans = [
     planType: 'premium',
     badge: 'Mais popular',
     highlighted: true,
-  ),
-  _DriverPlanCardData(
-    title: 'Premium anual',
-    description: 'Para manter o app no longo prazo com menor custo por mes.',
-    price: 'R\$ 199,90',
-    caption: 'cobranca anual',
-    features: [
-      'Tudo do Premium mensal',
-      'Economia em relacao ao ciclo mensal',
-      'Acesso prolongado para frota e rotina',
-      'Ideal para uso continuo do motorista',
-    ],
-    buttonLabel: 'Assinar anual',
-    icon: Icons.workspace_premium_outlined,
-    planType: 'premium',
   ),
 ];
 
@@ -652,7 +637,7 @@ const List<_DriverPlanCardData> _annualPlans = [
   _DriverPlanCardData(
     title: 'Premium anual',
     description: 'Melhor custo para manter a operacao completa o ano inteiro.',
-    price: 'R\$ 199,90',
+    price: 'R\$ 149,90',
     caption: 'cobranca anual',
     features: [
       'Multiplas plataformas e veiculos',

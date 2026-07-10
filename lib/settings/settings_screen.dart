@@ -12,6 +12,8 @@ import '../utilities/guards/developer_guard.dart';
 import '../utilities/state/app_session.dart';
 import '../utilities/ui/profile_avatar.dart';
 
+const _driverLogoAsset = 'src/driver_icon/driver_icon.png';
+
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -170,11 +172,31 @@ class _SettingsHeroCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              ProfileAvatar(
-                displayName: profile?.displayName ?? 'Omnya Driver',
-                avatarUrl: profile?.avatarUrl,
-                radius: 28,
-                showBorder: true,
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ProfileAvatar(
+                    displayName: profile?.displayName ?? 'Omnya Driver',
+                    avatarUrl: profile?.avatarUrl,
+                    radius: 28,
+                    showBorder: true,
+                  ),
+                  Positioned(
+                    right: -6,
+                    bottom: -6,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0B0D16),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: Image.asset(_driverLogoAsset),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 16),
               Expanded(
