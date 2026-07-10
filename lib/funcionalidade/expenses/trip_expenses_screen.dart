@@ -3,9 +3,17 @@ import 'package:flutter/material.dart';
 import '../../models/app_trip_expense.dart';
 import '../../services/journey_service.dart';
 import '../../services/trip_expense_service.dart';
+import '../../utilities/ui/screen_action_controller.dart';
 
 class TripExpensesScreen extends StatefulWidget {
-  const TripExpensesScreen({super.key});
+  const TripExpensesScreen({
+    super.key,
+    this.showCreateButton = true,
+    this.actionController,
+  });
+
+  final bool showCreateButton;
+  final ScreenActionController? actionController;
 
   @override
   State<TripExpensesScreen> createState() => _TripExpensesScreenState();
@@ -20,7 +28,14 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
   @override
   void initState() {
     super.initState();
+    widget.actionController?.bindCreate(_openCreateDialog);
     _loadExpenses();
+  }
+
+  @override
+  void dispose() {
+    widget.actionController?.clear();
+    super.dispose();
   }
 
   Future<void> _loadExpenses() async {
@@ -150,11 +165,12 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
-                FilledButton.icon(
-                  onPressed: _openCreateDialog,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Nova'),
-                ),
+                if (widget.showCreateButton)
+                  FilledButton.icon(
+                    onPressed: _openCreateDialog,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Nova'),
+                  ),
               ],
             ),
             const SizedBox(height: 16),

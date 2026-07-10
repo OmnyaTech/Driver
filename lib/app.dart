@@ -23,7 +23,7 @@ class OmnyaDriverApp extends StatelessWidget {
             themeMode: session.themeMode,
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
-            routes: {'/settings': (_) => const SettingsScreen()},
+            routes: {'/settings': (_) => const SettingsStandaloneScreen()},
             home: _resolveHome(session),
           );
         },

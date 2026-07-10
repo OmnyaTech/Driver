@@ -5,9 +5,17 @@ import '../../models/app_vehicle.dart';
 import '../../services/plan_access_service.dart';
 import '../../services/vehicle_service.dart';
 import '../../utilities/state/app_session.dart';
+import '../../utilities/ui/screen_action_controller.dart';
 
 class VehiclesScreen extends StatefulWidget {
-  const VehiclesScreen({super.key});
+  const VehiclesScreen({
+    super.key,
+    this.showCreateButton = true,
+    this.actionController,
+  });
+
+  final bool showCreateButton;
+  final ScreenActionController? actionController;
 
   @override
   State<VehiclesScreen> createState() => _VehiclesScreenState();
@@ -22,7 +30,14 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
   @override
   void initState() {
     super.initState();
+    widget.actionController?.bindCreate(_openCreateDialog);
     _loadVehicles();
+  }
+
+  @override
+  void dispose() {
+    widget.actionController?.clear();
+    super.dispose();
   }
 
   Future<void> _loadVehicles() async {
@@ -183,11 +198,12 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
-                FilledButton.icon(
-                  onPressed: _openCreateDialog,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Novo'),
-                ),
+                if (widget.showCreateButton)
+                  FilledButton.icon(
+                    onPressed: _openCreateDialog,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Novo'),
+                  ),
               ],
             ),
             const SizedBox(height: 16),

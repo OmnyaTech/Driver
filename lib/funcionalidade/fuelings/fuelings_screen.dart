@@ -5,9 +5,17 @@ import '../../models/app_vehicle.dart';
 import '../../services/fueling_service.dart';
 import '../../services/journey_service.dart';
 import '../../services/vehicle_service.dart';
+import '../../utilities/ui/screen_action_controller.dart';
 
 class FuelingsScreen extends StatefulWidget {
-  const FuelingsScreen({super.key});
+  const FuelingsScreen({
+    super.key,
+    this.showCreateButton = true,
+    this.actionController,
+  });
+
+  final bool showCreateButton;
+  final ScreenActionController? actionController;
 
   @override
   State<FuelingsScreen> createState() => _FuelingsScreenState();
@@ -22,7 +30,14 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
   @override
   void initState() {
     super.initState();
+    widget.actionController?.bindCreate(_openCreateDialog);
     _loadFuelings();
+  }
+
+  @override
+  void dispose() {
+    widget.actionController?.clear();
+    super.dispose();
   }
 
   Future<void> _loadFuelings() async {
@@ -166,11 +181,12 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
-                FilledButton.icon(
-                  onPressed: _openCreateDialog,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Novo'),
-                ),
+                if (widget.showCreateButton)
+                  FilledButton.icon(
+                    onPressed: _openCreateDialog,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Novo'),
+                  ),
               ],
             ),
             const SizedBox(height: 16),

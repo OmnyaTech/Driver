@@ -5,9 +5,17 @@ import '../../models/app_platform.dart';
 import '../../services/plan_access_service.dart';
 import '../../services/platform_service.dart';
 import '../../utilities/state/app_session.dart';
+import '../../utilities/ui/screen_action_controller.dart';
 
 class PlatformsScreen extends StatefulWidget {
-  const PlatformsScreen({super.key});
+  const PlatformsScreen({
+    super.key,
+    this.showCreateButton = true,
+    this.actionController,
+  });
+
+  final bool showCreateButton;
+  final ScreenActionController? actionController;
 
   @override
   State<PlatformsScreen> createState() => _PlatformsScreenState();
@@ -22,7 +30,14 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
   @override
   void initState() {
     super.initState();
+    widget.actionController?.bindCreate(_openCreateDialog);
     _loadPlatforms();
+  }
+
+  @override
+  void dispose() {
+    widget.actionController?.clear();
+    super.dispose();
   }
 
   Future<void> _loadPlatforms() async {
@@ -180,11 +195,12 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
-                FilledButton.icon(
-                  onPressed: _openCreateDialog,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Nova'),
-                ),
+                if (widget.showCreateButton)
+                  FilledButton.icon(
+                    onPressed: _openCreateDialog,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Nova'),
+                  ),
               ],
             ),
             const SizedBox(height: 16),

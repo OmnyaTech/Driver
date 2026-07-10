@@ -35,199 +35,303 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final session = context.watch<AppSession>();
     final isRegister = _mode == AuthFormMode.signUp;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      body: Container(
+      body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF081C15), Color(0xFF1B4332), Color(0xFF2D6A4F)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            colors: [Color(0xFF020409), Color(0xFF07101E), Color(0xFF0000CD)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: Card(
-                  elevation: 8,
-                  child: Padding(
-                    padding: const EdgeInsets.all(28),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Omnya Driver',
-                          style: Theme.of(context).textTheme.headlineMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          isRegister
-                              ? 'Crie sua conta e inicie o onboarding do motorista.'
-                              : 'Entre com seguranca para acessar seu painel.',
-                        ),
-                        const SizedBox(height: 24),
-                        SegmentedButton<AuthFormMode>(
-                          segments: const [
-                            ButtonSegment(
-                              value: AuthFormMode.signIn,
-                              label: Text('Entrar'),
-                            ),
-                            ButtonSegment(
-                              value: AuthFormMode.signUp,
-                              label: Text('Cadastrar'),
-                            ),
-                          ],
-                          selected: {_mode},
-                          onSelectionChanged: session.isBusy
-                              ? null
-                              : (selection) {
-                                  setState(() => _mode = selection.first);
-                                },
-                        ),
-                        const SizedBox(height: 24),
-                        Form(
-                          key: _formKey,
+        child: Stack(
+          children: [
+            Positioned(
+              top: -120,
+              right: -80,
+              child: Container(
+                width: 280,
+                height: 280,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF0000CD).withValues(alpha: 0.24),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 120,
+              left: -50,
+              child: Container(
+                width: 180,
+                height: 180,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.05),
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 12),
+                      child: Align(
+                        alignment: Alignment.topLeft,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 520),
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (isRegister) ...[
-                                TextFormField(
-                                  controller: _fullNameController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Nome completo',
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(999),
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.12),
                                   ),
-                                  validator: (value) {
-                                    if (!isRegister) return null;
-                                    if (value == null || value.trim().isEmpty) {
-                                      return 'Informe seu nome.';
-                                    }
-                                    return null;
-                                  },
                                 ),
-                                const SizedBox(height: 12),
-                              ],
-                              TextFormField(
-                                controller: _emailController,
-                                decoration: const InputDecoration(
-                                  labelText: 'E-mail',
+                                child: Text(
+                                  'OmnyaTech Driver Platform',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: Colors.white,
+                                  ),
                                 ),
-                                keyboardType: TextInputType.emailAddress,
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Informe seu e-mail.';
-                                  }
-                                  return null;
-                                },
                               ),
-                              const SizedBox(height: 12),
-                              TextFormField(
-                                controller: _passwordController,
-                                decoration: InputDecoration(
-                                  labelText: isRegister
-                                      ? 'Crie uma senha'
-                                      : 'Senha',
+                              const SizedBox(height: 20),
+                              Text(
+                                'Mobilidade com inteligencia operacional.',
+                                style: theme.textTheme.headlineMedium?.copyWith(
+                                  color: Colors.white,
+                                  height: 1.14,
                                 ),
-                                obscureText: true,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Informe sua senha.';
-                                  }
-                                  if (isRegister && value.length < 6) {
-                                    return 'Use pelo menos 6 caracteres.';
-                                  }
-                                  return null;
-                                },
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Controle jornadas, metas e custos em uma experiencia pensada para a identidade OmnyaTech.',
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.76),
+                                ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed: session.isBusy ? null : _submit,
-                            child: session.isBusy
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : Text(
-                                    isRegister
-                                        ? 'Criar conta e continuar'
-                                        : 'Entrar',
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Divider(
-                                color: Theme.of(context).dividerColor,
-                              ),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12),
-                              child: Text('ou'),
-                            ),
-                            Expanded(
-                              child: Divider(
-                                color: Theme.of(context).dividerColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: [
-                            OutlinedButton.icon(
-                              onPressed: session.isBusy
-                                  ? null
-                                  : () => _signInWithOAuth(
-                                      OauthProviderOption.google,
-                                    ),
-                              icon: const Icon(Icons.g_mobiledata),
-                              label: const Text('Google'),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: session.isBusy
-                                  ? null
-                                  : () => _signInWithOAuth(
-                                      OauthProviderOption.microsoft,
-                                    ),
-                              icon: const Icon(Icons.window_outlined),
-                              label: const Text('Microsoft'),
-                            ),
-                          ],
-                        ),
-                        if (session.errorMessage != null) ...[
-                          const SizedBox(height: 16),
-                          Text(
-                            session.errorMessage!,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 16),
-                        _AuthStatusPanel(
-                          supabaseConfigured: session.supabaseConfigured,
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 720),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
+                      decoration: BoxDecoration(
+                        color: theme.cardColor,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(36),
+                        ),
+                        border: Border.all(color: theme.dividerColor),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.24),
+                            blurRadius: 36,
+                            offset: const Offset(0, -8),
+                          ),
+                        ],
+                      ),
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.only(
+                          bottom: MediaQuery.of(context).viewInsets.bottom,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Center(
+                              child: Container(
+                                width: 52,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  color: theme.dividerColor,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              'Omnya Driver',
+                              style: theme.textTheme.headlineSmall,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              isRegister
+                                  ? 'Crie sua conta e inicie o onboarding do motorista.'
+                                  : 'Entre com seguranca para acessar seu painel.',
+                            ),
+                            const SizedBox(height: 24),
+                            SegmentedButton<AuthFormMode>(
+                              segments: const [
+                                ButtonSegment(
+                                  value: AuthFormMode.signIn,
+                                  label: Text('Entrar'),
+                                ),
+                                ButtonSegment(
+                                  value: AuthFormMode.signUp,
+                                  label: Text('Cadastrar'),
+                                ),
+                              ],
+                              selected: {_mode},
+                              onSelectionChanged: session.isBusy
+                                  ? null
+                                  : (selection) {
+                                      setState(() => _mode = selection.first);
+                                    },
+                            ),
+                            const SizedBox(height: 24),
+                            Form(
+                              key: _formKey,
+                              child: Column(
+                                children: [
+                                  if (isRegister) ...[
+                                    TextFormField(
+                                      controller: _fullNameController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Nome completo',
+                                      ),
+                                      validator: (value) {
+                                        if (!isRegister) return null;
+                                        if (value == null ||
+                                            value.trim().isEmpty) {
+                                          return 'Informe seu nome.';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    const SizedBox(height: 12),
+                                  ],
+                                  TextFormField(
+                                    controller: _emailController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'E-mail',
+                                    ),
+                                    keyboardType: TextInputType.emailAddress,
+                                    validator: (value) {
+                                      if (value == null ||
+                                          value.trim().isEmpty) {
+                                        return 'Informe seu e-mail.';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 12),
+                                  TextFormField(
+                                    controller: _passwordController,
+                                    decoration: InputDecoration(
+                                      labelText: isRegister
+                                          ? 'Crie uma senha'
+                                          : 'Senha',
+                                    ),
+                                    obscureText: true,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Informe sua senha.';
+                                      }
+                                      if (isRegister && value.length < 6) {
+                                        return 'Use pelo menos 6 caracteres.';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton(
+                                onPressed: session.isBusy ? null : _submit,
+                                child: session.isBusy
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Text(
+                                        isRegister
+                                            ? 'Criar conta e continuar'
+                                            : 'Entrar',
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Divider(color: theme.dividerColor),
+                                ),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 12),
+                                  child: Text('ou'),
+                                ),
+                                Expanded(
+                                  child: Divider(color: theme.dividerColor),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: session.isBusy
+                                      ? null
+                                      : () => _signInWithOAuth(
+                                          OauthProviderOption.google,
+                                        ),
+                                  icon: const Icon(Icons.g_mobiledata),
+                                  label: const Text('Google'),
+                                ),
+                                OutlinedButton.icon(
+                                  onPressed: session.isBusy
+                                      ? null
+                                      : () => _signInWithOAuth(
+                                          OauthProviderOption.microsoft,
+                                        ),
+                                  icon: const Icon(Icons.window_outlined),
+                                  label: const Text('Microsoft'),
+                                ),
+                              ],
+                            ),
+                            if (session.errorMessage != null) ...[
+                              const SizedBox(height: 16),
+                              Text(
+                                session.errorMessage!,
+                                style: TextStyle(
+                                  color: theme.colorScheme.error,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+                            _AuthStatusPanel(
+                              supabaseConfigured: session.supabaseConfigured,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

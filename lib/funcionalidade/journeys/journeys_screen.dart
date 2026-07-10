@@ -6,9 +6,17 @@ import '../../models/app_vehicle.dart';
 import '../../services/journey_service.dart';
 import '../../services/platform_service.dart';
 import '../../services/vehicle_service.dart';
+import '../../utilities/ui/screen_action_controller.dart';
 
 class JourneysScreen extends StatefulWidget {
-  const JourneysScreen({super.key});
+  const JourneysScreen({
+    super.key,
+    this.showCreateButton = true,
+    this.actionController,
+  });
+
+  final bool showCreateButton;
+  final ScreenActionController? actionController;
 
   @override
   State<JourneysScreen> createState() => _JourneysScreenState();
@@ -23,7 +31,14 @@ class _JourneysScreenState extends State<JourneysScreen> {
   @override
   void initState() {
     super.initState();
+    widget.actionController?.bindCreate(_openCreateDialog);
     _loadJourneys();
+  }
+
+  @override
+  void dispose() {
+    widget.actionController?.clear();
+    super.dispose();
   }
 
   Future<void> _loadJourneys() async {
@@ -166,11 +181,12 @@ class _JourneysScreenState extends State<JourneysScreen> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
-                FilledButton.icon(
-                  onPressed: _openCreateDialog,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Nova'),
-                ),
+                if (widget.showCreateButton)
+                  FilledButton.icon(
+                    onPressed: _openCreateDialog,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Nova'),
+                  ),
               ],
             ),
             const SizedBox(height: 16),

@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../funcionalidade/developer/developer_access_screen.dart';
-import '../funcionalidade/expenses/trip_expenses_screen.dart';
-import '../funcionalidade/fuelings/fuelings_screen.dart';
+import '../funcionalidade/finance/finance_hub_screen.dart';
 import '../funcionalidade/goals/goals_screen.dart';
 import '../funcionalidade/journeys/journeys_screen.dart';
-import '../funcionalidade/maintenances/maintenances_screen.dart';
 import '../funcionalidade/platforms/platforms_screen.dart';
 import '../funcionalidade/reports/reports_screen.dart';
-import '../funcionalidade/subscriptions/subscriptions_screen.dart';
 import '../funcionalidade/vehicles/vehicles_screen.dart';
 import '../models/app_dashboard_metrics.dart';
 import '../services/dashboard_metrics_service.dart';
-import '../utilities/guards/developer_guard.dart';
+import '../settings/settings_screen.dart';
 import '../utilities/state/app_session.dart';
+import '../utilities/ui/screen_action_controller.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -25,14 +22,26 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
-  final DeveloperGuard _developerGuard = DeveloperGuard();
+  final ScreenActionController _journeyController = ScreenActionController();
+  final ScreenActionController _goalController = ScreenActionController();
+  final ScreenActionController _expenseController = ScreenActionController();
+  final ScreenActionController _fuelingController = ScreenActionController();
+  final ScreenActionController _maintenanceController =
+      ScreenActionController();
+
+  @override
+  void dispose() {
+    _journeyController.clear();
+    _goalController.clear();
+    _expenseController.clear();
+    _fuelingController.clear();
+    _maintenanceController.clear();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final session = context.watch<AppSession>();
-    final canOpenDeveloper = session.profile != null
-        ? _developerGuard.canOpen(session.profile!.role)
-        : false;
 
     final tabs = [
       _DashboardTab(
@@ -46,7 +55,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       _DashboardTab(
         title: 'Jornadas',
-        page: const JourneysScreen(),
+        page: JourneysScreen(
+          showCreateButton: false,
+          actionController: _journeyController,
+        ),
         destination: const NavigationDestination(
           icon: Icon(Icons.route_outlined),
           selectedIcon: Icon(Icons.route),
@@ -55,7 +67,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       _DashboardTab(
         title: 'Objetivos',
-        page: const GoalsScreen(),
+        page: GoalsScreen(
+          showCreateButton: false,
+          actionController: _goalController,
+        ),
         destination: const NavigationDestination(
           icon: Icon(Icons.savings_outlined),
           selectedIcon: Icon(Icons.savings),
@@ -63,48 +78,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
       _DashboardTab(
-        title: 'Despesas',
-        page: const TripExpensesScreen(),
-        destination: const NavigationDestination(
-          icon: Icon(Icons.receipt_long_outlined),
-          selectedIcon: Icon(Icons.receipt_long),
-          label: 'Despesas',
+        title: 'Financeiro',
+        page: FinanceHubScreen(
+          expenseController: _expenseController,
+          fuelingController: _fuelingController,
+          maintenanceController: _maintenanceController,
         ),
-      ),
-      _DashboardTab(
-        title: 'Abastecimentos',
-        page: const FuelingsScreen(),
         destination: const NavigationDestination(
-          icon: Icon(Icons.local_gas_station_outlined),
-          selectedIcon: Icon(Icons.local_gas_station),
-          label: 'Abastec.',
-        ),
-      ),
-      _DashboardTab(
-        title: 'Manutencoes',
-        page: const MaintenancesScreen(),
-        destination: const NavigationDestination(
-          icon: Icon(Icons.build_outlined),
-          selectedIcon: Icon(Icons.build),
-          label: 'Manut.',
-        ),
-      ),
-      _DashboardTab(
-        title: 'Veiculos',
-        page: const VehiclesScreen(),
-        destination: const NavigationDestination(
-          icon: Icon(Icons.two_wheeler_outlined),
-          selectedIcon: Icon(Icons.two_wheeler),
-          label: 'Veiculos',
-        ),
-      ),
-      _DashboardTab(
-        title: 'Plataformas',
-        page: const PlatformsScreen(),
-        destination: const NavigationDestination(
-          icon: Icon(Icons.storefront_outlined),
-          selectedIcon: Icon(Icons.storefront),
-          label: 'Plataformas',
+          icon: Icon(Icons.account_balance_wallet_outlined),
+          selectedIcon: Icon(Icons.account_balance_wallet),
+          label: 'Financeiro',
         ),
       ),
       _DashboardTab(
@@ -117,52 +100,152 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
       _DashboardTab(
-        title: 'Planos',
-        page: const SubscriptionsScreen(),
+        title: 'Configuracoes',
+        page: const SettingsScreen(),
         destination: const NavigationDestination(
-          icon: Icon(Icons.workspace_premium_outlined),
-          selectedIcon: Icon(Icons.workspace_premium),
-          label: 'Planos',
+          icon: Icon(Icons.settings_outlined),
+          selectedIcon: Icon(Icons.settings),
+          label: 'Config.',
         ),
       ),
-      if (canOpenDeveloper)
-        _DashboardTab(
-          title: 'Developer',
-          page: const DeveloperAccessScreen(),
-          destination: const NavigationDestination(
-            icon: Icon(Icons.admin_panel_settings_outlined),
-            selectedIcon: Icon(Icons.admin_panel_settings),
-            label: 'Developer',
-          ),
-        ),
     ];
 
-    if (_currentIndex >= tabs.length) {
-      _currentIndex = 0;
-    }
+    final actions = _buildFabActions();
 
     return Scaffold(
       appBar: AppBar(
         title: Text(tabs[_currentIndex].title),
         actions: [
-          IconButton(
-            onPressed: session.isBusy ? null : session.signOut,
-            icon: const Icon(Icons.logout),
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            child: IconButton(
+              tooltip: 'Sair',
+              onPressed: session.isBusy ? null : session.signOut,
+              icon: const Icon(Icons.logout),
+            ),
           ),
         ],
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: tabs.map((tab) => tab.page).toList(),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF070A12), Color(0xFF090D18), Color(0xFF05070D)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: IndexedStack(
+          index: _currentIndex,
+          children: tabs.map((tab) => tab.page).toList(),
+        ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() => _currentIndex = index);
-        },
-        destinations: tabs.map((tab) => tab.destination).toList(),
+      floatingActionButton: actions.isEmpty
+          ? null
+          : _OmnyaFabMenu(actions: actions),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: Theme.of(context).dividerColor),
+          ),
+        ),
+        child: NavigationBar(
+          selectedIndex: _currentIndex,
+          onDestinationSelected: (index) {
+            setState(() => _currentIndex = index);
+          },
+          destinations: tabs.map((tab) => tab.destination).toList(),
+        ),
       ),
     );
+  }
+
+  List<_FabAction> _buildFabActions() {
+    switch (_currentIndex) {
+      case 0:
+        return [
+          _FabAction(
+            label: 'Nova jornada',
+            icon: Icons.route,
+            onTap: _journeyController.openCreate,
+          ),
+          _FabAction(
+            label: 'Novo objetivo',
+            icon: Icons.savings,
+            onTap: _goalController.openCreate,
+          ),
+          _FabAction(
+            label: 'Nova despesa',
+            icon: Icons.receipt_long,
+            onTap: _expenseController.openCreate,
+          ),
+        ];
+      case 1:
+        return [
+          _FabAction(
+            label: 'Nova jornada',
+            icon: Icons.route,
+            onTap: _journeyController.openCreate,
+          ),
+        ];
+      case 2:
+        return [
+          _FabAction(
+            label: 'Novo objetivo',
+            icon: Icons.savings,
+            onTap: _goalController.openCreate,
+          ),
+        ];
+      case 3:
+        return [
+          _FabAction(
+            label: 'Nova despesa',
+            icon: Icons.receipt_long,
+            onTap: _expenseController.openCreate,
+          ),
+          _FabAction(
+            label: 'Novo abastecimento',
+            icon: Icons.local_gas_station,
+            onTap: _fuelingController.openCreate,
+          ),
+          _FabAction(
+            label: 'Nova manutencao',
+            icon: Icons.build,
+            onTap: _maintenanceController.openCreate,
+          ),
+        ];
+      case 5:
+        return [
+          _FabAction(
+            label: 'Novo veiculo',
+            icon: Icons.two_wheeler,
+            onTap: () => _pushManagedCreate(
+              (controller) => VehiclesScreen(actionController: controller),
+            ),
+          ),
+          _FabAction(
+            label: 'Nova plataforma',
+            icon: Icons.storefront,
+            onTap: () => _pushManagedCreate(
+              (controller) => PlatformsScreen(actionController: controller),
+            ),
+          ),
+        ];
+      default:
+        return const [];
+    }
+  }
+
+  Future<void> _pushManagedCreate(
+    Widget Function(ScreenActionController controller) builder,
+  ) async {
+    final controller = ScreenActionController();
+    final future = Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => builder(controller)));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.openCreate();
+    });
+    await future;
   }
 }
 
@@ -176,6 +259,136 @@ class _DashboardTab {
   final String title;
   final Widget page;
   final NavigationDestination destination;
+}
+
+class _FabAction {
+  const _FabAction({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+}
+
+class _OmnyaFabMenu extends StatefulWidget {
+  const _OmnyaFabMenu({required this.actions});
+
+  final List<_FabAction> actions;
+
+  @override
+  State<_OmnyaFabMenu> createState() => _OmnyaFabMenuState();
+}
+
+class _OmnyaFabMenuState extends State<_OmnyaFabMenu>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  bool _open = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 240),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        ...widget.actions.asMap().entries.map((entry) {
+          final index = entry.key;
+          final action = entry.value;
+          return AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final curve = CurvedAnimation(
+                parent: _controller,
+                curve: Interval(
+                  0.0 + (index * 0.08),
+                  1.0,
+                  curve: Curves.easeOutBack,
+                ),
+              );
+              final value = curve.value;
+
+              return IgnorePointer(
+                ignoring: !_open,
+                child: Opacity(
+                  opacity: value,
+                  child: Transform.translate(
+                    offset: Offset(0, (1 - value) * 24),
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Theme.of(context).dividerColor,
+                              ),
+                            ),
+                            child: Text(action.label),
+                          ),
+                          const SizedBox(width: 10),
+                          FloatingActionButton.small(
+                            heroTag: 'fab-action-$index-${action.label}',
+                            onPressed: () {
+                              _toggle();
+                              action.onTap();
+                            },
+                            child: Icon(action.icon),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        }),
+        FloatingActionButton.extended(
+          heroTag: 'fab-main-dashboard',
+          onPressed: _toggle,
+          icon: AnimatedRotation(
+            turns: _open ? 0.125 : 0,
+            duration: const Duration(milliseconds: 240),
+            child: const Icon(Icons.add),
+          ),
+          label: Text(_open ? 'Fechar' : 'Novo'),
+        ),
+      ],
+    );
+  }
+
+  void _toggle() {
+    setState(() => _open = !_open);
+    if (_open) {
+      _controller.forward();
+      return;
+    }
+    _controller.reverse();
+  }
 }
 
 class _OverviewTab extends StatefulWidget {
@@ -234,7 +447,8 @@ class _OverviewTabState extends State<_OverviewTab> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final metrics = _metrics ??
+    final metrics =
+        _metrics ??
         const AppDashboardMetrics(
           totalIncome: 0,
           totalOperationalCosts: 0,
@@ -255,13 +469,13 @@ class _OverviewTabState extends State<_OverviewTab> {
     return RefreshIndicator(
       onRefresh: _loadMetrics,
       child: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
         children: [
           Row(
             children: [
               Expanded(
                 child: Text(
-                  'Visao consolidada',
+                  'Painel OmnyaTech',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
@@ -270,39 +484,66 @@ class _OverviewTabState extends State<_OverviewTab> {
                 icon: const Icon(Icons.date_range_outlined),
                 label: Text(_rangeLabel),
               ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: _range == null
-                    ? null
-                    : () {
-                        setState(() => _range = null);
-                        _loadMetrics();
-                      },
-                child: const Text('Limpar'),
-              ),
             ],
           ),
           const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Painel operacional',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  Text('Conta: ${profile?.email ?? 'usuario'}'),
-                  Text('Nome: ${profile?.displayName ?? 'Motorista'}'),
-                  Text('Plano: ${profile?.planType.name ?? 'free'}'),
-                  Text('Papel: ${profile?.role.name ?? 'user'}'),
-                  Text(
-                    'Onboarding: ${profile?.needsOnboarding == false ? 'concluido' : 'pendente'}',
-                  ),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF0B0D16),
+                  Color(0xFF111B35),
+                  Color(0xFF0000CD),
                 ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0000CD).withValues(alpha: 0.2),
+                  blurRadius: 24,
+                  offset: const Offset(0, 18),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Visao consolidada',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.headlineSmall?.copyWith(color: Colors.white),
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _HeroInfoPill(label: profile?.displayName ?? 'Motorista'),
+                    _HeroInfoPill(
+                      label: 'Plano ${profile?.planType.name ?? 'free'}',
+                    ),
+                    _HeroInfoPill(label: '${metrics.totalJourneys} jornadas'),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Conta: ${profile?.email ?? 'usuario'}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.82),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Liquido atual: ${_currency(metrics.netResult)}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(color: Colors.white),
+                ),
+              ],
             ),
           ),
           if (_errorMessage != null) ...[
@@ -317,7 +558,7 @@ class _OverviewTabState extends State<_OverviewTab> {
               ),
             ),
           ],
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           Wrap(
             spacing: 16,
             runSpacing: 16,
@@ -347,13 +588,7 @@ class _OverviewTabState extends State<_OverviewTab> {
               _MetricCard(
                 title: 'Distancia medida',
                 value: '${metrics.totalDistanceKm.toStringAsFixed(1)} km',
-                detail:
-                    'Custo por km: ${_currency(metrics.costPerKm)}',
-              ),
-              _MetricCard(
-                title: 'Produtividade',
-                value: metrics.averageDeliveriesPerJourney.toStringAsFixed(1),
-                detail: 'entregas por jornada',
+                detail: 'Custo por km: ${_currency(metrics.costPerKm)}',
               ),
               _MetricCard(
                 title: 'Ticket medio',
@@ -362,7 +597,7 @@ class _OverviewTabState extends State<_OverviewTab> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -399,10 +634,7 @@ class _OverviewTabState extends State<_OverviewTab> {
       lastDate: DateTime(2035),
       initialDateRange:
           _range ??
-          DateTimeRange(
-            start: DateTime(now.year, now.month, 1),
-            end: now,
-          ),
+          DateTimeRange(start: DateTime(now.year, now.month, 1), end: now),
     );
     if (picked == null || !mounted) return;
     setState(() => _range = picked);
@@ -417,6 +649,29 @@ class _OverviewTabState extends State<_OverviewTab> {
   String _formatDate(DateTime value) {
     final date = value.toLocal();
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
+  }
+}
+
+class _HeroInfoPill extends StatelessWidget {
+  const _HeroInfoPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(
+          context,
+        ).textTheme.labelLarge?.copyWith(color: Colors.white),
+      ),
+    );
   }
 }
 

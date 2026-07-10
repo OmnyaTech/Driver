@@ -4,9 +4,17 @@ import '../../models/app_maintenance.dart';
 import '../../models/app_vehicle.dart';
 import '../../services/maintenance_service.dart';
 import '../../services/vehicle_service.dart';
+import '../../utilities/ui/screen_action_controller.dart';
 
 class MaintenancesScreen extends StatefulWidget {
-  const MaintenancesScreen({super.key});
+  const MaintenancesScreen({
+    super.key,
+    this.showCreateButton = true,
+    this.actionController,
+  });
+
+  final bool showCreateButton;
+  final ScreenActionController? actionController;
 
   @override
   State<MaintenancesScreen> createState() => _MaintenancesScreenState();
@@ -21,7 +29,14 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
   @override
   void initState() {
     super.initState();
+    widget.actionController?.bindCreate(_openCreateDialog);
     _loadMaintenances();
+  }
+
+  @override
+  void dispose() {
+    widget.actionController?.clear();
+    super.dispose();
   }
 
   Future<void> _loadMaintenances() async {
@@ -159,11 +174,12 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
-                FilledButton.icon(
-                  onPressed: _openCreateDialog,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Nova'),
-                ),
+                if (widget.showCreateButton)
+                  FilledButton.icon(
+                    onPressed: _openCreateDialog,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Nova'),
+                  ),
               ],
             ),
             const SizedBox(height: 16),

@@ -3,9 +3,17 @@ import 'package:flutter/material.dart';
 import '../../models/app_goal.dart';
 import '../../services/goal_service.dart';
 import '../../services/journey_service.dart';
+import '../../utilities/ui/screen_action_controller.dart';
 
 class GoalsScreen extends StatefulWidget {
-  const GoalsScreen({super.key});
+  const GoalsScreen({
+    super.key,
+    this.showCreateButton = true,
+    this.actionController,
+  });
+
+  final bool showCreateButton;
+  final ScreenActionController? actionController;
 
   @override
   State<GoalsScreen> createState() => _GoalsScreenState();
@@ -23,7 +31,14 @@ class _GoalsScreenState extends State<GoalsScreen> {
   @override
   void initState() {
     super.initState();
+    widget.actionController?.bindCreate(_openCreateGoalDialog);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    widget.actionController?.clear();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -87,11 +102,12 @@ class _GoalsScreenState extends State<GoalsScreen> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
-                FilledButton.icon(
-                  onPressed: _openCreateGoalDialog,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Novo'),
-                ),
+                if (widget.showCreateButton)
+                  FilledButton.icon(
+                    onPressed: _openCreateGoalDialog,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Novo'),
+                  ),
               ],
             ),
             const SizedBox(height: 16),
