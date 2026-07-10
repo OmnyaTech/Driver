@@ -110,7 +110,7 @@
 - papel do usuario em `driver.profiles.role`;
 - plano em `driver.profiles.plan_type`;
 - acesso efetivo resolvido com suporte a `free`, `premium`, `gift`,
-  `lifetime` e `developer`;
+  `developer`;
 - a camada cliente apenas consome o acesso efetivo, sem ser a fonte de
   verdade para privilegios.
 

@@ -353,7 +353,6 @@ class _GrantAccessCardState extends State<_GrantAccessCard> {
                 DropdownMenuItem(value: 'free', child: Text('Free')),
                 DropdownMenuItem(value: 'premium', child: Text('Premium')),
                 DropdownMenuItem(value: 'gift', child: Text('Gift')),
-                DropdownMenuItem(value: 'lifetime', child: Text('Lifetime')),
                 DropdownMenuItem(value: 'developer', child: Text('Developer')),
               ],
               onChanged: (value) => setState(() => _planType = value ?? 'gift'),

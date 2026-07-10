@@ -104,16 +104,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   billingCycle: 'YEARLY',
                 ),
               ),
-              _PlanCard(
-                title: 'Lifetime',
-                subtitle: 'Pagamento unico hospedado no Asaas.',
-                buttonLabel: 'Comprar lifetime',
-                busy: _creatingCheckout,
-                onTap: () => _startCheckout(
-                  planType: 'lifetime',
-                  billingCycle: 'ONCE',
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 16),

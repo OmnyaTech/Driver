@@ -154,7 +154,7 @@ fontes de renda e acesso contratado, tudo isolado tecnicamente no dominio
 - arquivar veiculo;
 - aplicar regra de plano:
   - free com limite reduzido;
-  - premium/gift/lifetime/developer com expansao.
+  - premium/gift/developer com expansao.
 
 ### 10. Plataformas
 
@@ -163,7 +163,7 @@ fontes de renda e acesso contratado, tudo isolado tecnicamente no dominio
 - arquivar plataforma;
 - aplicar regra de plano:
   - free com limite reduzido;
-  - premium/gift/lifetime/developer com expansao.
+  - premium/gift/developer com expansao.
 
 ### 11. Assinaturas e acesso
 
@@ -180,7 +180,6 @@ fontes de renda e acesso contratado, tudo isolado tecnicamente no dominio
 - suporte a:
   - premium mensal;
   - premium anual;
-  - lifetime;
   - gift;
   - developer.
 
@@ -197,7 +196,6 @@ fontes de renda e acesso contratado, tudo isolado tecnicamente no dominio
   - free;
   - premium;
   - gift;
-  - lifetime;
   - developer.
 - alterar papel:
   - user;
@@ -235,7 +233,6 @@ fontes de renda e acesso contratado, tudo isolado tecnicamente no dominio
   - free;
   - premium;
   - gift;
-  - lifetime;
   - developer.
 - refletir o plano no perfil do usuario;
 - manter historico em `driver.subscriptions`;
