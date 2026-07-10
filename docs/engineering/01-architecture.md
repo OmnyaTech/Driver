@@ -42,6 +42,13 @@
 - criacao;
 - arquivamento.
 
+`lib/funcionalidade/goals`
+
+- objetivos financeiros;
+- saldo disponivel;
+- aportes e retiradas;
+- historico de movimentacoes.
+
 `lib/funcionalidade/platforms`
 
 - listagem;

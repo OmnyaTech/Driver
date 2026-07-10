@@ -183,7 +183,20 @@ fontes de renda e acesso contratado, tudo isolado tecnicamente no dominio
   - gift;
   - developer.
 
-### 12. Area Developer / Administrativa
+### 12. Objetivos financeiros
+
+- tela dedicada de objetivos;
+- CRUD de objetivos;
+- saldo atual por objetivo;
+- aporte em objetivo;
+- retirada de objetivo;
+- historico de movimentacoes;
+- regra de saldo:
+  - o dinheiro continua disponivel ate ser destinado a um objetivo;
+  - ao aportar, sai do saldo disponivel;
+  - ao retirar, volta para o saldo disponivel.
+
+### 13. Area Developer / Administrativa
 
 - visivel apenas para usuarios com papel `developer`;
 - consultar usuario por e-mail;
@@ -298,6 +311,8 @@ fontes de renda e acesso contratado, tudo isolado tecnicamente no dominio
   area administrativa.
 - `lib/funcionalidade/subscriptions/`
   planos, checkout e historico de billing.
+- `lib/funcionalidade/goals/`
+  objetivos financeiros e movimentacoes.
 - `lib/services/`
   integracao com Supabase e regras de negocio.
 - `sql/manual/`

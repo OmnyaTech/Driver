@@ -19,6 +19,9 @@ Atualizado em 2026-07-10.
 - `lib/funcionalidade/journeys/journeys_screen.dart`
   Jornadas com formulario real e breakdown por plataforma.
 
+- `lib/funcionalidade/goals/goals_screen.dart`
+  Objetivos financeiros com saldo disponivel, CRUD e movimentacoes.
+
 - `lib/funcionalidade/expenses/trip_expenses_screen.dart`
   Despesas operacionais com vinculacao opcional de jornada.
 
@@ -63,6 +66,9 @@ Atualizado em 2026-07-10.
 - `lib/models/app_dashboard_metrics.dart`
   Agregados operacionais do dashboard.
 
+- `lib/models/app_goal.dart`
+  Objetivos, transacoes e resumo financeiro disponivel.
+
 - `lib/models/app_subscription.dart`
   Historico de assinatura e consulta administrativa.
 
@@ -104,6 +110,9 @@ Atualizado em 2026-07-10.
 - `lib/services/dashboard_metrics_service.dart`
   Carrega metricas do dashboard via RPC no Supabase com fallback local.
 
+- `lib/services/goal_service.dart`
+  CRUD de objetivos, movimentacoes e saldo disponivel.
+
 - `lib/services/subscription_service.dart`
   Le historico de assinaturas do usuario atual.
 
@@ -131,6 +140,7 @@ Atualizado em 2026-07-10.
 - `sql/manual/005_driver_promote_first_developer.sql`
 - `sql/manual/006_driver_reporting_and_audit.sql`
 - `sql/manual/007_driver_billing_sync.sql`
+- `sql/manual/008_driver_goal_balance_functions.sql`
 
 ## Documentacao viva
 

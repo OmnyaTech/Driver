@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../funcionalidade/developer/developer_access_screen.dart';
 import '../funcionalidade/expenses/trip_expenses_screen.dart';
 import '../funcionalidade/fuelings/fuelings_screen.dart';
+import '../funcionalidade/goals/goals_screen.dart';
 import '../funcionalidade/journeys/journeys_screen.dart';
 import '../funcionalidade/maintenances/maintenances_screen.dart';
 import '../funcionalidade/platforms/platforms_screen.dart';
@@ -50,6 +51,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           icon: Icon(Icons.route_outlined),
           selectedIcon: Icon(Icons.route),
           label: 'Jornadas',
+        ),
+      ),
+      _DashboardTab(
+        title: 'Objetivos',
+        page: const GoalsScreen(),
+        destination: const NavigationDestination(
+          icon: Icon(Icons.savings_outlined),
+          selectedIcon: Icon(Icons.savings),
+          label: 'Objetivos',
         ),
       ),
       _DashboardTab(
@@ -229,6 +239,8 @@ class _OverviewTabState extends State<_OverviewTab> {
           totalIncome: 0,
           totalOperationalCosts: 0,
           netResult: 0,
+          allocatedToGoals: 0,
+          availableBalance: 0,
           totalJourneys: 0,
           openJourneys: 0,
           totalDeliveries: 0,
@@ -325,6 +337,12 @@ class _OverviewTabState extends State<_OverviewTab> {
                 title: 'Resultado liquido',
                 value: _currency(metrics.netResult),
                 detail: '${metrics.totalJourneys} jornadas no historico',
+              ),
+              _MetricCard(
+                title: 'Saldo disponivel',
+                value: _currency(metrics.availableBalance),
+                detail:
+                    'Reservado em objetivos: ${_currency(metrics.allocatedToGoals)}',
               ),
               _MetricCard(
                 title: 'Distancia medida',

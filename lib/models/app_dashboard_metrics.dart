@@ -3,6 +3,8 @@ class AppDashboardMetrics {
     required this.totalIncome,
     required this.totalOperationalCosts,
     required this.netResult,
+    required this.allocatedToGoals,
+    required this.availableBalance,
     required this.totalJourneys,
     required this.openJourneys,
     required this.totalDeliveries,
@@ -17,6 +19,8 @@ class AppDashboardMetrics {
   final double totalIncome;
   final double totalOperationalCosts;
   final double netResult;
+  final double allocatedToGoals;
+  final double availableBalance;
   final int totalJourneys;
   final int openJourneys;
   final int totalDeliveries;

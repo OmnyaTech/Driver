@@ -150,6 +150,7 @@ Executar manualmente no Supabase SQL Editor:
 
 - `sql/manual/006_driver_reporting_and_audit.sql`
 - `sql/manual/007_driver_billing_sync.sql`
+- `sql/manual/008_driver_goal_balance_functions.sql`
 
 Esses scripts habilitam:
 

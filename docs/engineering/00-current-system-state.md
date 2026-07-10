@@ -29,6 +29,14 @@ O Omnya Driver ja opera com:
 - criacao e listagem de despesas de percurso;
 - criacao e listagem de abastecimentos;
 - criacao e listagem de manutencoes com itens;
+- modulo de objetivos com:
+  - criacao;
+  - edicao;
+  - exclusao;
+  - aporte;
+  - retirada;
+  - historico de movimentacoes;
+  - saldo disponivel baseado no resultado operacional;
 - criacao e listagem de veiculos;
 - criacao e listagem de plataformas;
 - jornadas com detalhamento por plataforma e validacoes melhores;
@@ -65,6 +73,9 @@ O Omnya Driver ja opera com:
 
 - `sql/manual/007_driver_billing_sync.sql`
   Funcoes de sincronizacao de billing, assinatura e eventos.
+
+- `sql/manual/008_driver_goal_balance_functions.sql`
+  Functions seguras para saldo disponivel e movimentacoes de objetivos.
 
 ## Edge Functions disponiveis
 

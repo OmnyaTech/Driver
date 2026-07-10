@@ -1,4 +1,5 @@
 import '../models/app_dashboard_metrics.dart';
+import 'goal_service.dart';
 import 'auth_service.dart';
 import 'fueling_service.dart';
 import 'journey_service.dart';
@@ -16,13 +17,15 @@ class DashboardMetricsService {
     MaintenanceService? maintenanceService,
     VehicleService? vehicleService,
     PlatformService? platformService,
+    GoalService? goalService,
   }) : _authService = authService ?? const AuthService(),
        _journeyService = journeyService ?? JourneyService(),
        _tripExpenseService = tripExpenseService ?? TripExpenseService(),
        _fuelingService = fuelingService ?? FuelingService(),
        _maintenanceService = maintenanceService ?? MaintenanceService(),
        _vehicleService = vehicleService ?? VehicleService(),
-       _platformService = platformService ?? PlatformService();
+       _platformService = platformService ?? PlatformService(),
+       _goalService = goalService ?? GoalService(authService: authService);
 
   final AuthService _authService;
   final JourneyService _journeyService;
@@ -31,6 +34,7 @@ class DashboardMetricsService {
   final MaintenanceService _maintenanceService;
   final VehicleService _vehicleService;
   final PlatformService _platformService;
+  final GoalService _goalService;
 
   AuthService get authService => _authService;
 
@@ -51,12 +55,16 @@ class DashboardMetricsService {
           )
           .single();
 
+      final goalSummary = await _goalService.loadBalanceSummary();
+
       return AppDashboardMetrics(
         totalIncome: _toDouble(response['total_income']),
         totalOperationalCosts: _toDouble(
           response['total_operational_costs'],
         ),
         netResult: _toDouble(response['net_result']),
+        allocatedToGoals: goalSummary.allocatedToGoals,
+        availableBalance: goalSummary.availableBalance,
         totalJourneys: _toInt(response['total_journeys']),
         openJourneys: _toInt(response['open_journeys']),
         totalDeliveries: _toInt(response['total_deliveries']),
@@ -122,6 +130,8 @@ class DashboardMetricsService {
       totalIncome: totalIncome,
       totalOperationalCosts: totalOperationalCosts,
       netResult: totalIncome - totalOperationalCosts,
+      allocatedToGoals: 0,
+      availableBalance: totalIncome - totalOperationalCosts,
       totalJourneys: journeys.length,
       openJourneys: journeys.where((item) => !item.isFinished).length,
       totalDeliveries: totalDeliveries,
