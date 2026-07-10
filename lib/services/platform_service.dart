@@ -26,6 +26,7 @@ class PlatformService {
             name: row['name'].toString(),
             type: row['type'].toString(),
             active: row['active'] as bool? ?? true,
+            logoUrl: row['logo_url'] as String?,
             averageIncome: _parseDouble(row['average_income']),
             averageDeliveries: row['average_deliveries'] as int?,
           ),
@@ -72,6 +73,21 @@ class PlatformService {
           'average_income': _stringToDouble(averageIncome),
           'average_deliveries': _stringToInt(averageDeliveries),
           'active': active,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', id);
+  }
+
+  Future<void> updatePlatformLogo({
+    required String id,
+    required String? logoUrl,
+  }) async {
+    final client = _authService.requireClient();
+    await client
+        .schema('driver')
+        .from('platforms')
+        .update({
+          'logo_url': logoUrl,
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('id', id);

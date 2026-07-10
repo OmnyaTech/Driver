@@ -17,6 +17,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   final BillingService _billingService = BillingService();
   bool _loading = true;
   bool _creatingCheckout = false;
+  bool _annualBilling = false;
   List<AppSubscription> _subscriptions = const [];
   List<BillingEventItem> _billingEvents = const [];
   String? _errorMessage;
@@ -64,123 +65,172 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       );
     }
 
-    final content = RefreshIndicator(
-      onRefresh: _loadData,
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Text(
-            'Planos e assinatura',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-          if (_errorMessage != null)
+    final currentPlan = _subscriptions.isNotEmpty ? _subscriptions.first : null;
+    final planCards = _annualBilling ? _annualPlans : _monthlyPlans;
+
+    return OmnyaSubPageScaffold(
+      title: 'Assinatura',
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          children: [
+            Text(
+              'Planos e assinatura',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Escolha o nivel ideal do Omnya Driver para desbloquear mais operacao, multiplas plataformas e historico estendido.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 20),
+            _CurrentPlanCard(subscription: currentPlan),
+            const SizedBox(height: 16),
+            _BillingCycleBar(
+              annualBilling: _annualBilling,
+              onChanged: (value) => setState(() => _annualBilling = value),
+            ),
+            const SizedBox(height: 16),
+            if (_errorMessage != null)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    _errorMessage!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+              ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 900;
+                if (compact) {
+                  return Column(
+                    children: planCards
+                        .map(
+                          (plan) => Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _SubscriptionPlanCard(
+                              plan: plan,
+                              busy: _creatingCheckout,
+                              onTap: plan.planType == null
+                                  ? null
+                                  : () => _startCheckout(
+                                      planType: plan.planType!,
+                                      billingCycle: _annualBilling
+                                          ? 'YEARLY'
+                                          : 'MONTHLY',
+                                    ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  );
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: planCards
+                      .map(
+                        (plan) => Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              right: plan == planCards.last ? 0 : 16,
+                            ),
+                            child: _SubscriptionPlanCard(
+                              plan: plan,
+                              busy: _creatingCheckout,
+                              onTap: plan.planType == null
+                                  ? null
+                                  : () => _startCheckout(
+                                      planType: plan.planType!,
+                                      billingCycle: _annualBilling
+                                          ? 'YEARLY'
+                                          : 'MONTHLY',
+                                    ),
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Historico de assinatura',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    if (_subscriptions.isEmpty)
+                      const Text('Nenhum historico de assinatura encontrado.'),
+                    ..._subscriptions.map(
+                      (subscription) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          '${_capitalize(subscription.planType)} - ${_capitalize(subscription.status)}',
+                        ),
+                        subtitle: Text(
+                          [
+                            if (subscription.provider != null)
+                              subscription.provider!,
+                            if (subscription.startedAt != null)
+                              'Inicio ${_formatDate(subscription.startedAt!)}',
+                            if (subscription.expiresAt != null)
+                              'Expira ${_formatDate(subscription.expiresAt!)}',
+                          ].join(' - '),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: [
-              _PlanCard(
-                title: 'Premium mensal',
-                subtitle: 'Recorrencia mensal hospedada no Asaas.',
-                buttonLabel: 'Assinar mensal',
-                busy: _creatingCheckout,
-                onTap: () => _startCheckout(
-                  planType: 'premium',
-                  billingCycle: 'MONTHLY',
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Eventos de billing',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    if (_billingEvents.isEmpty)
+                      const Text('Nenhum evento de billing registrado ainda.'),
+                    ..._billingEvents.map(
+                      (event) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(event.eventType),
+                        subtitle: Text(
+                          [
+                            if (event.status != null) event.status!,
+                            _formatDateTime(event.createdAt),
+                            if (event.externalReference != null)
+                              event.externalReference!,
+                          ].join(' - '),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              _PlanCard(
-                title: 'Premium anual',
-                subtitle: 'Recorrencia anual hospedada no Asaas.',
-                buttonLabel: 'Assinar anual',
-                busy: _creatingCheckout,
-                onTap: () =>
-                    _startCheckout(planType: 'premium', billingCycle: 'YEARLY'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Historico de assinatura',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  if (_subscriptions.isEmpty)
-                    const Text('Nenhum historico de assinatura encontrado.'),
-                  ..._subscriptions.map(
-                    (subscription) => ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        '${subscription.planType} - ${subscription.status}',
-                      ),
-                      subtitle: Text(
-                        [
-                          if (subscription.provider != null)
-                            subscription.provider!,
-                          if (subscription.startedAt != null)
-                            'Inicio ${_formatDate(subscription.startedAt!)}',
-                          if (subscription.expiresAt != null)
-                            'Expira ${_formatDate(subscription.expiresAt!)}',
-                        ].join(' - '),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Eventos de billing',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  if (_billingEvents.isEmpty)
-                    const Text('Nenhum evento de billing registrado ainda.'),
-                  ..._billingEvents.map(
-                    (event) => ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(event.eventType),
-                      subtitle: Text(
-                        [
-                          if (event.status != null) event.status!,
-                          _formatDateTime(event.createdAt),
-                          if (event.externalReference != null)
-                            event.externalReference!,
-                        ].join(' - '),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
-
-    return OmnyaSubPageScaffold(title: 'Assinatura', body: content);
   }
 
   Future<void> _startCheckout({
@@ -231,45 +281,389 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     final local = value.toLocal();
     return '${_formatDate(local)} ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
+
+  String _capitalize(String value) {
+    if (value.isEmpty) return value;
+    return '${value[0].toUpperCase()}${value.substring(1)}';
+  }
 }
 
-class _PlanCard extends StatelessWidget {
-  const _PlanCard({
-    required this.title,
-    required this.subtitle,
-    required this.buttonLabel,
-    required this.busy,
-    required this.onTap,
-  });
+class _CurrentPlanCard extends StatelessWidget {
+  const _CurrentPlanCard({required this.subscription});
 
-  final String title;
-  final String subtitle;
-  final String buttonLabel;
-  final bool busy;
-  final VoidCallback onTap;
+  final AppSubscription? subscription;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 300,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF111522), Color(0xFF191E2E), Color(0xFF0000CD)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: theme.dividerColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Plano atual',
+            style: theme.textTheme.titleMedium?.copyWith(color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Gerencie cobranca, periodo atual e proximos passos do seu acesso.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.white.withValues(alpha: 0.78),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Wrap(
+            spacing: 14,
+            runSpacing: 14,
             children: [
-              Text(title, style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Text(subtitle),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: busy ? null : onTap,
-                child: Text(buttonLabel),
+              _CurrentPlanMetric(
+                label: 'Plano',
+                value: subscription?.planType.toUpperCase() ?? 'Free',
+              ),
+              _CurrentPlanMetric(
+                label: 'Status',
+                value: subscription?.status.toUpperCase() ?? 'Sem assinatura',
+              ),
+              _CurrentPlanMetric(
+                label: 'Proximo vencimento',
+                value: subscription?.expiresAt == null
+                    ? 'Sem vencimento'
+                    : '${subscription!.expiresAt!.day.toString().padLeft(2, '0')}/${subscription!.expiresAt!.month.toString().padLeft(2, '0')}/${subscription!.expiresAt!.year}',
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
 }
+
+class _CurrentPlanMetric extends StatelessWidget {
+  const _CurrentPlanMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 200),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(color: Colors.white70),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BillingCycleBar extends StatelessWidget {
+  const _BillingCycleBar({
+    required this.annualBilling,
+    required this.onChanged,
+  });
+
+  final bool annualBilling;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Theme.of(context).dividerColor),
+        color: isDark ? const Color(0xFF0F1320) : Colors.white,
+      ),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.spaceBetween,
+        children: [
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment<bool>(value: false, label: Text('Mensal')),
+              ButtonSegment<bool>(value: true, label: Text('Anual')),
+            ],
+            selected: {annualBilling},
+            onSelectionChanged: (selection) => onChanged(selection.first),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF27D17F).withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              annualBilling ? 'Economia no anual' : 'Cobranca recorrente',
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: const Color(0xFF27D17F)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SubscriptionPlanCard extends StatelessWidget {
+  const _SubscriptionPlanCard({
+    required this.plan,
+    required this.busy,
+    required this.onTap,
+  });
+
+  final _DriverPlanCardData plan;
+  final bool busy;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: plan.highlighted
+              ? const Color(0xFF0000CD)
+              : theme.dividerColor,
+        ),
+        boxShadow: plan.highlighted
+            ? [
+                BoxShadow(
+                  color: const Color(0xFF0000CD).withValues(alpha: 0.16),
+                  blurRadius: 22,
+                  offset: const Offset(0, 12),
+                ),
+              ]
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (plan.badge != null) ...[
+            Align(
+              alignment: Alignment.topRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0000CD),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  plan.badge!,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0000CD).withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(plan.icon, color: const Color(0xFF7582FF)),
+          ),
+          const SizedBox(height: 18),
+          Text(plan.title, style: theme.textTheme.titleMedium),
+          const SizedBox(height: 10),
+          Text(plan.description, style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 18),
+          Text(plan.price, style: theme.textTheme.headlineMedium),
+          const SizedBox(height: 4),
+          Text(plan.caption, style: theme.textTheme.bodySmall),
+          const SizedBox(height: 18),
+          const Divider(),
+          const SizedBox(height: 14),
+          ...plan.features.map(
+            (feature) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 2),
+                    child: Icon(
+                      Icons.check,
+                      size: 18,
+                      color: Color(0xFF27D17F),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(feature)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: plan.planType == null
+                ? OutlinedButton(
+                    onPressed: null,
+                    child: const Text('Plano base'),
+                  )
+                : FilledButton(
+                    onPressed: busy ? null : onTap,
+                    child: Text(plan.buttonLabel),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DriverPlanCardData {
+  const _DriverPlanCardData({
+    required this.title,
+    required this.description,
+    required this.price,
+    required this.caption,
+    required this.features,
+    required this.buttonLabel,
+    required this.icon,
+    this.planType,
+    this.badge,
+    this.highlighted = false,
+  });
+
+  final String title;
+  final String description;
+  final String price;
+  final String caption;
+  final List<String> features;
+  final String buttonLabel;
+  final IconData icon;
+  final String? planType;
+  final String? badge;
+  final bool highlighted;
+}
+
+const List<_DriverPlanCardData> _monthlyPlans = [
+  _DriverPlanCardData(
+    title: 'Gratis',
+    description: 'Para organizar o basico do mes atual com o essencial.',
+    price: 'R\$ 0',
+    caption: 'sem custo',
+    features: [
+      '1 plataforma ativa por conta',
+      'Cadastro de jornadas, despesas e objetivos',
+      'Relatorios operacionais do periodo',
+      'Perfil publico opcional',
+    ],
+    buttonLabel: 'Plano base',
+    icon: Icons.shield_outlined,
+  ),
+  _DriverPlanCardData(
+    title: 'Premium mensal',
+    description:
+        'Para ganhar ritmo com historico, multiplas fontes e mais controle.',
+    price: 'R\$ 19,90',
+    caption: 'cobranca mensal',
+    features: [
+      'Multiplas plataformas ativas',
+      'Mais veiculos e operacao expandida',
+      'Historico ampliado de uso',
+      'Checkout e cobranca recorrente',
+    ],
+    buttonLabel: 'Assinar mensal',
+    icon: Icons.flash_on_outlined,
+    planType: 'premium',
+    badge: 'Mais popular',
+    highlighted: true,
+  ),
+  _DriverPlanCardData(
+    title: 'Premium anual',
+    description: 'Para manter o app no longo prazo com menor custo por mes.',
+    price: 'R\$ 199,90',
+    caption: 'cobranca anual',
+    features: [
+      'Tudo do Premium mensal',
+      'Economia em relacao ao ciclo mensal',
+      'Acesso prolongado para frota e rotina',
+      'Ideal para uso continuo do motorista',
+    ],
+    buttonLabel: 'Assinar anual',
+    icon: Icons.workspace_premium_outlined,
+    planType: 'premium',
+  ),
+];
+
+const List<_DriverPlanCardData> _annualPlans = [
+  _DriverPlanCardData(
+    title: 'Gratis',
+    description: 'Entrada sem custo para iniciar os registros do dia a dia.',
+    price: 'R\$ 0',
+    caption: 'sem custo',
+    features: [
+      '1 plataforma ativa por conta',
+      'Historico operacional inicial',
+      'Metas e saldo do motorista',
+      'Tema claro/escuro e perfil base',
+    ],
+    buttonLabel: 'Plano base',
+    icon: Icons.shield_outlined,
+  ),
+  _DriverPlanCardData(
+    title: 'Premium anual',
+    description: 'Melhor custo para manter a operacao completa o ano inteiro.',
+    price: 'R\$ 199,90',
+    caption: 'cobranca anual',
+    features: [
+      'Multiplas plataformas e veiculos',
+      'Historico e uso expandido',
+      'Gestao completa com menor custo mensal',
+      'Checkout anual no Asaas',
+    ],
+    buttonLabel: 'Assinar anual',
+    icon: Icons.workspace_premium_outlined,
+    planType: 'premium',
+    badge: 'Economize no anual',
+    highlighted: true,
+  ),
+];

@@ -4,6 +4,7 @@ class AppPlatform {
     required this.name,
     required this.type,
     required this.active,
+    this.logoUrl,
     this.averageIncome,
     this.averageDeliveries,
   });
@@ -12,6 +13,7 @@ class AppPlatform {
   final String name;
   final String type;
   final bool active;
+  final String? logoUrl;
   final double? averageIncome;
   final int? averageDeliveries;
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/app_fueling.dart';
 import '../../models/app_vehicle.dart';
+import '../finance/widgets/financial_filter_toolbar.dart';
 import '../../services/fueling_service.dart';
 import '../../services/journey_service.dart';
 import '../../services/vehicle_service.dart';
@@ -26,21 +27,34 @@ class FuelingsScreen extends StatefulWidget {
 
 class _FuelingsScreenState extends State<FuelingsScreen> {
   final FuelingService _fuelingService = FuelingService();
+  final TextEditingController _searchController = TextEditingController();
   bool _loading = true;
   List<AppFueling> _fuelings = const [];
   String? _errorMessage;
+  late DateTimeRange _range;
 
   @override
   void initState() {
     super.initState();
+    _range = _currentMonthRange();
     widget.actionController?.bindCreate(_openCreateDialog);
+    _searchController.addListener(_handleFilterChange);
     _loadFuelings();
   }
 
   @override
   void dispose() {
+    _searchController
+      ..removeListener(_handleFilterChange)
+      ..dispose();
     widget.actionController?.clear();
     super.dispose();
+  }
+
+  void _handleFilterChange() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _loadFuelings() async {
@@ -198,12 +212,20 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
             ),
             const SizedBox(height: 16),
           ],
-          if (_fuelings.isNotEmpty)
+          FinancialFilterToolbar(
+            searchController: _searchController,
+            range: _range,
+            hintText: 'Buscar veiculo, posto ou combustivel',
+            onPickRange: _pickRange,
+            onClear: _clearFilters,
+          ),
+          const SizedBox(height: 16),
+          if (_filteredFuelings.isNotEmpty)
             Card(
               child: ListTile(
                 title: const Text('Resumo'),
                 subtitle: Text(
-                  '${_fuelings.length} abastecimentos registrados',
+                  '${_filteredFuelings.length} abastecimentos no filtro atual',
                 ),
                 trailing: Text('R\$ ${_totalAmount.toStringAsFixed(2)}'),
               ),
@@ -227,7 +249,16 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
                 ),
               ),
             ),
-          ..._fuelings.map(
+          if (_fuelings.isNotEmpty && _filteredFuelings.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Nenhum abastecimento encontrado para os filtros informados.',
+                ),
+              ),
+            ),
+          ..._filteredFuelings.map(
             (fueling) => Card(
               child: ListTile(
                 title: Text(fueling.vehicleLabel ?? 'Veiculo'),
@@ -291,7 +322,62 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
   }
 
   double get _totalAmount =>
-      _fuelings.fold<double>(0, (sum, item) => sum + item.totalAmount);
+      _filteredFuelings.fold<double>(0, (sum, item) => sum + item.totalAmount);
+
+  List<AppFueling> get _filteredFuelings {
+    final query = _searchController.text.trim().toLowerCase();
+    return _fuelings.where((fueling) {
+      if (!_isWithinRange(fueling.fueledAt)) return false;
+      if (query.isEmpty) return true;
+      final haystack = [
+        fueling.vehicleLabel,
+        fueling.stationName,
+        fueling.fuelType,
+      ].whereType<String>().join(' ').toLowerCase();
+      return haystack.contains(query);
+    }).toList();
+  }
+
+  bool _isWithinRange(DateTime value) {
+    final local = value.toLocal();
+    final start = DateTime(
+      _range.start.year,
+      _range.start.month,
+      _range.start.day,
+    );
+    final end = DateTime(
+      _range.end.year,
+      _range.end.month,
+      _range.end.day,
+      23,
+      59,
+      59,
+    );
+    return !local.isBefore(start) && !local.isAfter(end);
+  }
+
+  Future<void> _pickRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: _range,
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _range = picked);
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _searchController.clear();
+      _range = _currentMonthRange();
+    });
+  }
+
+  DateTimeRange _currentMonthRange() {
+    final now = DateTime.now();
+    return DateTimeRange(start: DateTime(now.year, now.month, 1), end: now);
+  }
 }
 
 class _FuelingFormDialog extends StatefulWidget {

@@ -43,16 +43,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final session = context.watch<AppSession>();
+    final compactNavigation = MediaQuery.sizeOf(context).width < 720;
 
     final tabs = [
       _DashboardTab(
         title: 'Visao geral',
         page: _OverviewTab(session: session),
-        destination: const NavigationDestination(
-          icon: Icon(Icons.dashboard_outlined),
-          selectedIcon: Icon(Icons.dashboard),
-          label: 'Home',
-        ),
+        icon: Icons.dashboard_outlined,
+        selectedIcon: Icons.dashboard,
+        label: compactNavigation ? 'Home' : 'Home',
       ),
       _DashboardTab(
         title: 'Jornadas',
@@ -61,11 +60,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           actionController: _journeyController,
           embedded: true,
         ),
-        destination: const NavigationDestination(
-          icon: Icon(Icons.route_outlined),
-          selectedIcon: Icon(Icons.route),
-          label: 'Jornadas',
-        ),
+        icon: Icons.route_outlined,
+        selectedIcon: Icons.route,
+        label: compactNavigation ? 'Jorn.' : 'Jornadas',
       ),
       _DashboardTab(
         title: 'Objetivos',
@@ -74,11 +71,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           actionController: _goalController,
           embedded: true,
         ),
-        destination: const NavigationDestination(
-          icon: Icon(Icons.savings_outlined),
-          selectedIcon: Icon(Icons.savings),
-          label: 'Objetivos',
-        ),
+        icon: Icons.savings_outlined,
+        selectedIcon: Icons.savings,
+        label: compactNavigation ? 'Metas' : 'Objetivos',
       ),
       _DashboardTab(
         title: 'Financeiro',
@@ -87,29 +82,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
           fuelingController: _fuelingController,
           maintenanceController: _maintenanceController,
         ),
-        destination: const NavigationDestination(
-          icon: Icon(Icons.account_balance_wallet_outlined),
-          selectedIcon: Icon(Icons.account_balance_wallet),
-          label: 'Financeiro',
-        ),
+        icon: Icons.account_balance_wallet_outlined,
+        selectedIcon: Icons.account_balance_wallet,
+        label: compactNavigation ? 'Fin.' : 'Financeiro',
       ),
       _DashboardTab(
         title: 'Relatorios',
         page: const ReportsScreen(),
-        destination: const NavigationDestination(
-          icon: Icon(Icons.insights_outlined),
-          selectedIcon: Icon(Icons.insights),
-          label: 'Relatorios',
-        ),
+        icon: Icons.insights_outlined,
+        selectedIcon: Icons.insights,
+        label: compactNavigation ? 'Dados' : 'Relatorios',
       ),
       _DashboardTab(
         title: 'Configuracoes',
         page: const SettingsScreen(),
-        destination: const NavigationDestination(
-          icon: Icon(Icons.settings_outlined),
-          selectedIcon: Icon(Icons.settings),
-          label: 'Config.',
-        ),
+        icon: Icons.settings_outlined,
+        selectedIcon: Icons.settings,
+        label: compactNavigation ? 'Config.' : 'Config.',
       ),
     ];
 
@@ -147,13 +136,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
             top: BorderSide(color: Theme.of(context).dividerColor),
           ),
         ),
-        child: NavigationBar(
-          selectedIndex: _currentIndex,
-          onDestinationSelected: (index) {
-            setState(() => _currentIndex = index);
-          },
-          destinations: tabs.map((tab) => tab.destination).toList(),
-        ),
+        child: compactNavigation
+            ? BottomNavigationBar(
+                currentIndex: _currentIndex,
+                onTap: (index) {
+                  setState(() => _currentIndex = index);
+                },
+                type: BottomNavigationBarType.fixed,
+                iconSize: 22,
+                selectedFontSize: 10,
+                unselectedFontSize: 10,
+                items: tabs
+                    .map(
+                      (tab) => BottomNavigationBarItem(
+                        icon: Icon(tab.icon),
+                        activeIcon: Icon(tab.selectedIcon),
+                        label: tab.label,
+                      ),
+                    )
+                    .toList(),
+              )
+            : NavigationBar(
+                selectedIndex: _currentIndex,
+                onDestinationSelected: (index) {
+                  setState(() => _currentIndex = index);
+                },
+                destinations: tabs
+                    .map(
+                      (tab) => NavigationDestination(
+                        icon: Icon(tab.icon),
+                        selectedIcon: Icon(tab.selectedIcon),
+                        label: tab.label,
+                      ),
+                    )
+                    .toList(),
+              ),
       ),
     );
   }
@@ -258,12 +275,16 @@ class _DashboardTab {
   const _DashboardTab({
     required this.title,
     required this.page,
-    required this.destination,
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
   });
 
   final String title;
   final Widget page;
-  final NavigationDestination destination;
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
 }
 
 class _OverviewTab extends StatefulWidget {

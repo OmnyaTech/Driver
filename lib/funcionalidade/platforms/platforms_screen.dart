@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/app_platform.dart';
 import '../../services/plan_access_service.dart';
+import '../../services/platform_logo_service.dart';
 import '../../services/platform_service.dart';
 import '../../utilities/state/app_session.dart';
 import '../../utilities/ui/omnya_shell.dart';
@@ -26,21 +27,34 @@ class PlatformsScreen extends StatefulWidget {
 
 class _PlatformsScreenState extends State<PlatformsScreen> {
   final PlatformService _platformService = PlatformService();
+  final PlatformLogoService _platformLogoService = PlatformLogoService();
   final PlanAccessService _planAccessService = const PlanAccessService();
+  final TextEditingController _searchController = TextEditingController();
   bool _loading = true;
   List<AppPlatform> _platforms = const [];
+  bool _uploadingLogo = false;
 
   @override
   void initState() {
     super.initState();
     widget.actionController?.bindCreate(_openCreateDialog);
+    _searchController.addListener(_handleFilterChange);
     _loadPlatforms();
   }
 
   @override
   void dispose() {
+    _searchController
+      ..removeListener(_handleFilterChange)
+      ..dispose();
     widget.actionController?.clear();
     super.dispose();
+  }
+
+  void _handleFilterChange() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _loadPlatforms() async {
@@ -139,6 +153,46 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
     await _loadPlatforms();
   }
 
+  Future<void> _updatePlatformLogo(AppPlatform platform) async {
+    setState(() => _uploadingLogo = true);
+    try {
+      final logoUrl = await _platformLogoService.pickAndUploadLogo(
+        platformId: platform.id,
+      );
+      if (logoUrl == null) return;
+      await _platformService.updatePlatformLogo(
+        id: platform.id,
+        logoUrl: logoUrl,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Logo atualizada com sucesso.')),
+      );
+      await _loadPlatforms();
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingLogo = false);
+      }
+    }
+  }
+
+  Future<void> _removePlatformLogo(AppPlatform platform) async {
+    setState(() => _uploadingLogo = true);
+    try {
+      await _platformLogoService.removeLogo(platformId: platform.id);
+      await _platformService.updatePlatformLogo(id: platform.id, logoUrl: null);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Logo removida com sucesso.')),
+      );
+      await _loadPlatforms();
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingLogo = false);
+      }
+    }
+  }
+
   Future<void> _deletePlatform(AppPlatform platform) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -219,6 +273,25 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
                 ),
               ),
             ),
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Buscar plataforma, tipo ou status',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchController.text.isEmpty
+                  ? null
+                  : IconButton(
+                      onPressed: _searchController.clear,
+                      icon: const Icon(Icons.close),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (_uploadingLogo)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 16),
+              child: LinearProgressIndicator(),
+            ),
           if (_platforms.isEmpty)
             const Card(
               child: Padding(
@@ -228,9 +301,17 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
                 ),
               ),
             ),
-          ..._platforms.map(
+          if (_platforms.isNotEmpty && _filteredPlatforms.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('Nenhuma plataforma encontrada na busca atual.'),
+              ),
+            ),
+          ..._filteredPlatforms.map(
             (platform) => Card(
               child: ListTile(
+                leading: _PlatformLogo(platform: platform),
                 title: Text(platform.name),
                 subtitle: Text(
                   [
@@ -248,6 +329,14 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
                       await _openEditDialog(platform);
                       return;
                     }
+                    if (value == 'logo') {
+                      await _updatePlatformLogo(platform);
+                      return;
+                    }
+                    if (value == 'remove_logo') {
+                      await _removePlatformLogo(platform);
+                      return;
+                    }
                     if (value == 'archive') {
                       await _archivePlatform(platform);
                       return;
@@ -258,6 +347,15 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
                   },
                   itemBuilder: (_) => [
                     const PopupMenuItem(value: 'edit', child: Text('Editar')),
+                    const PopupMenuItem(
+                      value: 'logo',
+                      child: Text('Alterar logo'),
+                    ),
+                    if ((platform.logoUrl ?? '').trim().isNotEmpty)
+                      const PopupMenuItem(
+                        value: 'remove_logo',
+                        child: Text('Remover logo'),
+                      ),
                     if (platform.active)
                       const PopupMenuItem(
                         value: 'archive',
@@ -291,6 +389,54 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
         ),
       ],
       body: content,
+    );
+  }
+
+  List<AppPlatform> get _filteredPlatforms {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return _platforms;
+    return _platforms.where((platform) {
+      final haystack = [
+        platform.name,
+        platform.type,
+        platform.active ? 'ativa' : 'arquivada',
+      ].join(' ').toLowerCase();
+      return haystack.contains(query);
+    }).toList();
+  }
+}
+
+class _PlatformLogo extends StatelessWidget {
+  const _PlatformLogo({required this.platform});
+
+  final AppPlatform platform;
+
+  @override
+  Widget build(BuildContext context) {
+    final logoUrl = platform.logoUrl?.trim();
+    final placeholder = Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: const Color(0xFF0000CD).withValues(alpha: 0.12),
+      ),
+      child: const Icon(Icons.storefront_outlined, color: Color(0xFF0000CD)),
+    );
+
+    if (logoUrl == null || logoUrl.isEmpty) {
+      return placeholder;
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Image.network(
+        logoUrl,
+        width: 44,
+        height: 44,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => placeholder,
+      ),
     );
   }
 }

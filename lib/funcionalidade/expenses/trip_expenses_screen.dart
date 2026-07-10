@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/app_trip_expense.dart';
+import '../finance/widgets/financial_filter_toolbar.dart';
 import '../../services/journey_service.dart';
 import '../../services/trip_expense_service.dart';
 import '../../utilities/ui/omnya_shell.dart';
@@ -24,21 +25,34 @@ class TripExpensesScreen extends StatefulWidget {
 
 class _TripExpensesScreenState extends State<TripExpensesScreen> {
   final TripExpenseService _expenseService = TripExpenseService();
+  final TextEditingController _searchController = TextEditingController();
   bool _loading = true;
   List<AppTripExpense> _expenses = const [];
   String? _errorMessage;
+  late DateTimeRange _range;
 
   @override
   void initState() {
     super.initState();
+    _range = _currentMonthRange();
     widget.actionController?.bindCreate(_openCreateDialog);
+    _searchController.addListener(_handleFilterChange);
     _loadExpenses();
   }
 
   @override
   void dispose() {
+    _searchController
+      ..removeListener(_handleFilterChange)
+      ..dispose();
     widget.actionController?.clear();
     super.dispose();
+  }
+
+  void _handleFilterChange() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _loadExpenses() async {
@@ -182,11 +196,21 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
             ),
             const SizedBox(height: 16),
           ],
-          if (_expenses.isNotEmpty)
+          FinancialFilterToolbar(
+            searchController: _searchController,
+            range: _range,
+            hintText: 'Buscar tipo, jornada ou descricao',
+            onPickRange: _pickRange,
+            onClear: _clearFilters,
+          ),
+          const SizedBox(height: 16),
+          if (_filteredExpenses.isNotEmpty)
             Card(
               child: ListTile(
                 title: const Text('Resumo'),
-                subtitle: Text('${_expenses.length} despesas registradas'),
+                subtitle: Text(
+                  '${_filteredExpenses.length} despesas no filtro atual',
+                ),
                 trailing: Text('R\$ ${_totalAmount.toStringAsFixed(2)}'),
               ),
             ),
@@ -209,7 +233,16 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                 ),
               ),
             ),
-          ..._expenses.map(
+          if (_expenses.isNotEmpty && _filteredExpenses.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Nenhuma despesa encontrada para os filtros informados.',
+                ),
+              ),
+            ),
+          ..._filteredExpenses.map(
             (expense) => Card(
               child: ListTile(
                 title: Text(_expenseLabel(expense.type)),
@@ -284,7 +317,62 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
   }
 
   double get _totalAmount =>
-      _expenses.fold<double>(0, (sum, item) => sum + item.amount);
+      _filteredExpenses.fold<double>(0, (sum, item) => sum + item.amount);
+
+  List<AppTripExpense> get _filteredExpenses {
+    final query = _searchController.text.trim().toLowerCase();
+    return _expenses.where((expense) {
+      if (!_isWithinRange(expense.occurredAt)) return false;
+      if (query.isEmpty) return true;
+      final haystack = [
+        _expenseLabel(expense.type),
+        expense.description,
+        expense.journeyLabel,
+      ].whereType<String>().join(' ').toLowerCase();
+      return haystack.contains(query);
+    }).toList();
+  }
+
+  bool _isWithinRange(DateTime value) {
+    final local = value.toLocal();
+    final start = DateTime(
+      _range.start.year,
+      _range.start.month,
+      _range.start.day,
+    );
+    final end = DateTime(
+      _range.end.year,
+      _range.end.month,
+      _range.end.day,
+      23,
+      59,
+      59,
+    );
+    return !local.isBefore(start) && !local.isAfter(end);
+  }
+
+  Future<void> _pickRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: _range,
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _range = picked);
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _searchController.clear();
+      _range = _currentMonthRange();
+    });
+  }
+
+  DateTimeRange _currentMonthRange() {
+    final now = DateTime.now();
+    return DateTimeRange(start: DateTime(now.year, now.month, 1), end: now);
+  }
 }
 
 class _TripExpenseFormDialog extends StatefulWidget {

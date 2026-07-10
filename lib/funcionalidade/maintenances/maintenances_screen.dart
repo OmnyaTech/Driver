@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/app_maintenance.dart';
 import '../../models/app_vehicle.dart';
+import '../finance/widgets/financial_filter_toolbar.dart';
 import '../../services/maintenance_service.dart';
 import '../../services/vehicle_service.dart';
 import '../../utilities/ui/omnya_shell.dart';
@@ -25,21 +26,34 @@ class MaintenancesScreen extends StatefulWidget {
 
 class _MaintenancesScreenState extends State<MaintenancesScreen> {
   final MaintenanceService _maintenanceService = MaintenanceService();
+  final TextEditingController _searchController = TextEditingController();
   bool _loading = true;
   List<AppMaintenance> _maintenances = const [];
   String? _errorMessage;
+  late DateTimeRange _range;
 
   @override
   void initState() {
     super.initState();
+    _range = _currentMonthRange();
     widget.actionController?.bindCreate(_openCreateDialog);
+    _searchController.addListener(_handleFilterChange);
     _loadMaintenances();
   }
 
   @override
   void dispose() {
+    _searchController
+      ..removeListener(_handleFilterChange)
+      ..dispose();
     widget.actionController?.clear();
     super.dispose();
+  }
+
+  void _handleFilterChange() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _loadMaintenances() async {
@@ -191,12 +205,20 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
             ),
             const SizedBox(height: 16),
           ],
-          if (_maintenances.isNotEmpty)
+          FinancialFilterToolbar(
+            searchController: _searchController,
+            range: _range,
+            hintText: 'Buscar veiculo, oficina, motivo ou item',
+            onPickRange: _pickRange,
+            onClear: _clearFilters,
+          ),
+          const SizedBox(height: 16),
+          if (_filteredMaintenances.isNotEmpty)
             Card(
               child: ListTile(
                 title: const Text('Resumo'),
                 subtitle: Text(
-                  '${_maintenances.length} manutencoes registradas',
+                  '${_filteredMaintenances.length} manutencoes no filtro atual',
                 ),
                 trailing: Text('R\$ ${_totalAmount.toStringAsFixed(2)}'),
               ),
@@ -220,7 +242,16 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
                 ),
               ),
             ),
-          ..._maintenances.map(
+          if (_maintenances.isNotEmpty && _filteredMaintenances.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Nenhuma manutencao encontrada para os filtros informados.',
+                ),
+              ),
+            ),
+          ..._filteredMaintenances.map(
             (maintenance) => Card(
               child: ExpansionTile(
                 title: Row(
@@ -300,8 +331,67 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  double get _totalAmount =>
-      _maintenances.fold<double>(0, (sum, item) => sum + item.totalAmount);
+  double get _totalAmount => _filteredMaintenances.fold<double>(
+    0,
+    (sum, item) => sum + item.totalAmount,
+  );
+
+  List<AppMaintenance> get _filteredMaintenances {
+    final query = _searchController.text.trim().toLowerCase();
+    return _maintenances.where((maintenance) {
+      if (!_isWithinRange(maintenance.maintenanceDate)) return false;
+      if (query.isEmpty) return true;
+      final haystack = [
+        maintenance.vehicleLabel,
+        maintenance.workshop,
+        maintenance.reason,
+        maintenance.description,
+        ...maintenance.items.map((item) => item.description),
+      ].whereType<String>().join(' ').toLowerCase();
+      return haystack.contains(query);
+    }).toList();
+  }
+
+  bool _isWithinRange(DateTime value) {
+    final local = value.toLocal();
+    final start = DateTime(
+      _range.start.year,
+      _range.start.month,
+      _range.start.day,
+    );
+    final end = DateTime(
+      _range.end.year,
+      _range.end.month,
+      _range.end.day,
+      23,
+      59,
+      59,
+    );
+    return !local.isBefore(start) && !local.isAfter(end);
+  }
+
+  Future<void> _pickRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: _range,
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _range = picked);
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _searchController.clear();
+      _range = _currentMonthRange();
+    });
+  }
+
+  DateTimeRange _currentMonthRange() {
+    final now = DateTime.now();
+    return DateTimeRange(start: DateTime(now.year, now.month, 1), end: now);
+  }
 }
 
 class _MaintenanceFormDialog extends StatefulWidget {

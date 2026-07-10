@@ -7,6 +7,7 @@ import '../funcionalidade/subscriptions/subscriptions_screen.dart';
 import '../funcionalidade/vehicles/vehicles_screen.dart';
 import '../services/avatar_service.dart';
 import '../services/profile_service.dart';
+import '../services/public_profile_service.dart';
 import '../utilities/guards/developer_guard.dart';
 import '../utilities/state/app_session.dart';
 import '../utilities/ui/profile_avatar.dart';
@@ -35,6 +36,12 @@ class SettingsScreen extends StatelessWidget {
               title: 'Perfil do motorista',
               subtitle: 'Nome, telefone e identidade publica',
               onTap: () => _openProfileSheet(context),
+            ),
+            _SettingsTile(
+              icon: Icons.public_outlined,
+              title: 'Perfil publico',
+              subtitle: 'Slug, bio, cidade e preparacao para ranking',
+              onTap: () => _openPublicProfileSheet(context),
             ),
             _SettingsTile(
               icon: Icons.palette_outlined,
@@ -106,6 +113,15 @@ class SettingsScreen extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _ProfileSheet(),
+    );
+  }
+
+  Future<void> _openPublicProfileSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _PublicProfileSheet(),
     );
   }
 }
@@ -567,5 +583,231 @@ class _ProfileSheetState extends State<_ProfileSheet> {
       return 'Campo obrigatorio.';
     }
     return null;
+  }
+}
+
+class _PublicProfileSheet extends StatefulWidget {
+  const _PublicProfileSheet();
+
+  @override
+  State<_PublicProfileSheet> createState() => _PublicProfileSheetState();
+}
+
+class _PublicProfileSheetState extends State<_PublicProfileSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _service = PublicProfileService();
+  final _slugController = TextEditingController();
+  final _bioController = TextEditingController();
+  final _cityController = TextEditingController();
+  bool _enabled = false;
+  bool _rankingOptIn = false;
+  bool _loading = true;
+  bool _saving = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _slugController.dispose();
+    _bioController.dispose();
+    _cityController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final settings = await _service.loadSettings();
+      if (!mounted) return;
+      setState(() {
+        _enabled = settings.publicProfileEnabled;
+        _rankingOptIn = settings.rankingOptIn;
+        _slugController.text = settings.publicSlug ?? '';
+        _bioController.text = settings.publicBio ?? '';
+        _cityController.text = settings.publicCity ?? '';
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _errorMessage = 'Nao foi possivel carregar o perfil publico.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(12, 0, 12, bottomInset + 12),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 720),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: theme.dividerColor),
+          ),
+          child: _loading
+              ? const SizedBox(
+                  height: 180,
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 48,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: theme.dividerColor,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Perfil publico',
+                          style: theme.textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Organize a vitrine publica sem expor ganhos e deixe o ranking pronto para a proxima etapa.',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 18),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Perfil publico ativo'),
+                          subtitle: const Text(
+                            'Permite exibir seu nome, avatar, cidade e conquistas publicas.',
+                          ),
+                          value: _enabled,
+                          onChanged: (value) =>
+                              setState(() => _enabled = value),
+                        ),
+                        TextFormField(
+                          controller: _slugController,
+                          decoration: const InputDecoration(
+                            labelText: 'Slug publico',
+                            hintText: 'ex: yan-driver',
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _cityController,
+                          decoration: const InputDecoration(
+                            labelText: 'Cidade publica',
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _bioController,
+                          maxLines: 3,
+                          decoration: const InputDecoration(
+                            labelText: 'Bio publica',
+                            hintText: 'Resumo curto do seu perfil no app.',
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Participar do ranking'),
+                          subtitle: const Text(
+                            'Opt-in para a futura exibicao no ranking publico.',
+                          ),
+                          value: _rankingOptIn,
+                          onChanged: (value) =>
+                              setState(() => _rankingOptIn = value),
+                        ),
+                        if (_errorMessage != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            _errorMessage!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _saving
+                                    ? null
+                                    : () => Navigator.of(context).pop(),
+                                child: const Text('Cancelar'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: _saving ? null : _save,
+                                child: _saving
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text('Salvar perfil publico'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    setState(() {
+      _saving = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _service.updateSettings(
+        publicProfileEnabled: _enabled,
+        publicSlug: _slugController.text,
+        publicBio: _bioController.text,
+        publicCity: _cityController.text,
+        rankingOptIn: _rankingOptIn,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Perfil publico atualizado com sucesso.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Nao foi possivel salvar as configuracoes agora.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
   }
 }
