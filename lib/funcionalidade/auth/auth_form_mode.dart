@@ -1,0 +1,1 @@
+enum AuthFormMode { signIn, signUp }

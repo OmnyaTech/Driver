@@ -1,0 +1,293 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../services/platform_service.dart';
+import '../../services/profile_service.dart';
+import '../../services/vehicle_service.dart';
+import '../../utilities/state/app_session.dart';
+
+class OnboardingScreen extends StatefulWidget {
+  const OnboardingScreen({super.key});
+
+  @override
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
+}
+
+class _OnboardingScreenState extends State<OnboardingScreen> {
+  final _profileService = ProfileService();
+  final _vehicleService = VehicleService();
+  final _platformService = PlatformService();
+  final _displayNameController = TextEditingController();
+  final _fullNameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _vehicleBrandController = TextEditingController();
+  final _vehicleModelController = TextEditingController();
+  final _vehicleYearController = TextEditingController();
+  final _vehicleFuelController = TextEditingController();
+  final _platformNameController = TextEditingController();
+  final _platformIncomeController = TextEditingController();
+  final _platformDeliveriesController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  int _step = 0;
+  bool _saving = false;
+  String _platformType = 'platform';
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    final profile = context.read<AppSession>().profile;
+    _displayNameController.text = profile?.displayName ?? '';
+    _fullNameController.text = profile?.fullName ?? '';
+    _phoneController.text = profile?.phone ?? '';
+  }
+
+  @override
+  void dispose() {
+    _displayNameController.dispose();
+    _fullNameController.dispose();
+    _phoneController.dispose();
+    _vehicleBrandController.dispose();
+    _vehicleModelController.dispose();
+    _vehicleYearController.dispose();
+    _vehicleFuelController.dispose();
+    _platformNameController.dispose();
+    _platformIncomeController.dispose();
+    _platformDeliveriesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Onboarding')),
+      body: Form(
+        key: _formKey,
+        child: Stepper(
+          currentStep: _step,
+          onStepContinue: _handleContinue,
+          onStepCancel: _step == 0
+              ? null
+              : () => setState(() {
+                  _step -= 1;
+                }),
+          controlsBuilder: (context, details) {
+            return Row(
+              children: [
+                FilledButton(
+                  onPressed: _saving ? null : details.onStepContinue,
+                  child: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(_step == 2 ? 'Finalizar' : 'Continuar'),
+                ),
+                if (_step > 0) ...[
+                  const SizedBox(width: 12),
+                  TextButton(
+                    onPressed: _saving ? null : details.onStepCancel,
+                    child: const Text('Voltar'),
+                  ),
+                ],
+              ],
+            );
+          },
+          steps: [
+            Step(
+              isActive: _step >= 0,
+              title: const Text('Perfil'),
+              content: Column(
+                children: [
+                  TextFormField(
+                    controller: _displayNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome exibido',
+                    ),
+                    validator: _step == 0 ? _required : null,
+                  ),
+                  TextFormField(
+                    controller: _fullNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome completo',
+                    ),
+                  ),
+                  TextFormField(
+                    controller: _phoneController,
+                    decoration: const InputDecoration(labelText: 'Telefone'),
+                    keyboardType: TextInputType.phone,
+                  ),
+                ],
+              ),
+            ),
+            Step(
+              isActive: _step >= 1,
+              title: const Text('Primeiro veiculo'),
+              subtitle: const Text('Opcional'),
+              content: Column(
+                children: [
+                  TextFormField(
+                    controller: _vehicleBrandController,
+                    decoration: const InputDecoration(labelText: 'Marca'),
+                  ),
+                  TextFormField(
+                    controller: _vehicleModelController,
+                    decoration: const InputDecoration(labelText: 'Modelo'),
+                  ),
+                  TextFormField(
+                    controller: _vehicleYearController,
+                    decoration: const InputDecoration(labelText: 'Ano'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  TextFormField(
+                    controller: _vehicleFuelController,
+                    decoration: const InputDecoration(labelText: 'Combustivel'),
+                  ),
+                ],
+              ),
+            ),
+            Step(
+              isActive: _step >= 2,
+              title: const Text('Primeira plataforma'),
+              subtitle: const Text('Opcional'),
+              content: Column(
+                children: [
+                  TextFormField(
+                    controller: _platformNameController,
+                    decoration: const InputDecoration(labelText: 'Nome'),
+                  ),
+                  DropdownButtonFormField<String>(
+                    initialValue: _platformType,
+                    decoration: const InputDecoration(labelText: 'Tipo'),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'platform',
+                        child: Text('Plataforma'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'restaurant',
+                        child: Text('Restaurante'),
+                      ),
+                      DropdownMenuItem(value: 'market', child: Text('Mercado')),
+                      DropdownMenuItem(value: 'other', child: Text('Outro')),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _platformType = value ?? 'platform'),
+                  ),
+                  TextFormField(
+                    controller: _platformIncomeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Media diaria de ganhos',
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                  ),
+                  TextFormField(
+                    controller: _platformDeliveriesController,
+                    decoration: const InputDecoration(
+                      labelText: 'Media diaria de entregas',
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: _errorMessage == null
+          ? null
+          : SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+            ),
+    );
+  }
+
+  Future<void> _handleContinue() async {
+    if (_step == 0 && !_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_step < 2) {
+      setState(() => _step += 1);
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _profileService.updateProfile(
+        displayName: _displayNameController.text,
+        fullName: _fullNameController.text,
+        phone: _phoneController.text,
+        completeOnboarding: true,
+      );
+
+      if (_vehicleBrandController.text.trim().isNotEmpty &&
+          _vehicleModelController.text.trim().isNotEmpty) {
+        await _vehicleService.createVehicle(
+          brand: _vehicleBrandController.text,
+          model: _vehicleModelController.text,
+          year: _vehicleYearController.text,
+          fuelType: _vehicleFuelController.text,
+        );
+      }
+
+      if (_platformNameController.text.trim().isNotEmpty) {
+        await _platformService.createPlatform(
+          name: _platformNameController.text,
+          type: _platformType,
+          averageIncome: _platformIncomeController.text,
+          averageDeliveries: _platformDeliveriesController.text,
+        );
+      }
+
+      if (!mounted) return;
+      await context.read<AppSession>().refreshProfile();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Onboarding concluido com sucesso.')),
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Onboarding failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+
+      final message = switch (error) {
+        PostgrestException() => error.message,
+        AuthException() => error.message,
+        _ => null,
+      };
+
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = message == null || message.trim().isEmpty
+            ? 'Nao foi possivel concluir o onboarding agora. Revise os dados e tente novamente.'
+            : 'Nao foi possivel concluir o onboarding agora: $message';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
+  }
+
+  String? _required(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Campo obrigatorio.';
+    }
+    return null;
+  }
+}

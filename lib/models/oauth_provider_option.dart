@@ -1,0 +1,1 @@
+enum OauthProviderOption { google, microsoft }
