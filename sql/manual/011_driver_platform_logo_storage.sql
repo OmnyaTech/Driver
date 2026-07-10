@@ -1,12 +1,9 @@
 -- Omnya Driver
 -- Platform logo storage bucket and policies.
 -- Date: 2026-07-10
--- Execute manually in Supabase SQL Editor.
--- If Supabase reports deadlock, run the ALTER TABLE first, wait a few seconds,
--- then run the bucket/policy section below in a second execution.
-
-alter table driver.platforms
-  add column if not exists logo_url text;
+-- Execute manually in Supabase SQL Editor after
+-- sql/manual/011a_driver_platform_logo_column.sql.
+-- This file avoids ALTER TABLE to prevent Storage policy deadlocks.
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (

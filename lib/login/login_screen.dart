@@ -8,7 +8,7 @@ import '../models/oauth_provider_option.dart';
 import '../models/turnstile_flow.dart';
 import '../utilities/state/app_session.dart';
 
-const _driverLogoAsset = 'src/driver_icon/driver_icon.png';
+const _driverLogoAsset = 'src/driver_icon/driver_icon_png.png';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

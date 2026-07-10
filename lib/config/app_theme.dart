@@ -59,7 +59,7 @@ final class AppTheme {
         color: base.colorScheme.onSurface,
       ),
       headlineSmall: GoogleFonts.poppins(
-        fontSize: 20,
+        fontSize: 19,
         fontWeight: FontWeight.w700,
         color: base.colorScheme.onSurface,
       ),
@@ -84,12 +84,12 @@ final class AppTheme {
         color: base.colorScheme.onSurface,
       ),
       bodyMedium: GoogleFonts.poppins(
-        fontSize: 14,
+        fontSize: 13,
         height: 1.45,
         color: base.colorScheme.onSurface.withValues(alpha: 0.86),
       ),
       labelLarge: GoogleFonts.poppins(
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: FontWeight.w600,
         color: base.colorScheme.onSurface.withValues(alpha: 0.78),
       ),
@@ -118,7 +118,7 @@ final class AppTheme {
         elevation: 0,
         shadowColor: brandBlue.withValues(alpha: isDark ? 0.28 : 0.08),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           side: BorderSide(color: cardBorder),
         ),
         surfaceTintColor: Colors.transparent,
@@ -133,7 +133,7 @@ final class AppTheme {
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return GoogleFonts.poppins(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             color: selected
                 ? base.colorScheme.onSurface
@@ -143,7 +143,7 @@ final class AppTheme {
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return IconThemeData(
-            size: 24,
+            size: 22,
             color: selected
                 ? brandBlueGlow
                 : base.colorScheme.onSurface.withValues(alpha: 0.7),
@@ -187,19 +187,19 @@ final class AppTheme {
           color: base.colorScheme.onSurface.withValues(alpha: 0.45),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 16,
+          horizontal: 14,
+          vertical: 12,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: cardBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: cardBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: brandBlueGlow, width: 1.6),
         ),
       ),
@@ -208,7 +208,7 @@ final class AppTheme {
         style: FilledButton.styleFrom(
           backgroundColor: brandBlue,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           textStyle: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             fontSize: 14,
@@ -222,7 +222,7 @@ final class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: base.colorScheme.onSurface,
           side: BorderSide(color: cardBorder),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           textStyle: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             fontSize: 14,

@@ -12,7 +12,7 @@ import '../utilities/guards/developer_guard.dart';
 import '../utilities/state/app_session.dart';
 import '../utilities/ui/profile_avatar.dart';
 
-const _driverLogoAsset = 'src/driver_icon/driver_icon.png';
+const _driverLogoAsset = 'src/driver_icon/driver_icon_png.png';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});

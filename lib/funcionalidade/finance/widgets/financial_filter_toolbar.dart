@@ -19,39 +19,59 @@ class FinancialFilterToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 720;
+    final theme = Theme.of(context);
 
-    final searchField = TextField(
-      controller: searchController,
-      decoration: InputDecoration(
-        hintText: hintText,
-        prefixIcon: const Icon(Icons.search),
-        suffixIcon: searchController.text.isEmpty
-            ? null
-            : IconButton(
-                onPressed: searchController.clear,
-                icon: const Icon(Icons.close),
-              ),
+    final searchField = SizedBox(
+      height: 44,
+      child: TextField(
+        controller: searchController,
+        style: theme.textTheme.bodyMedium,
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: compact ? 'Buscar' : hintText,
+          prefixIcon: const Icon(Icons.search, size: 18),
+          prefixIconConstraints: const BoxConstraints(minWidth: 38),
+          suffixIcon: searchController.text.isEmpty
+              ? null
+              : IconButton(
+                  onPressed: searchController.clear,
+                  icon: const Icon(Icons.close, size: 18),
+                ),
+          suffixIconConstraints: const BoxConstraints(minWidth: 36),
+        ),
       ),
     );
 
-    final actions = Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      alignment: WrapAlignment.end,
-      children: [
-        OutlinedButton.icon(
-          onPressed: onPickRange,
-          icon: const Icon(Icons.calendar_today_outlined),
-          label: Text(_formatRange(range)),
+    final dateButton = SizedBox(
+      height: 44,
+      child: OutlinedButton.icon(
+        onPressed: onPickRange,
+        icon: const Icon(Icons.calendar_today_outlined, size: 17),
+        label: Text(_formatRange(range)),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
         ),
-        TextButton(onPressed: onClear, child: const Text('Limpar')),
-      ],
+      ),
+    );
+
+    final clearButton = SizedBox(
+      height: 44,
+      width: 44,
+      child: IconButton(
+        tooltip: 'Limpar filtros',
+        onPressed: onClear,
+        icon: const Icon(Icons.tune_outlined, size: 18),
+      ),
     );
 
     if (compact) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [searchField, const SizedBox(height: 12), actions],
+      return Row(
+        children: [
+          Expanded(child: searchField),
+          const SizedBox(width: 8),
+          dateButton,
+          clearButton,
+        ],
       );
     }
 
@@ -59,7 +79,9 @@ class FinancialFilterToolbar extends StatelessWidget {
       children: [
         Expanded(child: searchField),
         const SizedBox(width: 12),
-        actions,
+        dateButton,
+        const SizedBox(width: 6),
+        TextButton(onPressed: onClear, child: const Text('Limpar')),
       ],
     );
   }

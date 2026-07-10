@@ -14,7 +14,7 @@ import '../utilities/state/app_session.dart';
 import '../utilities/ui/omnya_shell.dart';
 import '../utilities/ui/screen_action_controller.dart';
 
-const _driverLogoAsset = 'src/driver_icon/driver_icon.png';
+const _driverLogoAsset = 'src/driver_icon/driver_icon_png.png';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -523,41 +523,38 @@ class _OverviewTabState extends State<_OverviewTab> {
             ),
           ],
           const SizedBox(height: 18),
-          Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: [
-              _MetricCard(
-                title: 'Receita total',
+          _MetricGrid(
+            metrics: [
+              _MetricData(
+                title: 'Receita',
                 value: _currency(metrics.totalIncome),
-                detail: '${metrics.totalDeliveries} entregas registradas',
+                detail: '${metrics.totalDeliveries} entregas',
               ),
-              _MetricCard(
-                title: 'Custos operacionais',
+              _MetricData(
+                title: 'Custos',
                 value: _currency(metrics.totalOperationalCosts),
                 detail:
-                    '${metrics.totalTripExpenses} despesas, ${metrics.totalFuelings} abastecimentos, ${metrics.totalMaintenances} manutencoes',
+                    '${metrics.totalTripExpenses + metrics.totalFuelings + metrics.totalMaintenances} lancamentos',
               ),
-              _MetricCard(
-                title: 'Resultado liquido',
+              _MetricData(
+                title: 'Liquido',
                 value: _currency(metrics.netResult),
-                detail: '${metrics.totalJourneys} jornadas no historico',
+                detail: '${metrics.totalJourneys} jornadas',
               ),
-              _MetricCard(
-                title: 'Saldo disponivel',
+              _MetricData(
+                title: 'Saldo',
                 value: _currency(metrics.availableBalance),
-                detail:
-                    'Reservado em objetivos: ${_currency(metrics.allocatedToGoals)}',
+                detail: 'Objetivos ${_currency(metrics.allocatedToGoals)}',
               ),
-              _MetricCard(
-                title: 'Distancia medida',
+              _MetricData(
+                title: 'Distancia',
                 value: '${metrics.totalDistanceKm.toStringAsFixed(1)} km',
-                detail: 'Custo por km: ${_currency(metrics.costPerKm)}',
+                detail: 'km rodados',
               ),
-              _MetricCard(
-                title: 'Ticket medio',
+              _MetricData(
+                title: 'Ticket',
                 value: _currency(metrics.incomePerDelivery),
-                detail: 'por entrega registrada',
+                detail: 'por entrega',
               ),
             ],
           ),
@@ -639,8 +636,8 @@ class _HeroInfoPill extends StatelessWidget {
   }
 }
 
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({
+class _MetricData {
+  const _MetricData({
     required this.title,
     required this.value,
     required this.detail,
@@ -649,22 +646,63 @@ class _MetricCard extends StatelessWidget {
   final String title;
   final String value;
   final String detail;
+}
+
+class _MetricGrid extends StatelessWidget {
+  const _MetricGrid({required this.metrics});
+
+  final List<_MetricData> metrics;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 280,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final columns = width < 460
+            ? 2
+            : width < 900
+            ? 3
+            : 6;
+        final spacing = width < 460 ? 10.0 : 14.0;
+        final itemWidth = (width - (spacing * (columns - 1))) / columns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: metrics
+              .map(
+                (metric) => SizedBox(
+                  width: itemWidth,
+                  child: _MetricCard(metric: metric),
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({required this.metric});
+
+  final _MetricData metric;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 116),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 12),
-              Text(value, style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 8),
-              Text(detail),
+              Text(metric.title, style: Theme.of(context).textTheme.titleSmall),
+              const Spacer(),
+              Text(metric.value, style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 5),
+              Text(metric.detail, maxLines: 2, overflow: TextOverflow.ellipsis),
             ],
           ),
         ),

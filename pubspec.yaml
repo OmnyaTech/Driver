@@ -54,3 +54,4 @@ flutter:
   uses-material-design: true
   assets:
     - src/driver_icon/driver_icon.png
+    - src/driver_icon/driver_icon_png.png
