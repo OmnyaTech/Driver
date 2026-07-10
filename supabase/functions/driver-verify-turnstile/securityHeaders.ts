@@ -6,6 +6,8 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "http://localhost",
   "capacitor://localhost",
   "ionic://localhost",
+  "https://driver.omnyatech.com.br",
+  "https://driver-57a.pages.dev",
 ];
 
 const normalizeOriginList = () => {
@@ -42,7 +44,7 @@ export const isAllowedOrigin = (origin?: string | null) => {
 const resolveAllowedOrigin = (origin?: string | null) => {
   if (!origin || origin === "null") return DEFAULT_ALLOWED_ORIGINS[0];
   if (isLocalhostOrigin(origin)) return origin;
-  return isAllowedOrigin(origin) ? origin : DEFAULT_ALLOWED_ORIGINS[0];
+  return isAllowedOrigin(origin) ? origin : "";
 };
 
 export const buildCorsHeaders = (origin?: string | null) => ({

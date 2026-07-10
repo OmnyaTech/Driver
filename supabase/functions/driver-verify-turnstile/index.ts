@@ -14,13 +14,6 @@ import {
 import { safeLog } from "./safeLogger.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      status: 200,
-      headers: buildCorsHeaders(req.headers.get("origin")),
-    });
-  }
-
   if (!isAllowedOrigin(req.headers.get("origin"))) {
     return jsonSecurityResponse(
       req,
@@ -31,6 +24,13 @@ Deno.serve(async (req) => {
       },
       403,
     );
+  }
+
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      status: 200,
+      headers: buildCorsHeaders(req.headers.get("origin")),
+    });
   }
 
   if (req.method !== "POST") {
