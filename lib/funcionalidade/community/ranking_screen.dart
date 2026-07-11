@@ -37,7 +37,7 @@ class _RankingScreenState extends State<RankingScreen> {
       if (!mounted) return;
       setState(() {
         _items = const [];
-        _errorMessage = 'Nao foi possivel carregar o ranking agora.';
+        _errorMessage = 'Nao consegui carregar o ranking agora.';
       });
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -70,85 +70,117 @@ class _RankingScreenState extends State<RankingScreen> {
             if (_items.isEmpty) {
               return const _RankingEmptyState(
                 icon: Icons.emoji_events_outlined,
-                title: 'Temporada em aquecimento',
+                title: 'Temporada comecando',
                 message:
-                    'Quando os motoristas ativarem perfil publico e ranking, o placar aparece aqui.',
+                    'Quando a galera ativar o perfil publico, o placar aparece aqui.',
               );
             }
 
             final item = _items[index];
             final position = item.rankPosition ?? index + 1;
             return TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.94, end: 1),
+              tween: Tween(begin: 0, end: 1),
               duration: Duration(
-                milliseconds: 260 + (index * 42).clamp(0, 420),
+                milliseconds: 320 + (index * 48).clamp(0, 520),
               ),
-              curve: Curves.easeOutBack,
-              builder: (context, scale, child) {
-                return Transform.scale(scale: scale, child: child);
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) {
+                return Opacity(
+                  opacity: value,
+                  child: Transform.translate(
+                    offset: Offset(0, 18 * (1 - value)),
+                    child: Transform.scale(
+                      scale: 0.96 + (value * 0.04),
+                      child: child,
+                    ),
+                  ),
+                );
               },
-              child: Card(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(24),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          PublicDriverProfileScreen(slug: item.publicSlug),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
-                      children: [
-                        _RankBadge(position: position),
-                        const SizedBox(width: 12),
-                        ProfileAvatar(
-                          displayName: item.displayName,
-                          avatarUrl: item.avatarUrl,
-                          radius: 22,
-                          showBorder: position <= 3,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.displayName,
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${item.levelTitle} | ${item.medalsCount} medalhas | ${item.bestStreakDays}d',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '${item.publicScore}',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            Text(
-                              '@${item.publicSlug}',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              child: _RankingCard(item: item, position: position),
             );
           },
           separatorBuilder: (_, _) => const SizedBox(height: 10),
           itemCount: _errorMessage != null || _items.isEmpty
               ? 1
               : _items.length,
+        ),
+      ),
+    );
+  }
+}
+
+class _RankingCard extends StatelessWidget {
+  const _RankingCard({required this.item, required this.position});
+
+  final AppPublicDriverPreview item;
+  final int position;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPodium = position <= 3;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PublicDriverProfileScreen(slug: item.publicSlug),
+          ),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: isPodium
+                ? LinearGradient(
+                    colors: [
+                      const Color(0xFF0000CD).withValues(alpha: 0.28),
+                      Colors.transparent,
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  )
+                : null,
+          ),
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              _RankBadge(position: position),
+              const SizedBox(width: 12),
+              ProfileAvatar(
+                displayName: item.displayName,
+                avatarUrl: item.avatarUrl,
+                radius: 23,
+                showBorder: isPodium,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.displayName,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${item.levelTitle} | ${item.medalsCount} conquistas | ${item.bestStreakDays}d',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${item.publicScore}',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  Text('pts', style: Theme.of(context).textTheme.labelSmall),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

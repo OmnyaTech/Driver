@@ -245,7 +245,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
               child: Padding(
                 padding: EdgeInsets.all(20),
                 child: Text(
-                  'Nenhuma jornada registrada ainda. Crie a primeira para iniciar o controle operacional.',
+                  'Nenhuma jornada ainda. Crie a primeira para acompanhar seu dia.',
                 ),
               ),
             ),

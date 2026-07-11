@@ -40,7 +40,7 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const OmnyaSubPageScaffold(
-        title: 'Perfil publico',
+        title: 'Perfil',
         body: Center(child: CircularProgressIndicator()),
       );
     }
@@ -48,13 +48,13 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
     final profile = _profile;
     if (profile == null) {
       return const OmnyaSubPageScaffold(
-        title: 'Perfil publico',
-        body: Center(child: Text('Perfil nao encontrado ou desativado.')),
+        title: 'Perfil',
+        body: Center(child: Text('Esse perfil nao esta disponivel.')),
       );
     }
 
     return OmnyaSubPageScaffold(
-      title: 'Perfil publico',
+      title: 'Perfil',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
         children: [
@@ -131,16 +131,16 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                     await Clipboard.setData(
                       ClipboardData(
                         text:
-                            'Confira meu perfil no Omnya Driver: @${profile.publicSlug}',
+                            'Me encontre no Omnya Driver: @${profile.publicSlug}\n${PublicProfileService.buildInviteUrl(profile.publicSlug)}',
                       ),
                     );
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Convite copiado.')),
+                      const SnackBar(content: Text('Link copiado.')),
                     );
                   },
                   icon: const Icon(Icons.share_outlined),
-                  label: const Text('Copiar convite'),
+                  label: const Text('Copiar link'),
                 ),
               ],
             ),
@@ -173,7 +173,7 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Recordes publicos',
+                    'Melhores marcas',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 12),
@@ -182,7 +182,7 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                     value: _format(profile.bestFridayDate),
                   ),
                   _PublicRecordRow(
-                    label: 'Maior dia de faturamento',
+                    label: 'Melhor dia',
                     value: _format(profile.highestRevenueDayDate),
                   ),
                   _PublicRecordRow(

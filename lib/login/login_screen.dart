@@ -117,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 20),
                               Text(
-                                'Mobilidade com inteligencia operacional.',
+                                'Seu corre mais organizado.',
                                 style: theme.textTheme.headlineMedium?.copyWith(
                                   color: Colors.white,
                                   height: 1.14,

@@ -245,7 +245,7 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
               child: Padding(
                 padding: EdgeInsets.all(20),
                 child: Text(
-                  'Nenhum abastecimento registrado ainda. Cadastre litros, valor por litro e veiculo para iniciar o historico.',
+                  'Nenhum abastecimento ainda. Cadastre litros, valor e veiculo para acompanhar seus custos.',
                 ),
               ),
             ),

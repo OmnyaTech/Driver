@@ -238,7 +238,7 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
               child: Padding(
                 padding: EdgeInsets.all(20),
                 child: Text(
-                  'Nenhuma manutencao registrada ainda. Cadastre oficina, motivo e valor para construir o historico do veiculo.',
+                  'Nenhuma manutencao ainda. Cadastre oficina, motivo e valor para cuidar melhor do veiculo.',
                 ),
               ),
             ),

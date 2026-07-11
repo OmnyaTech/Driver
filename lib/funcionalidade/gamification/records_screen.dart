@@ -58,29 +58,28 @@ class _RecordsScreenState extends State<RecordsScreen> {
           _RecordCard(
             title: 'Melhor sexta-feira',
             value: _format(records.bestFridayDate),
-            detail:
-                'Dia em que sua sexta apareceu com melhor destaque operacional.',
+            detail: 'Sua sexta que mais brilhou ate agora.',
           ),
           const SizedBox(height: 12),
           _RecordCard(
-            title: 'Maior faturamento diario',
+            title: 'Maior dia de ganho',
             value: _format(records.highestRevenueDayDate),
-            detail: 'Recorde de receita em um unico dia registrado.',
+            detail: 'O dia em que entrou mais dinheiro no app.',
           ),
           const SizedBox(height: 12),
           _RecordCard(
             title: 'Melhor lucro por hora',
             value: _formatDateTime(records.highestProfitPerHourStartedAt),
-            detail: 'Jornada mais eficiente por hora dentro do historico.',
+            detail: 'Seu turno que rendeu melhor por hora.',
           ),
           const SizedBox(height: 12),
           _RecordCard(
-            title: 'Maior volume de entregas',
+            title: 'Mais entregas no dia',
             value: records.highestDeliveriesCount == 0
                 ? 'Sem registro'
                 : '${records.highestDeliveriesCount} entregas',
             detail: records.highestDeliveriesDayDate == null
-                ? 'Ainda sem historico suficiente.'
+                ? 'Ainda falta um pouco de historico.'
                 : 'Aconteceu em ${_format(records.highestDeliveriesDayDate)}.',
           ),
         ],

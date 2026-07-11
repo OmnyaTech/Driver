@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/app_gamification.dart';
 import '../../services/gamification_service.dart';
+import '../../utilities/state/app_session.dart';
 import '../../utilities/ui/omnya_shell.dart';
+import '../../utilities/ui/profile_avatar.dart';
 import 'records_screen.dart';
 
 class GamificationScreen extends StatefulWidget {
@@ -87,6 +90,8 @@ class _GamificationScreenState extends State<GamificationScreen>
           medals: [],
         );
 
+    final profile = context.watch<AppSession>().profile;
+
     return OmnyaSubPageScaffold(
       title: 'Progresso',
       body: RefreshIndicator(
@@ -94,7 +99,12 @@ class _GamificationScreenState extends State<GamificationScreen>
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
           children: [
-            _GameHero(summary: summary, animation: _pulseController),
+            _GameHero(
+              summary: summary,
+              animation: _pulseController,
+              displayName: profile?.displayName ?? 'Motorista',
+              avatarUrl: profile?.avatarUrl,
+            ),
             if (_errorMessage != null) ...[
               const SizedBox(height: 16),
               Card(
@@ -122,7 +132,7 @@ class _GamificationScreenState extends State<GamificationScreen>
                 const SizedBox(width: 12),
                 Expanded(
                   child: _StatCard(
-                    title: 'Melhor sequencia',
+                    title: 'Melhor ritmo',
                     value: '${summary.bestStreakDays} dias',
                     subtitle: 'Seu recorde',
                   ),
@@ -134,7 +144,7 @@ class _GamificationScreenState extends State<GamificationScreen>
               children: [
                 Expanded(
                   child: _StatCard(
-                    title: 'Medalhas',
+                    title: 'Conquistas',
                     value: '${summary.medalsCount}',
                     subtitle: 'Conquistas liberadas',
                   ),
@@ -142,11 +152,11 @@ class _GamificationScreenState extends State<GamificationScreen>
                 const SizedBox(width: 12),
                 Expanded(
                   child: _StatCard(
-                    title: 'Ranking',
+                    title: 'Disputa',
                     value: summary.rankingOptIn ? 'Ativo' : 'Pendente',
                     subtitle: summary.rankingOptIn
-                        ? 'Competindo por score'
-                        : 'Ative no perfil publico',
+                        ? 'Valendo pontos'
+                        : 'Ative no perfil',
                   ),
                 ),
               ],
@@ -162,7 +172,7 @@ class _GamificationScreenState extends State<GamificationScreen>
                       children: [
                         Expanded(
                           child: Text(
-                            'Missoes da proxima fase',
+                            'Proximos passos',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                         ),
@@ -201,7 +211,7 @@ class _GamificationScreenState extends State<GamificationScreen>
                     const SizedBox(height: 12),
                     if (summary.medals.isEmpty)
                       const Text(
-                        'As medalhas aparecem conforme sua operacao evolui.',
+                        'Suas conquistas vao aparecer aqui conforme voce usa o app.',
                       ),
                     ...summary.medals
                         .take(6)
@@ -248,25 +258,25 @@ class _GamificationScreenState extends State<GamificationScreen>
     if (remainingXp != null) {
       items.add((
         'Subir de nivel',
-        'Faltam $remainingXp XP para alcancar a proxima faixa de reputacao.',
+        'Faltam $remainingXp XP para subir mais um nivel.',
       ));
     }
     if (summary.bestStreakDays < 7) {
       items.add((
         'Sequencia de 7 dias',
-        'Mantenha jornadas ativas para desbloquear a medalha Foco da semana.',
+        'Trabalhe em dias seguidos para liberar a conquista Foco da semana.',
       ));
     }
     if (summary.medalsCount < 5) {
       items.add((
-        'Colecionar medalhas',
-        'Consolide jornadas, entregas e metas para fortalecer seu score publico.',
+        'Colecionar conquistas',
+        'Registre jornadas, entregas e metas para ganhar mais pontos.',
       ));
     }
     if (items.isEmpty) {
       items.add((
-        'Perfil consolidado',
-        'Seu perfil ja esta maduro. Agora vale focar em consistencia e ranking.',
+        'Voce esta voando',
+        'Agora o jogo e manter o ritmo e subir no ranking.',
       ));
     }
     return items;
@@ -279,10 +289,17 @@ class _GamificationScreenState extends State<GamificationScreen>
 }
 
 class _GameHero extends StatelessWidget {
-  const _GameHero({required this.summary, required this.animation});
+  const _GameHero({
+    required this.summary,
+    required this.animation,
+    required this.displayName,
+    required this.avatarUrl,
+  });
 
   final AppGamificationSummary summary;
   final Animation<double> animation;
+  final String displayName;
+  final String? avatarUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -320,19 +337,13 @@ class _GameHero extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.10),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.18),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.military_tech_outlined,
-                    color: Colors.white,
+                _AnimatedAvatarBadge(
+                  animation: animation,
+                  child: ProfileAvatar(
+                    displayName: displayName,
+                    avatarUrl: avatarUrl,
+                    radius: 24,
+                    showBorder: true,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -363,6 +374,14 @@ class _GameHero extends StatelessWidget {
               style: Theme.of(
                 context,
               ).textTheme.bodyLarge?.copyWith(color: Colors.white70),
+            ),
+            const SizedBox(height: 18),
+            _KarmaDial(
+              progress: summary.progressToNextLevel,
+              animation: animation,
+              label: summary.remainingXpToNextLevel == null
+                  ? 'Nivel maximo por enquanto'
+                  : 'Faltam ${summary.remainingXpToNextLevel} XP',
             ),
             const SizedBox(height: 18),
             TweenAnimationBuilder<double>(
@@ -396,7 +415,7 @@ class _GameHero extends StatelessWidget {
               runSpacing: 10,
               children: [
                 _ProgressPill(label: '${summary.currentStreakDays} dias'),
-                _ProgressPill(label: '${summary.medalsCount} medalhas'),
+                _ProgressPill(label: '${summary.medalsCount} conquistas'),
                 _ProgressPill(
                   label: summary.rankingOptIn
                       ? 'Ranking ativo'
@@ -439,6 +458,150 @@ class _ProgressPill extends StatelessWidget {
         ).textTheme.labelLarge?.copyWith(color: Colors.white),
       ),
     );
+  }
+}
+
+class _AnimatedAvatarBadge extends StatelessWidget {
+  const _AnimatedAvatarBadge({required this.animation, required this.child});
+
+  final Animation<double> animation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, _) {
+        final scale = 1 + (animation.value * 0.06);
+        return Transform.scale(
+          scale: scale,
+          child: Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  blurRadius: 14,
+                ),
+              ],
+            ),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _KarmaDial extends StatelessWidget {
+  const _KarmaDial({
+    required this.progress,
+    required this.animation,
+    required this.label,
+  });
+
+  final double progress;
+  final Animation<double> animation;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 72,
+          height: 72,
+          child: AnimatedBuilder(
+            animation: animation,
+            builder: (context, _) {
+              return CustomPaint(
+                painter: _KarmaDialPainter(
+                  progress: progress,
+                  pulse: animation.value,
+                ),
+                child: const Center(
+                  child: Icon(Icons.check_rounded, color: Colors.white),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Meta do nivel',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(color: Colors.white70),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _KarmaDialPainter extends CustomPainter {
+  const _KarmaDialPainter({required this.progress, required this.pulse});
+
+  final double progress;
+  final double pulse;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.shortestSide / 2) - 5;
+    final base = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 7
+      ..strokeCap = StrokeCap.round
+      ..color = Colors.white.withValues(alpha: 0.18);
+    final active = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 7
+      ..strokeCap = StrokeCap.round
+      ..shader = const LinearGradient(
+        colors: [Color(0xFF00E5FF), Colors.white],
+      ).createShader(Offset.zero & size);
+    final glow = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 10 + (pulse * 2)
+      ..strokeCap = StrokeCap.round
+      ..color = Colors.white.withValues(alpha: 0.08 + pulse * 0.08);
+
+    canvas.drawCircle(center, radius, base);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -1.5708,
+      progress.clamp(0, 1) * 6.283,
+      false,
+      glow,
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -1.5708,
+      progress.clamp(0, 1) * 6.283,
+      false,
+      active,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _KarmaDialPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.pulse != pulse;
   }
 }
 

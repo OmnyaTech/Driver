@@ -62,7 +62,7 @@ class EngagementNotificationService {
           kind: 'journey',
           title: 'Jornada em aberto',
           body:
-              'Voce ainda tem jornada em aberto. Vale revisar e encerrar para manter os indicadores em dia.',
+              'Tem uma jornada aberta. Se ja terminou, encerre para o app fechar suas contas direitinho.',
           actionType: 'journeys',
         ),
       );
@@ -98,7 +98,7 @@ class EngagementNotificationService {
             userId: user.id,
             key: 'reserve-${todayStart.toIso8601String()}',
             kind: 'goal',
-            title: 'Aporte sugerido',
+            title: 'Boa hora para guardar',
             body: reserveLabel,
             actionType: 'goals',
             actionPayload: {'suggested_amount': reserve},
@@ -114,9 +114,9 @@ class EngagementNotificationService {
           userId: user.id,
           key: 'level-${summary.level + 1}',
           kind: 'gamification',
-          title: 'Nivel proximo',
+          title: 'Falta pouco para subir',
           body:
-              'Faltam so $remainingXp XP para alcancar o proximo nivel e fortalecer seu perfil publico.',
+              'So mais $remainingXp XP para subir de nivel e ganhar mais destaque.',
           actionType: 'gamification',
         ),
       );
@@ -132,9 +132,9 @@ class EngagementNotificationService {
             userId: user.id,
             key: 'goal-near-${goal.id}',
             kind: 'goal',
-            title: 'Objetivo quase concluido',
+            title: 'Meta quase la',
             body:
-                'O objetivo "${goal.title}" ja atingiu ${(progress * 100).toStringAsFixed(0)}% da meta.',
+                '"${goal.title}" ja passou de ${(progress * 100).toStringAsFixed(0)}%. Falta pouco.',
             actionType: 'goals',
             actionPayload: {'goal_id': goal.id},
           ),
@@ -150,7 +150,7 @@ class EngagementNotificationService {
           kind: 'performance',
           title: 'Bom ritmo hoje',
           body:
-              'Voce ja registrou ${todayMetrics.totalDeliveries} entregas hoje. Vale revisar o horario mais forte e repetir a janela.',
+              'Voce ja fez ${todayMetrics.totalDeliveries} entregas hoje. Olhe o melhor horario e tente repetir esse ritmo.',
           actionType: 'reports',
         ),
       );
@@ -181,7 +181,7 @@ class EngagementNotificationService {
             id: row['id'].toString(),
             notificationKey: row['notification_key']?.toString() ?? '',
             kind: row['kind']?.toString() ?? 'info',
-            title: row['title']?.toString() ?? 'Notificacao',
+            title: row['title']?.toString() ?? 'Aviso',
             body: row['body']?.toString() ?? '',
             actionType: row['action_type']?.toString(),
             actionPayload: Map<String, dynamic>.from(

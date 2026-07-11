@@ -42,7 +42,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       setState(() {
         _items = const [];
         _errorMessage =
-            'Nao foi possivel sincronizar os lembretes agora. Tente atualizar em alguns segundos.';
+            'Nao consegui buscar seus avisos agora. Tente atualizar em alguns segundos.';
       });
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -53,13 +53,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const OmnyaSubPageScaffold(
-        title: 'Notificacoes',
+        title: 'Avisos',
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
     return OmnyaSubPageScaffold(
-      title: 'Notificacoes',
+      title: 'Avisos',
       actions: [
         TextButton(
           onPressed: _items.where((item) => !item.isRead).isEmpty
@@ -94,12 +94,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           Text(
                             _errorMessage == null
                                 ? 'Tudo em ordem por aqui'
-                                : 'Sincronizacao pausada',
+                                : 'Avisos pausados',
                           ),
                           const SizedBox(height: 6),
                           Text(
                             _errorMessage ??
-                                'Os lembretes de jornada, metas, desempenho e reserva aparecem conforme seu uso do app.',
+                                'Aqui entram lembretes de jornada, metas, desempenho e reserva.',
                           ),
                         ],
                       ),

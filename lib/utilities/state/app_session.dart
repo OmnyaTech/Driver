@@ -8,14 +8,17 @@ import '../../models/oauth_provider_option.dart';
 import '../../models/plan_type.dart';
 import '../../models/user_role.dart';
 import '../../services/auth_service.dart';
+import '../../services/referral_service.dart';
 
 class AppSession extends ChangeNotifier {
-  AppSession({AuthService? authService})
-    : _authService = authService ?? const AuthService() {
+  AppSession({AuthService? authService, ReferralService? referralService})
+    : _authService = authService ?? const AuthService(),
+      _referralService = referralService ?? ReferralService() {
     _initialize();
   }
 
   final AuthService _authService;
+  final ReferralService _referralService;
   ThemeMode _themeMode = ThemeMode.dark;
   bool _authenticated = false;
   bool _isReady = false;
@@ -135,6 +138,8 @@ class AppSession extends ChangeNotifier {
   }
 
   Future<void> _initialize() async {
+    await _referralService.captureInitialReferral();
+
     if (!_authService.isAvailable) {
       _isReady = true;
       notifyListeners();
@@ -162,6 +167,7 @@ class AppSession extends ChangeNotifier {
 
     try {
       await _authService.ensureDriverProfile();
+      await _referralService.redeemPendingReferral();
       final data = await _authService.fetchProfile();
       _profile = data == null
           ? _fallbackProfile(session.user)

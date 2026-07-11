@@ -15,7 +15,7 @@ class DriverReservePreference {
     return switch (mode) {
       DriverReserveMode.none => 'Reserva automatica desativada',
       DriverReserveMode.dailyPercent =>
-        '${dailyPercentage.toStringAsFixed(dailyPercentage.truncateToDouble() == dailyPercentage ? 0 : 1)}% do liquido do periodo',
+        '${dailyPercentage.toStringAsFixed(dailyPercentage.truncateToDouble() == dailyPercentage ? 0 : 1)}% do que sobrar',
       DriverReserveMode.perDeliveryFixed =>
         'R\$ ${amountPerDelivery.toStringAsFixed(2)} por entrega concluida',
     };

@@ -136,7 +136,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: 'Notificacoes',
+            tooltip: 'Avisos',
             onPressed: _openNotifications,
             icon: Badge(
               isLabelVisible: _unreadNotifications > 0,
@@ -447,7 +447,7 @@ class _OverviewTabState extends State<_OverviewTab> {
       if (!mounted) return;
       setState(() {
         _errorMessage =
-            'Nao foi possivel consolidar as metricas agora. Tente novamente.';
+            'Nao consegui atualizar seus numeros agora. Tente de novo em instantes.';
       });
     } finally {
       if (mounted) {
@@ -539,7 +539,7 @@ class _OverviewTabState extends State<_OverviewTab> {
             children: [
               Expanded(
                 child: Text(
-                  'Painel operacional',
+                  'Seu dia no app',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
@@ -614,7 +614,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Visao de ${intelligence.periodLabel.toLowerCase()}',
+                        'Seu resumo de ${intelligence.periodLabel.toLowerCase()}',
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(color: Colors.white),
                       ),
@@ -649,7 +649,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Receita ${_formatDelta(intelligence.incomeDeltaPct())} vs periodo anterior',
+                  'Receita ${_formatDelta(intelligence.incomeDeltaPct())} que antes',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.white.withValues(alpha: 0.82),
                   ),
@@ -680,7 +680,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Pulso da operacao',
+                          'Como o dinheiro entrou',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),
@@ -703,7 +703,7 @@ class _OverviewTabState extends State<_OverviewTab> {
           _MetricGrid(
             metrics: [
               _MetricData(
-                title: 'Receita atual',
+                title: 'Receita',
                 value: _currency(metrics.totalIncome),
                 detail: _deltaLabel(
                   intelligence.incomeDeltaPct(),
@@ -711,7 +711,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                 ),
               ),
               _MetricData(
-                title: 'Liquido',
+                title: 'Sobrou',
                 value: _currency(metrics.netResult),
                 detail: _deltaLabel(
                   intelligence.netDeltaPct(),
@@ -727,7 +727,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                 ),
               ),
               _MetricData(
-                title: 'Saldo livre',
+                title: 'Livre',
                 value: _currency(metrics.availableBalance),
                 detail: 'Objetivos ${_currency(metrics.allocatedToGoals)}',
               ),
@@ -759,7 +759,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Reserva sugerida',
+                            'Para guardar',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           const SizedBox(height: 10),
@@ -786,7 +786,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Gamificacao visivel',
+                            'Seu progresso',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           const SizedBox(height: 10),
@@ -796,7 +796,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            '${gamification.xp} XP • ${gamification.medalsCount} medalhas',
+                            '${gamification.xp} XP | ${gamification.medalsCount} conquistas',
                           ),
                           const SizedBox(height: 10),
                           Wrap(
@@ -880,7 +880,7 @@ class _OverviewTabState extends State<_OverviewTab> {
 
   String _deltaLabel(double delta, String fallback) {
     final prefix = delta >= 0 ? '+' : '';
-    return '$prefix${delta.toStringAsFixed(0)}% vs anterior • $fallback';
+    return '$prefix${delta.toStringAsFixed(0)}% que antes | $fallback';
   }
 }
 
@@ -1025,7 +1025,7 @@ class _SparklineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (points.isEmpty) {
-      return const Center(child: Text('Sem tendencia suficiente no periodo.'));
+      return const Center(child: Text('Ainda falta historico para desenhar.'));
     }
 
     return CustomPaint(
@@ -1129,7 +1129,7 @@ class _InsightBoard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Inteligencia operacional',
+              'Dicas para render mais',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),

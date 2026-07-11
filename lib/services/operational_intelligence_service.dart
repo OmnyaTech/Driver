@@ -205,28 +205,27 @@ class OperationalIntelligenceService {
             ? '--'
             : '${bestHour.key.toString().padLeft(2, '0')}h',
         description: bestHour == null
-            ? 'Sem dados suficientes.'
-            : 'Esse horario concentrou o maior faturamento da janela.',
+            ? 'Ainda preciso de mais jornadas para mostrar isso.'
+            : 'Foi o horario que mais rendeu nesse filtro.',
       ),
       OperationalInsight(
         title: 'Melhor dia',
         value: bestWeekday == null ? '--' : _weekdayLabel(bestWeekday.key),
         description: bestWeekday == null
-            ? 'Sem dados suficientes.'
-            : 'Seu melhor dia em receita dentro do periodo atual.',
+            ? 'Ainda preciso de mais jornadas para mostrar isso.'
+            : 'Foi o dia que mais rendeu nesse filtro.',
       ),
       OperationalInsight(
         title: 'Plataforma mais lucrativa',
         value: bestPlatform?.key ?? 'Sem plataforma',
         description: bestPlatform == null
-            ? 'Sem dados suficientes.'
-            : 'Liderou sua receita com melhor retorno consolidado.',
+            ? 'Cadastre jornadas por plataforma para comparar.'
+            : 'Foi a que mais puxou seu resultado.',
       ),
       OperationalInsight(
         title: 'Ritmo medio',
         value: '${productivity.toStringAsFixed(1)} ent./jornada',
-        description:
-            'Use esse indicador para comparar sua eficiencia por turno.',
+        description: 'Bom para comparar seus dias de trabalho.',
       ),
     ];
   }

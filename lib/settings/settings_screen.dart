@@ -42,13 +42,13 @@ class SettingsScreen extends StatelessWidget {
             _SettingsTile(
               icon: Icons.person_outline,
               title: 'Perfil do motorista',
-              subtitle: 'Nome, telefone e identidade publica',
+              subtitle: 'Seu nome, telefone e foto',
               onTap: () => _openProfileSheet(context),
             ),
             _SettingsTile(
               icon: Icons.public_outlined,
               title: 'Perfil publico',
-              subtitle: 'Slug, bio, cidade e preparacao para ranking',
+              subtitle: 'Seu @, cidade e convite',
               onTap: () => _openPublicProfileSheet(context),
             ),
             _SettingsTile(
@@ -67,7 +67,7 @@ class SettingsScreen extends StatelessWidget {
               title: 'Reserva automatica',
               subtitle:
                   profile?.reservePreference.summaryLabel ??
-                  '30% do liquido do periodo',
+                  '30% do que sobrar',
               onTap: () => _openReservePreferenceSheet(context),
             ),
           ],
@@ -79,13 +79,13 @@ class SettingsScreen extends StatelessWidget {
             _SettingsTile(
               icon: Icons.two_wheeler_outlined,
               title: 'Veiculos',
-              subtitle: 'Gerencie frota, status e dados do veiculo',
+              subtitle: 'Suas motos, carros e status',
               onTap: () => _pushPage(context, const VehiclesScreen()),
             ),
             _SettingsTile(
               icon: Icons.storefront_outlined,
               title: 'Plataformas',
-              subtitle: 'Cadastre apps, restaurantes e fontes de receita',
+              subtitle: 'Apps, restaurantes e lugares de ganho',
               onTap: () => _pushPage(context, const PlatformsScreen()),
             ),
           ],
@@ -97,25 +97,25 @@ class SettingsScreen extends StatelessWidget {
             _SettingsTile(
               icon: Icons.workspace_premium_outlined,
               title: 'Progresso do motorista',
-              subtitle: 'XP, nivel, medalhas e proximas conquistas',
+              subtitle: 'Nivel, conquistas e proximos passos',
               onTap: () => _pushPage(context, const GamificationScreen()),
             ),
             _SettingsTile(
               icon: Icons.groups_outlined,
               title: 'Comunidade',
-              subtitle: 'Buscar motoristas, gerar convite e explorar perfis',
+              subtitle: 'Chame amigos e encontre motoristas',
               onTap: () => _pushPage(context, const CommunityHubScreen()),
             ),
             _SettingsTile(
               icon: Icons.emoji_events_outlined,
               title: 'Ranking',
-              subtitle: 'Score publico, medalhas e destaque entre motoristas',
+              subtitle: 'Pontos, conquistas e disputa saudavel',
               onTap: () => _pushPage(context, const RankingScreen()),
             ),
             _SettingsTile(
               icon: Icons.notifications_outlined,
-              title: 'Notificacoes',
-              subtitle: 'Lembretes de jornada, metas e desempenho',
+              title: 'Avisos',
+              subtitle: 'Lembretes de jornada, metas e ganhos',
               onTap: () => _pushPage(context, const NotificationsScreen()),
             ),
           ],
@@ -127,20 +127,20 @@ class SettingsScreen extends StatelessWidget {
             _SettingsTile(
               icon: Icons.workspace_premium_outlined,
               title: 'Assinatura',
-              subtitle: 'Planos, checkout e historico de billing',
+              subtitle: 'Planos, pagamento e historico',
               onTap: () => _pushPage(context, const SubscriptionsScreen()),
             ),
             if (canOpenDeveloper)
               _SettingsTile(
                 icon: Icons.admin_panel_settings_outlined,
                 title: 'Developer',
-                subtitle: 'Auditoria, lookup e controle administrativo',
+                subtitle: 'Ferramentas internas da OmnyaTech',
                 onTap: () => _pushPage(context, const DeveloperAccessScreen()),
               ),
             _SettingsTile(
               icon: Icons.logout,
               title: 'Sair da conta',
-              subtitle: 'Encerrar sessao neste dispositivo',
+              subtitle: 'Encerrar neste aparelho',
               onTap: session.isBusy ? null : session.signOut,
             ),
           ],
@@ -457,7 +457,7 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Atualize sua identidade principal e mantenha o painel alinhado com a marca OmnyaTech.',
+                    'Deixe seu nome e foto do jeito que voce quer aparecer no app.',
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 20),
@@ -710,7 +710,7 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _errorMessage = 'Nao foi possivel carregar o perfil publico.';
+        _errorMessage = 'Nao consegui carregar seu perfil agora.';
       });
     }
   }
@@ -761,7 +761,7 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Organize a vitrine publica sem expor ganhos e deixe o ranking pronto para a proxima etapa.',
+                          'Escolha como outros motoristas vao te encontrar. Seus ganhos continuam privados.',
                           style: theme.textTheme.bodyMedium,
                         ),
                         const SizedBox(height: 18),
@@ -769,7 +769,7 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                           contentPadding: EdgeInsets.zero,
                           title: const Text('Perfil publico ativo'),
                           subtitle: const Text(
-                            'Permite exibir seu nome, avatar, cidade e conquistas publicas.',
+                            'Mostra seu nome, foto, cidade e conquistas.',
                           ),
                           value: _enabled,
                           onChanged: (value) =>
@@ -778,7 +778,7 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                         TextFormField(
                           controller: _slugController,
                           decoration: const InputDecoration(
-                            labelText: 'Slug publico',
+                            labelText: 'Seu @ no Omnya Driver',
                             hintText: 'ex: yan-driver',
                           ),
                         ),
@@ -786,7 +786,7 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                         TextFormField(
                           controller: _cityController,
                           decoration: const InputDecoration(
-                            labelText: 'Cidade publica',
+                            labelText: 'Cidade',
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -794,8 +794,8 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                           controller: _bioController,
                           maxLines: 3,
                           decoration: const InputDecoration(
-                            labelText: 'Bio publica',
-                            hintText: 'Resumo curto do seu perfil no app.',
+                            labelText: 'Sobre voce',
+                            hintText: 'Conte rapidinho como e seu corre.',
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -803,7 +803,7 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                           contentPadding: EdgeInsets.zero,
                           title: const Text('Participar do ranking'),
                           subtitle: const Text(
-                            'Opt-in para a futura exibicao no ranking publico.',
+                            'Seu nome pode aparecer no placar da comunidade.',
                           ),
                           value: _rankingOptIn,
                           onChanged: (value) =>
@@ -841,7 +841,7 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                                           strokeWidth: 2,
                                         ),
                                       )
-                                    : const Text('Salvar perfil publico'),
+                                    : const Text('Salvar perfil'),
                               ),
                             ),
                           ],
@@ -877,7 +877,8 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Nao foi possivel salvar as configuracoes agora.';
+        _errorMessage =
+            'Nao consegui salvar agora. Tente de novo em instantes.';
       });
     } finally {
       if (mounted) {
@@ -972,7 +973,7 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                 Text('Reserva automatica', style: theme.textTheme.titleLarge),
                 const SizedBox(height: 6),
                 Text(
-                  'Defina como voce separa parte do resultado para custos, disciplina financeira ou objetivos.',
+                  'Escolha quanto voce costuma guardar para despesa, meta ou seguranca.',
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 18),
@@ -987,7 +988,7 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                           setState(() => _mode = DriverReserveMode.none),
                     ),
                     ChoiceChip(
-                      label: const Text('% do liquido'),
+                      label: const Text('% do que sobrar'),
                       selected: _mode == DriverReserveMode.dailyPercent,
                       onSelected: (_) => setState(
                         () => _mode = DriverReserveMode.dailyPercent,
@@ -1010,14 +1011,14 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                       decimal: true,
                     ),
                     decoration: const InputDecoration(
-                      labelText: 'Percentual do liquido',
+                      labelText: 'Percentual do que sobrar',
                       hintText: 'Ex: 30',
                       suffixText: '%',
                     ),
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'A sugestao de aporte considera o resultado liquido positivo do periodo atual.',
+                    'A sugestao usa o valor que sobrou no periodo atual.',
                     style: theme.textTheme.bodySmall,
                   ),
                 ],

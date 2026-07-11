@@ -113,7 +113,7 @@ class _CaptchaDialogState extends State<_CaptchaDialog> {
                     return;
                   case 'executed':
                     setState(() {
-                      _status = 'Executando a validacao tecnica de seguranca.';
+                      _status = 'Fazendo uma checagem rapida de seguranca.';
                     });
                     return;
                   default:

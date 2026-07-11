@@ -114,13 +114,13 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Convide outros motoristas',
+                          'Chame seus amigos',
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(color: Colors.white),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Use seu perfil publico e compartilhe seu convite sem expor ganhos.',
+                          'Compartilhe seu link. Quando alguem entrar por ele, voce ganha pontos no progresso.',
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(color: Colors.white70),
                         ),
@@ -137,7 +137,7 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                   child: FilledButton.icon(
                     onPressed: () => _copyInvite(profile?.displayName),
                     icon: const Icon(Icons.share_outlined),
-                    label: const Text('Gerar convite'),
+                    label: const Text('Copiar meu link'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -153,7 +153,7 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Buscar motoristas, slug ou cidade',
+                hintText: 'Buscar motorista, @usuario ou cidade',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isEmpty
                     ? null
@@ -205,7 +205,7 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                             ),
                             title: Text(item.displayName),
                             subtitle: Text(
-                              '${item.levelTitle} • ${item.medalsCount} medalhas',
+                              '${item.levelTitle} | ${item.medalsCount} conquistas',
                             ),
                             trailing: Text('#${item.rankPosition ?? 0}'),
                             onTap: () => _openProfile(item.publicSlug),
@@ -213,7 +213,7 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                         ),
                     if (_ranking.isEmpty)
                       const Text(
-                        'O ranking esta em aquecimento. Ative perfis publicos para liberar a disputa.',
+                        'O ranking esta começando. Ative seu perfil e chame a galera.',
                       ),
                   ],
                 ),
@@ -221,7 +221,7 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Encontrar perfis publicos',
+              'Encontrar motoristas',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 10),
@@ -229,9 +229,7 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
               const Card(
                 child: Padding(
                   padding: EdgeInsets.all(18),
-                  child: Text(
-                    'Nenhum perfil publico encontrado para esse filtro.',
-                  ),
+                  child: Text('Nao achei ninguem com esse nome ainda.'),
                 ),
               ),
             ..._results.map(
@@ -254,7 +252,7 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                         item.levelTitle,
                         if ((item.publicCity ?? '').isNotEmpty)
                           item.publicCity!,
-                      ].join(' • '),
+                      ].join(' | '),
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _openProfile(item.publicSlug),
@@ -289,12 +287,12 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
       setState(() => _settings = settings);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Convite @$slug copiado.')));
+      ).showSnackBar(SnackBar(content: Text('Link @$slug copiado.')));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Nao foi possivel gerar o convite agora.'),
+          content: Text('Nao consegui copiar o link agora. Tente de novo.'),
         ),
       );
     }

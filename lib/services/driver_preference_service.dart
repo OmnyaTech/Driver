@@ -74,18 +74,19 @@ class DriverPreferenceService {
   }) {
     if (amount <= 0) {
       return switch (preference.mode) {
-        DriverReserveMode.none => 'Reserva automatica desativada por enquanto.',
+        DriverReserveMode.none =>
+          'Voce deixou a reserva desligada por enquanto.',
         DriverReserveMode.dailyPercent =>
-          'Sem reserva sugerida porque o liquido do periodo ainda nao ficou positivo.',
+          'Ainda nao sobrou valor positivo nesse periodo para separar.',
         DriverReserveMode.perDeliveryFixed =>
-          'Sem reserva sugerida porque ainda nao houve entregas suficientes no periodo.',
+          'Ainda nao tem entregas suficientes nesse periodo para sugerir reserva.',
       };
     }
 
     return switch (preference.mode) {
-      DriverReserveMode.none => 'Reserva automatica desativada por enquanto.',
+      DriverReserveMode.none => 'Voce deixou a reserva desligada por enquanto.',
       DriverReserveMode.dailyPercent =>
-        'Separar R\$ ${amount.toStringAsFixed(2)} em $periodLabel segue sua regra de ${preference.dailyPercentage.toStringAsFixed(preference.dailyPercentage.truncateToDouble() == preference.dailyPercentage ? 0 : 1)}% do liquido.',
+        'Separar R\$ ${amount.toStringAsFixed(2)} em $periodLabel segue sua regra de guardar ${preference.dailyPercentage.toStringAsFixed(preference.dailyPercentage.truncateToDouble() == preference.dailyPercentage ? 0 : 1)}% do que sobrar.',
       DriverReserveMode.perDeliveryFixed =>
         'Separar R\$ ${amount.toStringAsFixed(2)} em $periodLabel segue sua regra de R\$ ${preference.amountPerDelivery.toStringAsFixed(2)} por entrega.',
     };
