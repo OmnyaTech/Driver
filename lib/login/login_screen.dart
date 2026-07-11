@@ -9,6 +9,8 @@ import '../models/turnstile_flow.dart';
 import '../utilities/state/app_session.dart';
 
 const _driverLogoAsset = 'src/driver_icon/driver_icon_png.png';
+const _googleIconAsset = 'src/icons/google.webp';
+const _microsoftIconAsset = 'src/icons/microsoft.png';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -294,27 +296,26 @@ class _LoginScreenState extends State<LoginScreen> {
                               ],
                             ),
                             const SizedBox(height: 16),
-                            Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
+                            Column(
                               children: [
-                                OutlinedButton.icon(
+                                _SocialLoginButton(
+                                  assetPath: _googleIconAsset,
+                                  label: 'Continuar com Google',
                                   onPressed: session.isBusy
                                       ? null
                                       : () => _signInWithOAuth(
                                           OauthProviderOption.google,
                                         ),
-                                  icon: const Icon(Icons.g_mobiledata),
-                                  label: const Text('Google'),
                                 ),
-                                OutlinedButton.icon(
+                                const SizedBox(height: 10),
+                                _SocialLoginButton(
+                                  assetPath: _microsoftIconAsset,
+                                  label: 'Continuar com Microsoft',
                                   onPressed: session.isBusy
                                       ? null
                                       : () => _signInWithOAuth(
                                           OauthProviderOption.microsoft,
                                         ),
-                                  icon: const Icon(Icons.window_outlined),
-                                  label: const Text('Microsoft'),
                                 ),
                               ],
                             ),
@@ -405,6 +406,54 @@ class _LoginScreenState extends State<LoginScreen> {
     await context.read<AppSession>().signInWithOAuth(
       provider,
       verificationToken: token,
+    );
+  }
+}
+
+class _SocialLoginButton extends StatelessWidget {
+  const _SocialLoginButton({
+    required this.assetPath,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final String assetPath;
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: theme.brightness == Brightness.dark ? 0.68 : 1,
+          ),
+          side: BorderSide(color: theme.dividerColor),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Image.asset(assetPath, width: 22, height: 22),
+            ),
+            Text(
+              label,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

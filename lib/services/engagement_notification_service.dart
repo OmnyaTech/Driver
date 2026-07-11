@@ -160,7 +160,7 @@ class EngagementNotificationService {
     await client
         .schema('driver')
         .from('driver_notifications')
-        .upsert(notifications);
+        .upsert(notifications, onConflict: 'user_id,notification_key');
   }
 
   Future<List<AppDriverNotification>> listNotifications() async {

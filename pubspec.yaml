@@ -55,3 +55,5 @@ flutter:
   assets:
     - src/driver_icon/driver_icon.png
     - src/driver_icon/driver_icon_png.png
+    - src/icons/google.webp
+    - src/icons/microsoft.png

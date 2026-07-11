@@ -12,8 +12,10 @@ class GamificationScreen extends StatefulWidget {
   State<GamificationScreen> createState() => _GamificationScreenState();
 }
 
-class _GamificationScreenState extends State<GamificationScreen> {
+class _GamificationScreenState extends State<GamificationScreen>
+    with SingleTickerProviderStateMixin {
   final GamificationService _service = GamificationService();
+  late final AnimationController _pulseController;
   bool _loading = true;
   String? _errorMessage;
   AppGamificationSummary? _summary;
@@ -21,7 +23,17 @@ class _GamificationScreenState extends State<GamificationScreen> {
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -40,9 +52,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
         _errorMessage = 'Nao foi possivel carregar seu progresso agora.';
       });
     } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -84,73 +94,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
           children: [
-            Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF0F1320),
-                    Color(0xFF1A2133),
-                    Color(0xFF0000CD),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                border: Border.all(color: Theme.of(context).dividerColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Nivel ${summary.level}',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.headlineSmall?.copyWith(color: Colors.white),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    summary.levelTitle,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.copyWith(color: Colors.white70),
-                  ),
-                  const SizedBox(height: 18),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      value: summary.progressToNextLevel,
-                      minHeight: 10,
-                      backgroundColor: Colors.white.withValues(alpha: 0.10),
-                      valueColor: const AlwaysStoppedAnimation(Colors.white),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    summary.remainingXpToNextLevel == null
-                        ? '${summary.xp} XP acumulados'
-                        : '${summary.xp} XP • faltam ${summary.remainingXpToNextLevel} XP para o proximo nivel',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      _ProgressPill(
-                        label: '${summary.currentStreakDays} dias seguidos',
-                      ),
-                      _ProgressPill(label: '${summary.medalsCount} medalhas'),
-                      _ProgressPill(
-                        label: 'Score publico ${summary.publicScore}',
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            _GameHero(summary: summary, animation: _pulseController),
             if (_errorMessage != null) ...[
               const SizedBox(height: 16),
               Card(
@@ -192,7 +136,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
                   child: _StatCard(
                     title: 'Medalhas',
                     value: '${summary.medalsCount}',
-                    subtitle: 'Conquistas desbloqueadas',
+                    subtitle: 'Conquistas liberadas',
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -201,7 +145,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
                     title: 'Ranking',
                     value: summary.rankingOptIn ? 'Ativo' : 'Pendente',
                     subtitle: summary.rankingOptIn
-                        ? 'Seu perfil pode aparecer'
+                        ? 'Competindo por score'
                         : 'Ative no perfil publico',
                   ),
                 ),
@@ -218,7 +162,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Proximas conquistas',
+                            'Missoes da proxima fase',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                         ),
@@ -228,7 +172,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
                               builder: (_) => const RecordsScreen(),
                             ),
                           ),
-                          child: const Text('Ver recordes'),
+                          child: const Text('Recordes'),
                         ),
                       ],
                     ),
@@ -257,7 +201,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
                     const SizedBox(height: 12),
                     if (summary.medals.isEmpty)
                       const Text(
-                        'As medalhas aparecerao aqui conforme sua operacao for evoluindo.',
+                        'As medalhas aparecem conforme sua operacao evolui.',
                       ),
                     ...summary.medals
                         .take(6)
@@ -331,6 +275,147 @@ class _GamificationScreenState extends State<GamificationScreen> {
   String _formatDate(DateTime value) {
     final local = value.toLocal();
     return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}';
+  }
+}
+
+class _GameHero extends StatelessWidget {
+  const _GameHero({required this.summary, required this.animation});
+
+  final AppGamificationSummary summary;
+  final Animation<double> animation;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        final glow = 0.18 + (animation.value * 0.14);
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0000CD).withValues(alpha: glow),
+                blurRadius: 28,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: child,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0F1320), Color(0xFF1A2133), Color(0xFF0000CD)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(color: Theme.of(context).dividerColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.10),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.18),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.military_tech_outlined,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Liga ${_leagueName(summary.level)}',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.labelLarge?.copyWith(color: Colors.white70),
+                      ),
+                      Text(
+                        'Nivel ${summary.level}',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                _ProgressPill(label: '${summary.publicScore} pts'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              summary.levelTitle,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: Colors.white70),
+            ),
+            const SizedBox(height: 18),
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: summary.progressToNextLevel),
+              duration: const Duration(milliseconds: 900),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, _) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: value,
+                    minHeight: 10,
+                    backgroundColor: Colors.white.withValues(alpha: 0.10),
+                    valueColor: const AlwaysStoppedAnimation(Colors.white),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 10),
+            Text(
+              summary.remainingXpToNextLevel == null
+                  ? '${summary.xp} XP acumulados'
+                  : '${summary.xp} XP | faltam ${summary.remainingXpToNextLevel} XP para o proximo nivel',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _ProgressPill(label: '${summary.currentStreakDays} dias'),
+                _ProgressPill(label: '${summary.medalsCount} medalhas'),
+                _ProgressPill(
+                  label: summary.rankingOptIn
+                      ? 'Ranking ativo'
+                      : 'Ranking pendente',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _leagueName(int level) {
+    if (level >= 8) return 'Lenda';
+    if (level >= 6) return 'Elite';
+    if (level >= 4) return 'Pro';
+    if (level >= 2) return 'Ritmo';
+    return 'Inicio';
   }
 }
 

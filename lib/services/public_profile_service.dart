@@ -73,12 +73,14 @@ class PublicProfileService {
       throw StateError('Usuario nao autenticado.');
     }
 
+    final normalizedSlug = _normalizeSlug(publicSlug);
+
     await client
         .schema('driver')
         .from('profiles')
         .update({
           'public_profile_enabled': publicProfileEnabled,
-          'public_slug': _normalize(publicSlug),
+          'public_slug': normalizedSlug,
           'public_bio': _normalize(publicBio),
           'public_city': _normalize(publicCity),
           'updated_at': DateTime.now().toUtc().toIso8601String(),
@@ -90,12 +92,89 @@ class PublicProfileService {
       'ranking_opt_in': rankingOptIn,
       'updated_at': DateTime.now().toUtc().toIso8601String(),
       'last_calculated_at': DateTime.now().toUtc().toIso8601String(),
-    });
+    }, onConflict: 'user_id');
   }
 
   String? _normalize(String? value) {
     final trimmed = value?.trim();
     return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+  }
+
+  Future<String> ensureInviteSlug({
+    PublicProfileSettings? currentSettings,
+    String? displayName,
+  }) async {
+    final client = _authService.requireClient();
+    final user = client.auth.currentUser;
+    if (user == null) {
+      throw StateError('Usuario nao autenticado.');
+    }
+
+    final settings = currentSettings ?? await loadSettings();
+    final existing = _normalizeSlug(settings.publicSlug);
+    if (existing != null && settings.publicProfileEnabled) {
+      return existing;
+    }
+
+    final suggested =
+        existing ?? _suggestSlug(displayName, user.email, user.id);
+    try {
+      await updateSettings(
+        publicProfileEnabled: true,
+        publicSlug: suggested,
+        publicBio: settings.publicBio,
+        publicCity: settings.publicCity,
+        rankingOptIn: true,
+      );
+      return suggested;
+    } catch (_) {
+      final fallback =
+          '$suggested-${user.id.replaceAll('-', '').substring(0, 4)}';
+      await updateSettings(
+        publicProfileEnabled: true,
+        publicSlug: fallback,
+        publicBio: settings.publicBio,
+        publicCity: settings.publicCity,
+        rankingOptIn: true,
+      );
+      return fallback;
+    }
+  }
+
+  static String buildInviteUrl(String slug) {
+    final cleanSlug = _normalizeSlug(slug) ?? slug.trim();
+    return 'https://driver.omnyatech.com.br/@$cleanSlug';
+  }
+
+  static String? _normalizeSlug(String? value) {
+    final normalized = _normalizeSearchQuery(value ?? '');
+    if (normalized.isEmpty) return null;
+    return normalized
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9._-]+'), '-')
+        .replaceAll(RegExp(r'-+'), '-')
+        .replaceAll(RegExp(r'^[-._]+|[-._]+$'), '');
+  }
+
+  static String _normalizeSearchQuery(String value) {
+    var normalized = value.trim();
+    if (normalized.isEmpty) return '';
+    normalized = normalized.split(RegExp(r'\s+')).first;
+    normalized = normalized.replaceFirst(RegExp(r'^https?://[^/]+/?'), '');
+    normalized = normalized.replaceFirst(RegExp(r'^(u/|perfil/|@)'), '');
+    normalized = normalized.replaceFirst(RegExp(r'^/+'), '');
+    return normalized.trim();
+  }
+
+  String _suggestSlug(String? displayName, String? email, String userId) {
+    final source =
+        _normalize(displayName) ??
+        _normalize(email?.split('@').first) ??
+        'motorista-${userId.replaceAll('-', '').substring(0, 6)}';
+    final slug = _normalizeSlug(source);
+    return slug == null || slug.isEmpty
+        ? 'motorista-${userId.replaceAll('-', '').substring(0, 6)}'
+        : slug;
   }
 
   Future<AppPublicDriverProfile?> loadPublicProfile(String slug) async {
@@ -172,12 +251,13 @@ class PublicProfileService {
     int limit = 20,
   }) async {
     final client = _authService.requireClient();
+    final normalizedQuery = _normalizeSearchQuery(query);
     final rows = await client
         .schema('driver')
         .rpc(
           'list_public_driver_profiles',
           params: {
-            'p_query': query.trim().isEmpty ? null : query.trim(),
+            'p_query': normalizedQuery.isEmpty ? null : normalizedQuery,
             'p_limit': limit,
           },
         );

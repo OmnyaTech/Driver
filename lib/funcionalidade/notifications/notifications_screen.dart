@@ -19,6 +19,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   final EngagementNotificationService _service =
       EngagementNotificationService();
   bool _loading = true;
+  String? _errorMessage;
   List<AppDriverNotification> _items = const [];
 
   @override
@@ -28,13 +29,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _load() async {
-    await _service.syncSmartNotifications();
-    final items = await _service.listNotifications();
-    if (!mounted) return;
-    setState(() {
-      _items = items;
-      _loading = false;
-    });
+    try {
+      await _service.syncSmartNotifications();
+      final items = await _service.listNotifications();
+      if (!mounted) return;
+      setState(() {
+        _items = items;
+        _errorMessage = null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _items = const [];
+        _errorMessage =
+            'Nao foi possivel sincronizar os lembretes agora. Tente atualizar em alguns segundos.';
+      });
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -64,19 +76,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: _items.isEmpty
             ? ListView(
                 padding: const EdgeInsets.fromLTRB(20, 28, 20, 120),
-                children: const [
+                children: [
                   Card(
                     child: Padding(
-                      padding: EdgeInsets.all(22),
+                      padding: const EdgeInsets.all(22),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.notifications_none_outlined, size: 34),
-                          SizedBox(height: 14),
-                          Text('Tudo em ordem por aqui'),
-                          SizedBox(height: 6),
+                          Icon(
+                            _errorMessage == null
+                                ? Icons.notifications_none_outlined
+                                : Icons.wifi_tethering_error_rounded,
+                            size: 34,
+                            color: const Color(0xFF7582FF),
+                          ),
+                          const SizedBox(height: 14),
                           Text(
-                            'Os lembretes de jornada, metas, desempenho e reserva aparecem conforme seu uso do app.',
+                            _errorMessage == null
+                                ? 'Tudo em ordem por aqui'
+                                : 'Sincronizacao pausada',
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _errorMessage ??
+                                'Os lembretes de jornada, metas, desempenho e reserva aparecem conforme seu uso do app.',
                           ),
                         ],
                       ),

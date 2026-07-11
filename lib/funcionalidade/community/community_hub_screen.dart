@@ -38,22 +38,32 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
   }
 
   Future<void> _load() async {
-    final ranking = await _service.listRankingPreview(limit: 10);
-    final results = await _service.searchDrivers('', limit: 12);
-    final settings = await _service.loadSettings();
-    if (!mounted) return;
-    setState(() {
-      _ranking = ranking;
-      _results = results;
-      _settings = settings;
-      _loading = false;
-    });
+    try {
+      final ranking = await _service.listRankingPreview(limit: 10);
+      final results = await _service.searchDrivers('', limit: 12);
+      final settings = await _service.loadSettings();
+      if (!mounted) return;
+      setState(() {
+        _ranking = ranking;
+        _results = results;
+        _settings = settings;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
   }
 
   Future<void> _search(String query) async {
-    final results = await _service.searchDrivers(query, limit: 20);
-    if (!mounted) return;
-    setState(() => _results = results);
+    try {
+      final results = await _service.searchDrivers(query, limit: 20);
+      if (!mounted) return;
+      setState(() => _results = results);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _results = const []);
+    }
   }
 
   @override
@@ -125,24 +135,7 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
               children: [
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: () async {
-                      final slug =
-                          _settings?.publicSlug?.trim().isNotEmpty == true
-                          ? _settings!.publicSlug!.trim()
-                          : (profile?.displayName
-                                    .toLowerCase()
-                                    .replaceAll(' ', '-') ??
-                                'motorista');
-                      await Clipboard.setData(
-                        ClipboardData(
-                          text: 'Me encontre no Omnya Driver: @$slug',
-                        ),
-                      );
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Convite copiado.')),
-                      );
-                    },
+                    onPressed: () => _copyInvite(profile?.displayName),
                     icon: const Icon(Icons.share_outlined),
                     label: const Text('Gerar convite'),
                   ),
@@ -200,22 +193,28 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    ..._ranking.take(3).map(
-                      (item) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: ProfileAvatar(
-                          displayName: item.displayName,
-                          avatarUrl: item.avatarUrl,
-                          radius: 20,
+                    ..._ranking
+                        .take(3)
+                        .map(
+                          (item) => ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: ProfileAvatar(
+                              displayName: item.displayName,
+                              avatarUrl: item.avatarUrl,
+                              radius: 20,
+                            ),
+                            title: Text(item.displayName),
+                            subtitle: Text(
+                              '${item.levelTitle} • ${item.medalsCount} medalhas',
+                            ),
+                            trailing: Text('#${item.rankPosition ?? 0}'),
+                            onTap: () => _openProfile(item.publicSlug),
+                          ),
                         ),
-                        title: Text(item.displayName),
-                        subtitle: Text(
-                          '${item.levelTitle} • ${item.medalsCount} medalhas',
-                        ),
-                        trailing: Text('#${item.rankPosition ?? 0}'),
-                        onTap: () => _openProfile(item.publicSlug),
+                    if (_ranking.isEmpty)
+                      const Text(
+                        'O ranking esta em aquecimento. Ative perfis publicos para liberar a disputa.',
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -273,5 +272,31 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => PublicDriverProfileScreen(slug: slug)),
     );
+  }
+
+  Future<void> _copyInvite(String? displayName) async {
+    try {
+      final slug = await _service.ensureInviteSlug(
+        currentSettings: _settings,
+        displayName: displayName,
+      );
+      final url = PublicProfileService.buildInviteUrl(slug);
+      await Clipboard.setData(
+        ClipboardData(text: 'Me encontre no Omnya Driver: @$slug\n$url'),
+      );
+      final settings = await _service.loadSettings();
+      if (!mounted) return;
+      setState(() => _settings = settings);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Convite @$slug copiado.')));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nao foi possivel gerar o convite agora.'),
+        ),
+      );
+    }
   }
 }
