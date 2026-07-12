@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/app_referral_reward.dart';
 import 'auth_service.dart';
 
 class ReferralService {
@@ -10,11 +11,16 @@ class ReferralService {
   final AuthService _authService;
 
   Future<void> captureInitialReferral() async {
-    final slug = extractReferralSlug(Uri.base);
-    if (slug == null) return;
+    await captureReferralFromUri(Uri.base);
+  }
+
+  Future<bool> captureReferralFromUri(Uri uri) async {
+    final slug = extractReferralSlug(uri);
+    if (slug == null) return false;
 
     final preferences = await SharedPreferences.getInstance();
     await preferences.setString(_pendingReferralKey, slug);
+    return true;
   }
 
   Future<void> redeemPendingReferral() async {
@@ -30,9 +36,30 @@ class ReferralService {
       await client
           .schema('driver')
           .rpc('accept_public_referral', params: {'p_referrer_slug': slug});
-    } finally {
       await preferences.remove(_pendingReferralKey);
+    } catch (_) {
+      // Keep the pending slug so it can be redeemed after the SQL function exists.
     }
+  }
+
+  Future<List<AppReferralReward>> listRewards() async {
+    final client = _authService.client;
+    final user = client?.auth.currentUser;
+    if (client == null || user == null) return const [];
+
+    final List<dynamic> response;
+    try {
+      response = await client
+          .schema('driver')
+          .rpc('get_referral_rewards')
+          .select();
+    } catch (_) {
+      return const [];
+    }
+
+    return response
+        .map((item) => AppReferralReward.fromMap(item as Map<String, dynamic>))
+        .toList();
   }
 
   static String? extractReferralSlug(Uri uri) {

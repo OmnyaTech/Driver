@@ -117,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 20),
                               Text(
-                                'Seu corre mais organizado.',
+                                'Seu corre, sem bagunca.',
                                 style: theme.textTheme.headlineMedium?.copyWith(
                                   color: Colors.white,
                                   height: 1.14,
@@ -125,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 10),
                               Text(
-                                'Controle jornadas, metas e custos em uma experiencia pensada para a identidade OmnyaTech.',
+                                'Anote jornadas, veja quanto sobrou e acompanhe sua evolucao sem complicar o dia.',
                                 style: theme.textTheme.bodyLarge?.copyWith(
                                   color: Colors.white.withValues(alpha: 0.76),
                                 ),
@@ -180,8 +180,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             const SizedBox(height: 8),
                             Text(
                               isRegister
-                                  ? 'Crie sua conta e inicie o onboarding do motorista.'
-                                  : 'Entre com seguranca para acessar seu painel.',
+                                  ? 'Crie sua conta e deixe o app pronto para sua rotina.'
+                                  : 'Entre para continuar de onde parou.',
                             ),
                             const SizedBox(height: 24),
                             SegmentedButton<AuthFormMode>(
@@ -482,13 +482,11 @@ class _AuthStatusPanel extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             supabaseConfigured
-                ? 'Supabase e Turnstile estao conectados ao app.'
-                : 'Supabase ainda nao esta configurado no ambiente atual.',
+                ? 'Login protegido e pronto para uso.'
+                : 'Ambiente ainda nao conectado. Configure o Supabase para entrar.',
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Fluxos ativos nesta etapa: e-mail e senha, Google, Microsoft e captcha endurecido no Flutter.',
-          ),
+          const Text('Voce pode entrar com e-mail, Google ou Microsoft.'),
         ],
       ),
     );

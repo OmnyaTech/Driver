@@ -8,17 +8,28 @@ import '../../models/oauth_provider_option.dart';
 import '../../models/plan_type.dart';
 import '../../models/user_role.dart';
 import '../../services/auth_service.dart';
+import '../../services/deep_link_service.dart';
+import '../../services/push_notification_service.dart';
 import '../../services/referral_service.dart';
 
 class AppSession extends ChangeNotifier {
-  AppSession({AuthService? authService, ReferralService? referralService})
-    : _authService = authService ?? const AuthService(),
-      _referralService = referralService ?? ReferralService() {
+  AppSession({
+    AuthService? authService,
+    ReferralService? referralService,
+    DeepLinkService? deepLinkService,
+    PushNotificationService? pushNotificationService,
+  }) : _authService = authService ?? const AuthService(),
+       _referralService = referralService ?? ReferralService(),
+       _deepLinkService = deepLinkService ?? DeepLinkService(),
+       _pushNotificationService =
+           pushNotificationService ?? PushNotificationService() {
     _initialize();
   }
 
   final AuthService _authService;
   final ReferralService _referralService;
+  final DeepLinkService _deepLinkService;
+  final PushNotificationService _pushNotificationService;
   ThemeMode _themeMode = ThemeMode.dark;
   bool _authenticated = false;
   bool _isReady = false;
@@ -33,6 +44,12 @@ class AppSession extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   AppProfile? get profile => _profile;
   bool get supabaseConfigured => SupabaseRuntimeConfig.isConfigured;
+
+  @override
+  void dispose() {
+    _deepLinkService.dispose();
+    super.dispose();
+  }
 
   void toggleThemeMode() {
     _themeMode = _themeMode == ThemeMode.dark
@@ -139,6 +156,12 @@ class AppSession extends ChangeNotifier {
 
   Future<void> _initialize() async {
     await _referralService.captureInitialReferral();
+    await _deepLinkService.start(
+      onReferralCaptured: () async {
+        await _referralService.redeemPendingReferral();
+        await refreshProfile();
+      },
+    );
 
     if (!_authService.isAvailable) {
       _isReady = true;
@@ -172,6 +195,7 @@ class AppSession extends ChangeNotifier {
       _profile = data == null
           ? _fallbackProfile(session.user)
           : _mapProfile(data);
+      await _pushNotificationService.registerDeviceIfPossible();
       _errorMessage = null;
     } catch (_) {
       _errorMessage = 'Falha ao carregar o perfil do motorista.';

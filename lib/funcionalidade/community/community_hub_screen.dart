@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/app_public_driver.dart';
+import '../../models/app_referral_reward.dart';
 import '../../services/public_profile_service.dart';
+import '../../services/referral_service.dart';
 import '../../utilities/state/app_session.dart';
 import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/profile_avatar.dart';
@@ -19,10 +21,12 @@ class CommunityHubScreen extends StatefulWidget {
 
 class _CommunityHubScreenState extends State<CommunityHubScreen> {
   final PublicProfileService _service = PublicProfileService();
+  final ReferralService _referralService = ReferralService();
   final TextEditingController _searchController = TextEditingController();
   bool _loading = true;
   List<AppPublicDriverPreview> _ranking = const [];
   List<AppPublicDriverPreview> _results = const [];
+  List<AppReferralReward> _rewards = const [];
   PublicProfileSettings? _settings;
 
   @override
@@ -42,10 +46,12 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
       final ranking = await _service.listRankingPreview(limit: 10);
       final results = await _service.searchDrivers('', limit: 12);
       final settings = await _service.loadSettings();
+      final rewards = await _referralService.listRewards();
       if (!mounted) return;
       setState(() {
         _ranking = ranking;
         _results = results;
+        _rewards = rewards;
         _settings = settings;
         _loading = false;
       });
@@ -149,6 +155,8 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            _ReferralRewardsCard(rewards: _rewards),
             const SizedBox(height: 16),
             TextField(
               controller: _searchController,
@@ -296,5 +304,88 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
         ),
       );
     }
+  }
+}
+
+class _ReferralRewardsCard extends StatelessWidget {
+  const _ReferralRewardsCard({required this.rewards});
+
+  final List<AppReferralReward> rewards;
+
+  @override
+  Widget build(BuildContext context) {
+    final totalXp = rewards.fold<int>(
+      0,
+      (total, reward) => total + reward.rewardXp,
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0000CD).withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.group_add_outlined),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Seu placar de convites',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        rewards.isEmpty
+                            ? 'Convide amigos e ganhe XP quando eles entrarem.'
+                            : '${rewards.length} motorista(s) entraram | +$totalXp XP',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (rewards.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              ...rewards
+                  .take(3)
+                  .map(
+                    (reward) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: ProfileAvatar(
+                        displayName: reward.referredDisplayName,
+                        avatarUrl: reward.referredAvatarUrl,
+                        radius: 18,
+                      ),
+                      title: Text(reward.referredDisplayName),
+                      subtitle: Text(_dateLabel(reward.acceptedAt)),
+                      trailing: Text(
+                        '+${reward.rewardXp} XP',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                    ),
+                  ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _dateLabel(DateTime? value) {
+    if (value == null) return 'Convite aceito';
+    final date = value.toLocal();
+    return 'Entrou em ${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
   }
 }

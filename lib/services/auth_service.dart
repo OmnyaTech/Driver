@@ -141,8 +141,12 @@ class AuthService {
     };
     final existing = await fetchProfile();
 
-    final avatarUrl = (existing?['avatar_url'] ?? metadata['avatar_url'])
-        ?.toString();
+    final avatarUrl =
+        (existing?['avatar_url'] ??
+                metadata['avatar_url'] ??
+                metadata['picture'] ??
+                metadata['photo_url'])
+            ?.toString();
     payload['avatar_url'] = avatarUrl;
 
     if (existing == null) {

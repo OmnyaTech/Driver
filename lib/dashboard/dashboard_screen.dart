@@ -700,6 +700,11 @@ class _OverviewTabState extends State<_OverviewTab> {
             ),
           ),
           const SizedBox(height: 18),
+          _ComparisonBoard(
+            current: metrics,
+            previous: intelligence.previousMetrics,
+          ),
+          const SizedBox(height: 18),
           _MetricGrid(
             metrics: [
               _MetricData(
@@ -1050,6 +1055,141 @@ class _SparklineChart extends StatelessWidget {
               ),
             )
             .toList(),
+      ),
+    );
+  }
+}
+
+class _ComparisonBoard extends StatelessWidget {
+  const _ComparisonBoard({required this.current, required this.previous});
+
+  final AppDashboardMetrics current;
+  final AppDashboardMetrics previous;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _ComparisonItem(
+        label: 'Receita',
+        current: current.totalIncome,
+        previous: previous.totalIncome,
+        valueLabel: _currency(current.totalIncome),
+      ),
+      _ComparisonItem(
+        label: 'Sobrou',
+        current: current.netResult,
+        previous: previous.netResult,
+        valueLabel: _currency(current.netResult),
+      ),
+      _ComparisonItem(
+        label: 'Entregas',
+        current: current.totalDeliveries.toDouble(),
+        previous: previous.totalDeliveries.toDouble(),
+        valueLabel: '${current.totalDeliveries}',
+      ),
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Comparativo do periodo',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 14),
+            ...items.map((item) => _ComparisonRow(item: item)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _currency(double value) => 'R\$ ${value.toStringAsFixed(2)}';
+}
+
+class _ComparisonItem {
+  const _ComparisonItem({
+    required this.label,
+    required this.current,
+    required this.previous,
+    required this.valueLabel,
+  });
+
+  final String label;
+  final double current;
+  final double previous;
+  final String valueLabel;
+
+  double get ratio {
+    final maxValue = [
+      current.abs(),
+      previous.abs(),
+      1.0,
+    ].reduce((a, b) => a > b ? a : b);
+    return (current.abs() / maxValue).clamp(0.06, 1);
+  }
+
+  String get deltaLabel {
+    if (previous.abs() < 0.001) {
+      return current.abs() < 0.001 ? 'sem movimento' : 'novo movimento';
+    }
+    final delta = ((current - previous) / previous.abs()) * 100;
+    final prefix = delta >= 0 ? '+' : '';
+    return '$prefix${delta.toStringAsFixed(0)}%';
+  }
+}
+
+class _ComparisonRow extends StatelessWidget {
+  const _ComparisonRow({required this.item});
+
+  final _ComparisonItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 76,
+            child: Text(item.label, style: theme.textTheme.labelLarge),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: item.ratio,
+                    minHeight: 9,
+                    backgroundColor: theme.dividerColor.withValues(alpha: 0.32),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  'Antes: ${item.previous.toStringAsFixed(item.label == 'Entregas' ? 0 : 2)}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 74,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(item.valueLabel, style: theme.textTheme.labelLarge),
+                Text(item.deltaLabel, style: theme.textTheme.bodySmall),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -143,7 +143,7 @@ class PublicProfileService {
 
   static String buildInviteUrl(String slug) {
     final cleanSlug = _normalizeSlug(slug) ?? slug.trim();
-    return 'https://driver.omnyatech.com.br/?ref=$cleanSlug';
+    return 'https://driver.omnyatech.com.br/convite/$cleanSlug';
   }
 
   static String? _normalizeSlug(String? value) {
