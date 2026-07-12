@@ -30,9 +30,19 @@ class SubscriptionService {
             expiresAt: _parseDate(row['expires_at']),
             cancelledAt: _parseDate(row['cancelled_at']),
             giftedBy: row['gifted_by']?.toString(),
+            externalReference: row['external_reference']?.toString(),
           ),
         )
         .toList();
+  }
+
+  AppSubscription? currentSubscription(List<AppSubscription> subscriptions) {
+    for (final subscription in subscriptions) {
+      if (subscription.isCurrent && subscription.cancelledAt == null) {
+        return subscription;
+      }
+    }
+    return subscriptions.isEmpty ? null : subscriptions.first;
   }
 
   DateTime? _parseDate(Object? value) {

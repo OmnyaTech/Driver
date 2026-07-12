@@ -8,6 +8,7 @@ class AppSubscription {
     required this.expiresAt,
     required this.cancelledAt,
     required this.giftedBy,
+    required this.externalReference,
   });
 
   final String id;
@@ -18,6 +19,26 @@ class AppSubscription {
   final DateTime? expiresAt;
   final DateTime? cancelledAt;
   final String? giftedBy;
+  final String? externalReference;
+
+  bool get isPending => status.toLowerCase() == 'pending';
+
+  bool get isActive {
+    final normalizedStatus = status.toLowerCase();
+    final normalizedPlan = planType.toLowerCase();
+    return ['active', 'gifted'].contains(normalizedStatus) &&
+        ['premium', 'gift', 'lifetime', 'developer'].contains(normalizedPlan);
+  }
+
+  bool get isCurrent {
+    final normalizedStatus = status.toLowerCase();
+    return [
+      'pending',
+      'active',
+      'gifted',
+      'overdue',
+    ].contains(normalizedStatus);
+  }
 }
 
 class AdminAccessProfile {

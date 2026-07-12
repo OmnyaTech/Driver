@@ -45,11 +45,11 @@ const resolvePrice = (planType: string, billingCycle: string) => {
   switch (key) {
     case "premium:MONTHLY":
       return Number(
-        Deno.env.get("DRIVER_PREMIUM_MONTHLY_PRICE") ?? "29.90",
+        Deno.env.get("DRIVER_PREMIUM_MONTHLY_PRICE") ?? "14.90",
       );
     case "premium:YEARLY":
       return Number(
-        Deno.env.get("DRIVER_PREMIUM_YEARLY_PRICE") ?? "299.90",
+        Deno.env.get("DRIVER_PREMIUM_YEARLY_PRICE") ?? "149.90",
       );
     default:
       return null;
@@ -73,7 +73,7 @@ const buildPaymentLinkPayload = (
     notificationEnabled: true,
   };
 
-  if (successUrl && successUrl.trim().isNotEmpty) {
+  if (successUrl && successUrl.trim().length > 0) {
     payload.callback = {
       successUrl,
       autoRedirect: false,
@@ -172,6 +172,37 @@ Deno.serve(async (req) => {
       );
     }
 
+    const { data: activeProfiles, error: profileError } = await admin
+      .schema("driver")
+      .from("profiles")
+      .select("plan_type, subscription_status")
+      .eq("id", user.id)
+      .limit(1);
+
+    if (profileError) {
+      throw profileError;
+    }
+
+    const currentProfile = Array.isArray(activeProfiles)
+      ? activeProfiles[0]
+      : null;
+    const hasActiveAccess =
+      ["premium", "gift", "lifetime", "developer"].includes(
+        currentProfile?.plan_type ?? "",
+      ) &&
+      ["active", "gifted"].includes(currentProfile?.subscription_status ?? "");
+
+    if (hasActiveAccess) {
+      return jsonSecurityResponse(
+        req,
+        {
+          success: false,
+          message: "Voce ja tem um plano ativo.",
+        },
+        409,
+      );
+    }
+
     const successUrl =
       Deno.env.get("DRIVER_BILLING_SUCCESS_URL") ??
       Deno.env.get("BILLING_SUCCESS_URL") ??
@@ -251,6 +282,38 @@ Deno.serve(async (req) => {
       p_status: "created",
       p_payload: asaasData,
     });
+
+    const { data: pendingResult, error: pendingError } = await admin
+      .schema("driver")
+      .rpc("mark_subscription_checkout_pending", {
+        p_user_id: user.id,
+        p_plan_type: planType,
+        p_provider: "asaas",
+        p_external_reference: externalReference,
+        p_provider_checkout_id: asaasData.id ?? null,
+        p_payload: asaasData,
+      });
+
+    if (pendingError) {
+      throw pendingError;
+    }
+
+    const pendingOk = pendingResult &&
+      typeof pendingResult === "object" &&
+      (pendingResult as { ok?: boolean }).ok === true;
+
+    if (!pendingOk) {
+      return jsonSecurityResponse(
+        req,
+        {
+          success: false,
+          message:
+            (pendingResult as { message?: string } | null)?.message ??
+              "Nao foi possivel preparar sua assinatura.",
+        },
+        409,
+      );
+    }
 
     return jsonSecurityResponse(
       req,

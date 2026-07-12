@@ -40,16 +40,16 @@ const parsePlanFromReference = (reference?: string | null) => {
 };
 
 const mapEventToStatus = (eventType: string) => {
-  if (
-    [
-      "PAYMENT_RECEIVED",
-      "PAYMENT_CONFIRMED",
-      "PAYMENT_CREATED",
-      "SUBSCRIPTION_CREATED",
-      "SUBSCRIPTION_UPDATED",
-    ].includes(eventType)
-  ) {
+  if (["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED"].includes(eventType)) {
     return "active";
+  }
+
+  if (
+    ["PAYMENT_CREATED", "SUBSCRIPTION_CREATED", "SUBSCRIPTION_UPDATED"].includes(
+      eventType,
+    )
+  ) {
+    return "pending";
   }
 
   if (["PAYMENT_OVERDUE"].includes(eventType)) {
@@ -165,6 +165,7 @@ Deno.serve(async (req) => {
         p_provider_subscription_id: providerSubscriptionId,
         p_current_period_end: expiresAt?.toISOString() ?? null,
         p_payload: payload,
+        p_external_reference: externalReference,
       });
     }
 

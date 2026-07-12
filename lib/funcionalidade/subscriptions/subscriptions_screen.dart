@@ -65,8 +65,16 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       );
     }
 
-    final currentPlan = _subscriptions.isNotEmpty ? _subscriptions.first : null;
+    final currentPlan = _subscriptionService.currentSubscription(
+      _subscriptions,
+    );
     final planCards = _annualBilling ? _annualPlans : _monthlyPlans;
+    final hasPendingCheckout = currentPlan?.isPending ?? false;
+    final hasActivePlan = currentPlan?.isActive ?? false;
+    final checkoutBlockReason = _checkoutBlockReason(
+      hasPendingCheckout: hasPendingCheckout,
+      hasActivePlan: hasActivePlan,
+    );
 
     return OmnyaSubPageScaffold(
       title: 'Assinatura',
@@ -86,6 +94,10 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
             ),
             const SizedBox(height: 20),
             _CurrentPlanCard(subscription: currentPlan),
+            if (hasPendingCheckout) ...[
+              const SizedBox(height: 12),
+              _PendingCheckoutNotice(onRefresh: _loadData),
+            ],
             const SizedBox(height: 16),
             _BillingCycleBar(
               annualBilling: _annualBilling,
@@ -116,7 +128,12 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                             child: _SubscriptionPlanCard(
                               plan: plan,
                               busy: _creatingCheckout,
-                              onTap: plan.planType == null
+                              blockedReason: plan.planType == null
+                                  ? null
+                                  : checkoutBlockReason,
+                              onTap:
+                                  plan.planType == null ||
+                                      checkoutBlockReason != null
                                   ? null
                                   : () => _startCheckout(
                                       planType: plan.planType!,
@@ -143,7 +160,12 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                             child: _SubscriptionPlanCard(
                               plan: plan,
                               busy: _creatingCheckout,
-                              onTap: plan.planType == null
+                              blockedReason: plan.planType == null
+                                  ? null
+                                  : checkoutBlockReason,
+                              onTap:
+                                  plan.planType == null ||
+                                      checkoutBlockReason != null
                                   ? null
                                   : () => _startCheckout(
                                       planType: plan.planType!,
@@ -254,9 +276,13 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
           _errorMessage = 'Nao foi possivel abrir o checkout do Asaas.';
         });
       } else {
+        await _loadData();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Checkout aberto no provedor de pagamento.'),
+            content: Text(
+              'Checkout aberto. Seu plano fica pendente ate o pagamento cair.',
+            ),
           ),
         );
       }
@@ -285,6 +311,15 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   String _capitalize(String value) {
     if (value.isEmpty) return value;
     return '${value[0].toUpperCase()}${value.substring(1)}';
+  }
+
+  String? _checkoutBlockReason({
+    required bool hasPendingCheckout,
+    required bool hasActivePlan,
+  }) {
+    if (hasActivePlan) return 'Plano ativo';
+    if (hasPendingCheckout) return 'Pagamento pendente';
+    return null;
   }
 }
 
@@ -344,6 +379,33 @@ class _CurrentPlanCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PendingCheckoutNotice extends StatelessWidget {
+  const _PendingCheckoutNotice({required this.onRefresh});
+
+  final Future<void> Function() onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            const Icon(Icons.hourglass_top_rounded, color: Color(0xFF27D17F)),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Pagamento em andamento. Assim que o Asaas confirmar, o Premium entra sozinho aqui no app.',
+              ),
+            ),
+            TextButton(onPressed: onRefresh, child: const Text('Atualizar')),
+          ],
+        ),
       ),
     );
   }
@@ -443,11 +505,13 @@ class _SubscriptionPlanCard extends StatelessWidget {
   const _SubscriptionPlanCard({
     required this.plan,
     required this.busy,
+    required this.blockedReason,
     required this.onTap,
   });
 
   final _DriverPlanCardData plan;
   final bool busy;
+  final String? blockedReason;
   final VoidCallback? onTap;
 
   @override
@@ -549,7 +613,7 @@ class _SubscriptionPlanCard extends StatelessWidget {
                   )
                 : FilledButton(
                     onPressed: busy ? null : onTap,
-                    child: Text(plan.buttonLabel),
+                    child: Text(blockedReason ?? plan.buttonLabel),
                   ),
           ),
         ],

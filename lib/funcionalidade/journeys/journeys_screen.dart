@@ -4,6 +4,7 @@ import '../../models/app_journey.dart';
 import '../../models/app_platform.dart';
 import '../../models/app_vehicle.dart';
 import '../finance/widgets/financial_filter_toolbar.dart';
+import '../../services/active_journey_storage_service.dart';
 import '../../services/journey_service.dart';
 import '../../services/platform_service.dart';
 import '../../services/vehicle_service.dart';
@@ -28,9 +29,12 @@ class JourneysScreen extends StatefulWidget {
 
 class _JourneysScreenState extends State<JourneysScreen> {
   final JourneyService _journeyService = JourneyService();
+  final ActiveJourneyStorageService _activeJourneyStorage =
+      ActiveJourneyStorageService();
   final TextEditingController _searchController = TextEditingController();
   bool _loading = true;
   List<AppJourney> _journeys = const [];
+  ActiveJourneyDraft? _activeJourney;
   String? _errorMessage;
   late DateTimeRange _range;
 
@@ -66,9 +70,11 @@ class _JourneysScreenState extends State<JourneysScreen> {
 
     try {
       final journeys = await _journeyService.listJourneys();
+      final activeJourney = await _activeJourneyStorage.load();
       if (!mounted) return;
       setState(() {
         _journeys = journeys;
+        _activeJourney = activeJourney;
       });
     } catch (_) {
       if (!mounted) return;
@@ -80,6 +86,72 @@ class _JourneysScreenState extends State<JourneysScreen> {
       if (mounted) {
         setState(() => _loading = false);
       }
+    }
+  }
+
+  Future<void> _startAutomaticJourney() async {
+    if (_activeJourney != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Voce ja tem uma jornada em andamento.')),
+      );
+      return;
+    }
+
+    final vehicles = await VehicleService().listVehicles();
+    if (!mounted) return;
+
+    final draft = await showDialog<ActiveJourneyDraft>(
+      context: context,
+      builder: (_) => _StartAutomaticJourneyDialog(
+        vehicles: vehicles.where((item) => item.active).toList(),
+      ),
+    );
+
+    if (draft == null) return;
+    await _activeJourneyStorage.save(draft);
+    if (!mounted) return;
+    setState(() => _activeJourney = draft);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Jornada iniciada. Boa corrida!')),
+    );
+  }
+
+  Future<void> _finishAutomaticJourney() async {
+    final activeJourney = _activeJourney;
+    if (activeJourney == null) return;
+
+    final platforms = await PlatformService().listPlatforms();
+    if (!mounted) return;
+
+    final finished = await showDialog<bool>(
+      context: context,
+      builder: (_) => _FinishAutomaticJourneyDialog(
+        activeJourney: activeJourney,
+        platforms: platforms.where((item) => item.active).toList(),
+        onSubmit:
+            ({required odometerEnd, required notes, required platforms}) async {
+              await _journeyService.createJourney(
+                mode: 'automatic',
+                startedAt: activeJourney.startedAt,
+                endedAt: DateTime.now(),
+                vehicleId: activeJourney.vehicleId,
+                odometerStart: activeJourney.odometerStart,
+                odometerEnd: odometerEnd,
+                notes: notes,
+                platforms: platforms,
+              );
+              await _activeJourneyStorage.clear();
+            },
+      ),
+    );
+
+    if (finished == true) {
+      if (!mounted) return;
+      setState(() => _activeJourney = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Jornada finalizada e salva.')),
+      );
+      await _loadJourneys();
     }
   }
 
@@ -220,6 +292,14 @@ class _JourneysScreenState extends State<JourneysScreen> {
             onClear: _clearFilters,
           ),
           const SizedBox(height: 16),
+          if (_activeJourney != null) ...[
+            _ActiveJourneyCard(
+              draft: _activeJourney!,
+              onFinish: _finishAutomaticJourney,
+              onDiscard: _discardActiveJourney,
+            ),
+            const SizedBox(height: 16),
+          ],
           if (_filteredJourneys.isNotEmpty)
             Card(
               child: ListTile(
@@ -337,6 +417,18 @@ class _JourneysScreenState extends State<JourneysScreen> {
       title: 'Jornadas',
       heroTagPrefix: 'journeys',
       floatingActions: [
+        if (_activeJourney == null)
+          OmnyaFabAction(
+            label: 'Iniciar automatica',
+            icon: Icons.play_arrow_rounded,
+            onTap: _startAutomaticJourney,
+          )
+        else
+          OmnyaFabAction(
+            label: 'Encerrar jornada',
+            icon: Icons.stop_rounded,
+            onTap: _finishAutomaticJourney,
+          ),
         OmnyaFabAction(
           label: 'Nova jornada',
           icon: Icons.add,
@@ -345,6 +437,32 @@ class _JourneysScreenState extends State<JourneysScreen> {
       ],
       body: content,
     );
+  }
+
+  Future<void> _discardActiveJourney() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Descartar jornada?'),
+        content: const Text(
+          'Isso remove a jornada em andamento deste aparelho sem salvar no historico.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Descartar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _activeJourneyStorage.clear();
+    if (!mounted) return;
+    setState(() => _activeJourney = null);
   }
 
   String _formatJourneyTitle(AppJourney journey) {
@@ -424,6 +542,382 @@ class _JourneysScreenState extends State<JourneysScreen> {
   DateTimeRange _currentMonthRange() {
     final now = DateTime.now();
     return DateTimeRange(start: DateTime(now.year, now.month, 1), end: now);
+  }
+}
+
+class _ActiveJourneyCard extends StatelessWidget {
+  const _ActiveJourneyCard({
+    required this.draft,
+    required this.onFinish,
+    required this.onDiscard,
+  });
+
+  final ActiveJourneyDraft draft;
+  final VoidCallback onFinish;
+  final VoidCallback onDiscard;
+
+  @override
+  Widget build(BuildContext context) {
+    final startedAt = draft.startedAt.toLocal();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.timer_outlined, color: Color(0xFF27D17F)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Jornada em andamento',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                TextButton(
+                  onPressed: onDiscard,
+                  child: const Text('Descartar'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Comecou hoje as ${startedAt.hour.toString().padLeft(2, '0')}:${startedAt.minute.toString().padLeft(2, '0')}',
+            ),
+            if (draft.vehicleLabel != null) Text(draft.vehicleLabel!),
+            if (draft.odometerStart.trim().isNotEmpty)
+              Text('Km inicial: ${draft.odometerStart}'),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onFinish,
+                icon: const Icon(Icons.stop_rounded),
+                label: const Text('Encerrar e salvar'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StartAutomaticJourneyDialog extends StatefulWidget {
+  const _StartAutomaticJourneyDialog({required this.vehicles});
+
+  final List<AppVehicle> vehicles;
+
+  @override
+  State<_StartAutomaticJourneyDialog> createState() =>
+      _StartAutomaticJourneyDialogState();
+}
+
+class _StartAutomaticJourneyDialogState
+    extends State<_StartAutomaticJourneyDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _odometerController = TextEditingController();
+  String? _vehicleId;
+
+  @override
+  void dispose() {
+    _odometerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Iniciar jornada'),
+      content: Form(
+        key: _formKey,
+        child: SizedBox(
+          width: 420,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String?>(
+                initialValue: _vehicleId,
+                decoration: const InputDecoration(labelText: 'Veiculo'),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Sem vincular'),
+                  ),
+                  ...widget.vehicles.map(
+                    (vehicle) => DropdownMenuItem<String?>(
+                      value: vehicle.id,
+                      child: Text('${vehicle.brand} ${vehicle.model}'),
+                    ),
+                  ),
+                ],
+                onChanged: (value) => setState(() => _vehicleId = value),
+              ),
+              TextFormField(
+                controller: _odometerController,
+                decoration: const InputDecoration(labelText: 'Km inicial'),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                validator: _validateDistanceField,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (!_formKey.currentState!.validate()) return;
+            AppVehicle? vehicle;
+            for (final item in widget.vehicles) {
+              if (item.id == _vehicleId) {
+                vehicle = item;
+                break;
+              }
+            }
+            Navigator.of(context).pop(
+              ActiveJourneyDraft(
+                startedAt: DateTime.now(),
+                vehicleId: _vehicleId,
+                vehicleLabel: vehicle == null
+                    ? null
+                    : '${vehicle.brand} ${vehicle.model}',
+                odometerStart: _odometerController.text,
+              ),
+            );
+          },
+          child: const Text('Comecar'),
+        ),
+      ],
+    );
+  }
+
+  String? _validateDistanceField(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final normalized = value.trim().replaceAll(',', '.');
+    if (double.tryParse(normalized) == null) return 'Informe um km valido.';
+    return null;
+  }
+}
+
+class _FinishAutomaticJourneyDialog extends StatefulWidget {
+  const _FinishAutomaticJourneyDialog({
+    required this.activeJourney,
+    required this.platforms,
+    required this.onSubmit,
+  });
+
+  final ActiveJourneyDraft activeJourney;
+  final List<AppPlatform> platforms;
+  final Future<void> Function({
+    required String odometerEnd,
+    required String notes,
+    required List<JourneyPlatformDraft> platforms,
+  })
+  onSubmit;
+
+  @override
+  State<_FinishAutomaticJourneyDialog> createState() =>
+      _FinishAutomaticJourneyDialogState();
+}
+
+class _FinishAutomaticJourneyDialogState
+    extends State<_FinishAutomaticJourneyDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _odometerEndController = TextEditingController();
+  final _notesController = TextEditingController();
+  final List<_PlatformIncomeEntry> _platformEntries = [_PlatformIncomeEntry()];
+  bool _saving = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _odometerEndController.dispose();
+    _notesController.dispose();
+    for (final entry in _platformEntries) {
+      entry.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Encerrar jornada'),
+      content: SizedBox(
+        width: 520,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _odometerEndController,
+                  decoration: const InputDecoration(labelText: 'Km final'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: _validateDistanceField,
+                ),
+                TextFormField(
+                  controller: _notesController,
+                  decoration: const InputDecoration(labelText: 'Observacoes'),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Quanto fez por plataforma?',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => setState(
+                        () => _platformEntries.add(_PlatformIncomeEntry()),
+                      ),
+                      child: const Text('Adicionar'),
+                    ),
+                  ],
+                ),
+                ..._platformEntries.asMap().entries.map(
+                  (entry) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: entry.value.platformId,
+                            decoration: const InputDecoration(
+                              labelText: 'Plataforma',
+                            ),
+                            items: [
+                              const DropdownMenuItem(
+                                value: '',
+                                child: Text('Selecionar'),
+                              ),
+                              ...widget.platforms.map(
+                                (platform) => DropdownMenuItem(
+                                  value: platform.id,
+                                  child: Text(platform.name),
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) =>
+                                entry.value.platformId = value ?? '',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 92,
+                          child: TextFormField(
+                            controller: entry.value.incomeController,
+                            decoration: const InputDecoration(
+                              labelText: 'Ganho',
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 92,
+                          child: TextFormField(
+                            controller: entry.value.deliveriesController,
+                            decoration: const InputDecoration(
+                              labelText: 'Entregas',
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        if (_platformEntries.length > 1)
+                          IconButton(
+                            onPressed: () {
+                              final removed = _platformEntries.removeAt(
+                                entry.key,
+                              );
+                              removed.dispose();
+                              setState(() {});
+                            },
+                            icon: const Icon(Icons.delete_outline),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (_errorMessage != null)
+                  Text(
+                    _errorMessage!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _saving
+              ? null
+              : () async {
+                  if (!_formKey.currentState!.validate()) return;
+                  final navigator = Navigator.of(context);
+                  setState(() {
+                    _saving = true;
+                    _errorMessage = null;
+                  });
+                  try {
+                    await widget.onSubmit(
+                      odometerEnd: _odometerEndController.text,
+                      notes: _notesController.text,
+                      platforms: _platformEntries
+                          .map(
+                            (entry) => JourneyPlatformDraft(
+                              platformId: entry.platformId,
+                              income: entry.incomeController.text,
+                              deliveries: entry.deliveriesController.text,
+                            ),
+                          )
+                          .toList(),
+                    );
+                    if (!mounted) return;
+                    navigator.pop(true);
+                  } catch (error) {
+                    if (!mounted) return;
+                    setState(() {
+                      _errorMessage =
+                          'Nao consegui salvar agora. Tente de novo.';
+                    });
+                  } finally {
+                    if (mounted) setState(() => _saving = false);
+                  }
+                },
+          child: const Text('Salvar jornada'),
+        ),
+      ],
+    );
+  }
+
+  String? _validateDistanceField(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final normalized = value.trim().replaceAll(',', '.');
+    if (double.tryParse(normalized) == null) return 'Informe um km valido.';
+    return null;
   }
 }
 
