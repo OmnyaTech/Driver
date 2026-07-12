@@ -217,6 +217,8 @@ class AppSession extends ChangeNotifier {
       role: _parseRole((data['role'] ?? 'user').toString()),
       planType: _parsePlanType((data['plan_type'] ?? 'free').toString()),
       onboardingCompletedAt: _parseDate(data['onboarding_completed_at']),
+      languageCode: (data['language_code'] ?? 'pt-BR').toString(),
+      currencyCode: (data['currency_code'] ?? 'BRL').toString(),
       reservePreference: DriverReservePreference(
         mode: _parseReserveMode(
           (data['reserve_mode'] ?? 'daily_percent').toString(),
@@ -275,6 +277,8 @@ class AppSession extends ChangeNotifier {
       role: UserRole.user,
       planType: PlanType.free,
       onboardingCompletedAt: null,
+      languageCode: 'pt-BR',
+      currencyCode: 'BRL',
       reservePreference: const DriverReservePreference(
         mode: DriverReserveMode.dailyPercent,
         dailyPercentage: 30,

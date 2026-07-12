@@ -41,6 +41,27 @@ class DriverPreferenceService {
         .eq('id', user.id);
   }
 
+  Future<void> updateAppPreferences({
+    required String languageCode,
+    required String currencyCode,
+  }) async {
+    final client = _authService.requireClient();
+    final user = client.auth.currentUser;
+    if (user == null) {
+      throw StateError('Usuario nao autenticado.');
+    }
+
+    await client
+        .schema('driver')
+        .from('profiles')
+        .update({
+          'language_code': _normalizeLanguage(languageCode),
+          'currency_code': _normalizeCurrency(currencyCode),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', user.id);
+  }
+
   DriverReservePreference mapPreference(Map<String, dynamic> data) {
     return DriverReservePreference(
       mode: _modeFromDb(data['reserve_mode']?.toString()),
@@ -120,5 +141,21 @@ class DriverPreferenceService {
     if (value == null) return fallback;
     if (value is num) return value.toDouble();
     return double.tryParse(value.toString()) ?? fallback;
+  }
+
+  String _normalizeLanguage(String value) {
+    return switch (value) {
+      'en-US' => 'en-US',
+      'es-ES' => 'es-ES',
+      _ => 'pt-BR',
+    };
+  }
+
+  String _normalizeCurrency(String value) {
+    return switch (value) {
+      'USD' => 'USD',
+      'EUR' => 'EUR',
+      _ => 'BRL',
+    };
   }
 }

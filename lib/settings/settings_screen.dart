@@ -53,7 +53,14 @@ class SettingsScreen extends StatelessWidget {
             ),
             _SettingsTile(
               icon: Icons.palette_outlined,
-              title: 'Preferencias',
+              title: 'Preferencias do app',
+              subtitle:
+                  '${profile?.languageLabel ?? 'Portugues'} - ${profile?.currencyLabel ?? 'Real brasileiro'}',
+              onTap: () => _openAppPreferenceSheet(context),
+            ),
+            _SettingsTile(
+              icon: Icons.dark_mode_outlined,
+              title: 'Tema do app',
               subtitle: session.themeMode == ThemeMode.dark
                   ? 'Tema escuro ativo'
                   : 'Tema claro ativo',
@@ -177,6 +184,15 @@ class SettingsScreen extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _ReservePreferenceSheet(),
+    );
+  }
+
+  Future<void> _openAppPreferenceSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _AppPreferenceSheet(),
     );
   }
 }
@@ -885,6 +901,209 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
         setState(() => _saving = false);
       }
     }
+  }
+}
+
+class _AppPreferenceSheet extends StatefulWidget {
+  const _AppPreferenceSheet();
+
+  @override
+  State<_AppPreferenceSheet> createState() => _AppPreferenceSheetState();
+}
+
+class _AppPreferenceSheetState extends State<_AppPreferenceSheet> {
+  final _service = DriverPreferenceService();
+  late String _languageCode;
+  late String _currencyCode;
+  bool _saving = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    final profile = context.read<AppSession>().profile;
+    _languageCode = profile?.languageCode ?? 'pt-BR';
+    _currencyCode = profile?.currencyCode ?? 'BRL';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(12, 0, 12, bottomInset + 12),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 720),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: theme.dividerColor),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: theme.dividerColor,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text('Preferencias do app', style: theme.textTheme.titleLarge),
+                const SizedBox(height: 6),
+                Text(
+                  'Ajuste como o Omnya Driver deve falar com voce e mostrar os valores.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 18),
+                DropdownButtonFormField<String>(
+                  initialValue: _normalizeLanguage(_languageCode),
+                  decoration: const InputDecoration(
+                    labelText: 'Idioma',
+                    prefixIcon: Icon(Icons.language_outlined),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'pt-BR',
+                      child: Text('Portugues do Brasil'),
+                    ),
+                    DropdownMenuItem(value: 'en-US', child: Text('English')),
+                    DropdownMenuItem(value: 'es-ES', child: Text('Espanol')),
+                  ],
+                  onChanged: _saving
+                      ? null
+                      : (value) {
+                          if (value == null) return;
+                          setState(() => _languageCode = value);
+                        },
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  initialValue: _normalizeCurrency(_currencyCode),
+                  decoration: const InputDecoration(
+                    labelText: 'Moeda',
+                    prefixIcon: Icon(Icons.payments_outlined),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'BRL',
+                      child: Text('Real brasileiro (R\$)'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'USD',
+                      child: Text('Dolar americano (US\$)'),
+                    ),
+                    DropdownMenuItem(value: 'EUR', child: Text('Euro')),
+                  ],
+                  onChanged: _saving
+                      ? null
+                      : (value) {
+                          if (value == null) return;
+                          setState(() => _currencyCode = value);
+                        },
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Nesta etapa os textos principais continuam em portugues; essa configuracao ja deixa o perfil preparado para traducao completa.',
+                  style: theme.textTheme.bodySmall,
+                ),
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _errorMessage!,
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                ],
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _saving
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        child: const Text('Cancelar'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _saving ? null : _save,
+                        child: _saving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Salvar'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    final session = context.read<AppSession>();
+    setState(() {
+      _saving = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _service.updateAppPreferences(
+        languageCode: _languageCode,
+        currencyCode: _currencyCode,
+      );
+      await session.refreshProfile();
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preferencias atualizadas.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = error.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
+  }
+
+  String _normalizeLanguage(String value) {
+    return switch (value) {
+      'en-US' => 'en-US',
+      'es-ES' => 'es-ES',
+      _ => 'pt-BR',
+    };
+  }
+
+  String _normalizeCurrency(String value) {
+    return switch (value) {
+      'USD' => 'USD',
+      'EUR' => 'EUR',
+      _ => 'BRL',
+    };
   }
 }
 
