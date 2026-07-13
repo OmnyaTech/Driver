@@ -8,7 +8,6 @@ import '../funcionalidade/goals/goals_screen.dart';
 import '../funcionalidade/journeys/journeys_screen.dart';
 import '../funcionalidade/notifications/notifications_screen.dart';
 import '../funcionalidade/platforms/platforms_screen.dart';
-import '../funcionalidade/reports/reports_screen.dart';
 import '../funcionalidade/vehicles/vehicles_screen.dart';
 import '../models/app_dashboard_metrics.dart';
 import '../models/app_gamification.dart';
@@ -108,11 +107,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         label: compactNavigation ? 'Fin.' : 'Financeiro',
       ),
       _DashboardTab(
-        title: 'Relatorios',
-        page: const ReportsScreen(),
-        icon: Icons.insights_outlined,
-        selectedIcon: Icons.insights,
-        label: compactNavigation ? 'Dados' : 'Relatorios',
+        title: 'Comunidade',
+        page: const CommunityHubScreen(),
+        icon: Icons.groups_outlined,
+        selectedIcon: Icons.groups,
+        label: compactNavigation ? 'Social' : 'Comunidade',
       ),
       _DashboardTab(
         title: 'Configuracoes',
