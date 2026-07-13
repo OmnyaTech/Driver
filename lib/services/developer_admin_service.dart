@@ -92,8 +92,25 @@ class DeveloperAdminService {
 
   Future<Map<String, dynamic>> loadMetrics() async {
     final client = _authService.requireClient();
-    final response = await client.schema('driver').rpc('get_developer_metrics');
-    return Map<String, dynamic>.from((response as Map?) ?? const {});
+    final metricsResponse = await client
+        .schema('driver')
+        .rpc('get_developer_metrics');
+    final metrics = Map<String, dynamic>.from(
+      (metricsResponse as Map?) ?? const {},
+    );
+
+    try {
+      final analyticsResponse = await client
+          .schema('driver')
+          .rpc('get_product_analytics_summary');
+      metrics['product_events'] = Map<String, dynamic>.from(
+        (analyticsResponse as Map?) ?? const {},
+      );
+    } catch (_) {
+      metrics['product_events'] = const <String, dynamic>{};
+    }
+
+    return metrics;
   }
 
   DateTime? _parseDate(Object? value) {

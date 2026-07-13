@@ -59,6 +59,24 @@ class BillingService {
         )
         .toList();
   }
+
+  Future<Map<String, dynamic>> manageSubscription({
+    required String action,
+    String? planType,
+    String? reason,
+  }) async {
+    final client = _authService.requireClient();
+    final body = <String, dynamic>{'action': action};
+    if (planType != null) body['planType'] = planType;
+    if (reason != null) body['reason'] = reason;
+
+    final response = await client.functions.invoke(
+      'driver-manage-asaas-subscription',
+      body: body,
+    );
+
+    return Map<String, dynamic>.from(response.data as Map);
+  }
 }
 
 class BillingEventItem {

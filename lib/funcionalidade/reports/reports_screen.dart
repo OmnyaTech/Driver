@@ -1,12 +1,17 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/app_operational_report.dart';
+import '../../models/plan_type.dart';
+import '../../services/plan_access_service.dart';
+import '../../services/product_analytics_service.dart';
 import '../../services/report_export_service.dart';
 import '../../services/reporting_service.dart';
 import '../../utilities/localization/app_format.dart';
 import '../../utilities/localization/app_strings.dart';
+import '../../utilities/state/app_session.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -18,6 +23,9 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   final ReportingService _reportingService = ReportingService();
   final ReportExportService _reportExportService = ReportExportService();
+  final PlanAccessService _planAccessService = const PlanAccessService();
+  final ProductAnalyticsService _analyticsService =
+      const ProductAnalyticsService();
   bool _loading = true;
   bool _exporting = false;
   String? _errorMessage;
@@ -81,6 +89,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
           topPlatforms: [],
           expenseBreakdown: [],
         );
+    final currentPlan =
+        context.watch<AppSession>().profile?.planType ?? PlanType.free;
+    final canExport = _planAccessService.canAccessAdvancedOperations(
+      currentPlan,
+    );
 
     return RefreshIndicator(
       onRefresh: _loadReport,
@@ -101,12 +114,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     label: Text(_rangeLabel),
                   ),
                   OutlinedButton.icon(
-                    onPressed: _exporting ? null : () => _exportReport('pdf'),
+                    onPressed: _exporting
+                        ? null
+                        : () => _exportReport('pdf', canExport: canExport),
                     icon: const Icon(Icons.picture_as_pdf_outlined),
                     label: const Text('PDF'),
                   ),
                   OutlinedButton.icon(
-                    onPressed: _exporting ? null : () => _exportReport('excel'),
+                    onPressed: _exporting
+                        ? null
+                        : () => _exportReport('excel', canExport: canExport),
                     icon: const Icon(Icons.table_chart_outlined),
                     label: const Text('Excel'),
                   ),
@@ -165,6 +182,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: LinearProgressIndicator(minHeight: 2),
             ),
           const SizedBox(height: 16),
+          if (!canExport)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.workspace_premium_outlined),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        strings.pick(
+                          pt: 'PDF e Excel fazem parte do Premium. Voce ainda consegue ver os relatorios por aqui.',
+                          en: 'PDF and Excel exports are Premium. You can still view reports here.',
+                          es: 'PDF y Excel son Premium. Aun puedes ver los reportes aqui.',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (!canExport) const SizedBox(height: 16),
           if (_errorMessage != null)
             Card(
               child: Padding(
@@ -237,9 +276,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
     await _loadReport();
   }
 
-  Future<void> _exportReport(String type) async {
+  Future<void> _exportReport(String type, {required bool canExport}) async {
     final report = _report;
     if (report == null || _exporting) return;
+    if (!canExport) {
+      await _analyticsService.track(
+        'premium_export_blocked',
+        screen: 'reports',
+        metadata: {'type': type},
+      );
+      setState(() {
+        _errorMessage = AppStrings.of(context).pick(
+          pt: 'Exportar relatorios e um recurso Premium.',
+          en: 'Report export is a Premium feature.',
+          es: 'Exportar reportes es una funcion Premium.',
+        );
+      });
+      return;
+    }
 
     setState(() {
       _exporting = true;
@@ -247,6 +301,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
     });
 
     try {
+      await _analyticsService.track(
+        'report_export_started',
+        screen: 'reports',
+        metadata: {'type': type},
+      );
       if (type == 'pdf') {
         await _reportExportService.sharePdf(
           report: report,

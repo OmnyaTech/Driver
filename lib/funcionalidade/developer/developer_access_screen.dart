@@ -230,6 +230,16 @@ class _DeveloperMetricsCard extends StatelessWidget {
         Icons.calendar_month_outlined,
       ),
       (
+        'Retencao 7d',
+        '${_value(metrics, 'retention', 'active_7d_pct')}%',
+        Icons.insights_outlined,
+      ),
+      (
+        'Conversao paga',
+        '${_value(metrics, 'conversion', 'paid_pct')}%',
+        Icons.trending_up_rounded,
+      ),
+      (
         'Assinantes',
         _value(metrics, 'billing', 'active'),
         Icons.workspace_premium_outlined,
@@ -243,6 +253,41 @@ class _DeveloperMetricsCard extends StatelessWidget {
         'Dispositivos push',
         _value(metrics, 'devices', 'push_enabled'),
         Icons.notifications_active_outlined,
+      ),
+      (
+        'Push na fila',
+        _value(metrics, 'push_jobs', 'queued'),
+        Icons.outbox_rounded,
+      ),
+      (
+        'Push com falha',
+        _value(metrics, 'push_jobs', 'failed'),
+        Icons.error_outline_rounded,
+      ),
+      (
+        'Flags ativas',
+        _value(metrics, 'feature_flags', 'enabled'),
+        Icons.flag_outlined,
+      ),
+      (
+        'Usuarios EN',
+        _value(metrics, 'preferences', 'en_us'),
+        Icons.translate_rounded,
+      ),
+      (
+        'Eventos 24h',
+        _value(metrics, 'product_events', 'events_24h'),
+        Icons.track_changes_rounded,
+      ),
+      (
+        'Eventos 7d',
+        _value(metrics, 'product_events', 'events_7d'),
+        Icons.timeline_rounded,
+      ),
+      (
+        'Usuarios eventos',
+        _value(metrics, 'product_events', 'active_event_users_7d'),
+        Icons.ads_click_rounded,
       ),
     ];
 

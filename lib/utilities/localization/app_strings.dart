@@ -425,6 +425,117 @@ class AppStrings {
     es: 'Backup, privacidad y cierre de cuenta',
   );
 
+  String get helpCenter =>
+      pick(pt: 'Central de ajuda', en: 'Help center', es: 'Centro de ayuda');
+
+  String get helpCenterSubtitle => pick(
+    pt: 'Dicas rapidas para usar melhor',
+    en: 'Quick tips to use the app better',
+    es: 'Consejos rapidos para usar mejor',
+  );
+
+  String get helpCenterIntro => pick(
+    pt: 'O Omnya Driver foi pensado para registrar sua rotina sem complicar seu dia. Comece por jornada, ganhos e custos; o painel faz o resto.',
+    en: 'Omnya Driver is built to track your routine without making your day harder. Start with shifts, earnings and costs; the dashboard does the rest.',
+    es: 'Omnya Driver fue pensado para registrar tu rutina sin complicar tu dia. Empieza por jornadas, ingresos y costos; el panel hace el resto.',
+  );
+
+  String get helpCenterTipJourney => pick(
+    pt: 'Use a jornada em tempo real sempre que sair para trabalhar. Se esquecer aberta, o app avisa para fechar e manter os numeros certos.',
+    en: 'Use the live shift whenever you start working. If you leave it open, the app reminds you to close it and keep numbers right.',
+    es: 'Usa la jornada en vivo cuando salgas a trabajar. Si queda abierta, la app te recuerda cerrarla para mantener los numeros correctos.',
+  );
+
+  String get helpCenterTipBilling => pick(
+    pt: 'Planos Premium liberam historico ampliado, multiplas plataformas, exportacoes e controles avancados.',
+    en: 'Premium plans unlock deeper history, multiple platforms, exports and advanced controls.',
+    es: 'Los planes Premium liberan historial ampliado, multiples plataformas, exportaciones y controles avanzados.',
+  );
+
+  String get helpCenterTipSupport => pick(
+    pt: 'Se algo parecer errado, leve um backup em Seguranca e dados e fale com o suporte da OmnyaTech.',
+    en: 'If something looks off, copy a backup in Security and data and contact OmnyaTech support.',
+    es: 'Si algo parece incorrecto, copia un backup en Seguridad y datos y habla con soporte OmnyaTech.',
+  );
+
+  String get aboutOmnyaDriver =>
+      pick(pt: 'Sobre o app', en: 'About the app', es: 'Sobre la app');
+
+  String get aboutOmnyaDriverSubtitle => pick(
+    pt: 'Omnya Driver e identidade OmnyaTech',
+    en: 'Omnya Driver and OmnyaTech identity',
+    es: 'Omnya Driver e identidad OmnyaTech',
+  );
+
+  String get aboutOmnyaDriverBody => pick(
+    pt: 'O Omnya Driver ajuda entregadores e motoristas a entender ganhos, custos, metas, progresso e rotina em um lugar so.',
+    en: 'Omnya Driver helps couriers and drivers understand earnings, costs, goals, progress and routine in one place.',
+    es: 'Omnya Driver ayuda a repartidores y conductores a entender ingresos, costos, metas, progreso y rutina en un solo lugar.',
+  );
+
+  String get aboutOmnyaDriverBrand => pick(
+    pt: 'O app segue a marca OmnyaTech: tecnologia simples, confiavel e focada em resultado real.',
+    en: 'The app follows the OmnyaTech brand: simple, reliable technology focused on real outcomes.',
+    es: 'La app sigue la marca OmnyaTech: tecnologia simple, confiable y enfocada en resultados reales.',
+  );
+
+  String get termsOfUse =>
+      pick(pt: 'Termos de uso', en: 'Terms of use', es: 'Terminos de uso');
+
+  String get termsOfUseSubtitle => pick(
+    pt: 'Regras simples para usar o app',
+    en: 'Simple rules for using the app',
+    es: 'Reglas simples para usar la app',
+  );
+
+  String get termsOfUseBody => pick(
+    pt: 'Voce e responsavel pelos dados que cadastra. O app organiza informacoes e estimativas, mas nao substitui orientacao contabil, fiscal ou juridica.',
+    en: 'You are responsible for the data you enter. The app organizes information and estimates, but does not replace accounting, tax or legal advice.',
+    es: 'Eres responsable de los datos que registras. La app organiza informacion y estimaciones, pero no reemplaza asesoramiento contable, fiscal o legal.',
+  );
+
+  String get termsOfUseBilling => pick(
+    pt: 'Assinaturas sao processadas pelo provedor de pagamento. Recursos Premium entram quando o pagamento for confirmado.',
+    en: 'Subscriptions are processed by the payment provider. Premium features start when payment is confirmed.',
+    es: 'Las suscripciones son procesadas por el proveedor de pago. Premium entra cuando el pago sea confirmado.',
+  );
+
+  String get termsOfUseData => pick(
+    pt: 'Voce pode pedir backup e encerramento da conta em Seguranca e dados.',
+    en: 'You can request backup and account closure in Security and data.',
+    es: 'Puedes pedir backup y cierre de cuenta en Seguridad y datos.',
+  );
+
+  String get privacyPolicy => pick(
+    pt: 'Politica de privacidade',
+    en: 'Privacy policy',
+    es: 'Politica de privacidad',
+  );
+
+  String get privacyPolicySubtitle => pick(
+    pt: 'Como seus dados sao tratados',
+    en: 'How your data is handled',
+    es: 'Como se tratan tus datos',
+  );
+
+  String get privacyPolicyBody => pick(
+    pt: 'Usamos seus dados para manter conta, relatorios, notificacoes, assinatura, gamificacao e perfil publico quando voce ativar.',
+    en: 'We use your data to maintain your account, reports, notifications, subscription, gamification and public profile when you enable it.',
+    es: 'Usamos tus datos para mantener cuenta, reportes, notificaciones, suscripcion, gamificacion y perfil publico cuando lo actives.',
+  );
+
+  String get privacyPolicyStorage => pick(
+    pt: 'Fotos, logos e backups ficam protegidos por permissoes de conta e politicas de seguranca.',
+    en: 'Photos, logos and backups are protected by account permissions and security policies.',
+    es: 'Fotos, logos y backups quedan protegidos por permisos de cuenta y politicas de seguridad.',
+  );
+
+  String get privacyPolicyContact => pick(
+    pt: 'Para duvidas de privacidade, fale com o suporte OmnyaTech.',
+    en: 'For privacy questions, contact OmnyaTech support.',
+    es: 'Para dudas de privacidad, habla con soporte OmnyaTech.',
+  );
+
   String get developerTools => pick(
     pt: 'Ferramentas internas da OmnyaTech',
     en: 'OmnyaTech internal tools',

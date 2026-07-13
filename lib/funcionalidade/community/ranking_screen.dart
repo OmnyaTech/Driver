@@ -18,6 +18,7 @@ class _RankingScreenState extends State<RankingScreen> {
   bool _loading = true;
   String? _errorMessage;
   List<AppPublicDriverPreview> _items = const [];
+  String _scope = 'global';
 
   @override
   void initState() {
@@ -27,7 +28,7 @@ class _RankingScreenState extends State<RankingScreen> {
 
   Future<void> _load() async {
     try {
-      final items = await _service.listRankingPreview(limit: 50);
+      final items = await _service.listRankingPreview(limit: 50, scope: _scope);
       if (!mounted) return;
       setState(() {
         _items = items;
@@ -60,6 +61,19 @@ class _RankingScreenState extends State<RankingScreen> {
         child: ListView.separated(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
           itemBuilder: (context, index) {
+            if (index == 0) {
+              return _RankingScopeBar(
+                selectedScope: _scope,
+                onChanged: (value) {
+                  setState(() {
+                    _scope = value;
+                    _loading = true;
+                  });
+                  _load();
+                },
+              );
+            }
+
             if (_errorMessage != null) {
               return _RankingEmptyState(
                 icon: Icons.wifi_tethering_error_rounded,
@@ -76,8 +90,8 @@ class _RankingScreenState extends State<RankingScreen> {
               );
             }
 
-            final item = _items[index];
-            final position = item.rankPosition ?? index + 1;
+            final item = _items[index - 1];
+            final position = item.rankPosition ?? index;
             return TweenAnimationBuilder<double>(
               tween: Tween(begin: 0, end: 1),
               duration: Duration(
@@ -101,8 +115,46 @@ class _RankingScreenState extends State<RankingScreen> {
           },
           separatorBuilder: (_, _) => const SizedBox(height: 10),
           itemCount: _errorMessage != null || _items.isEmpty
-              ? 1
-              : _items.length,
+              ? 2
+              : _items.length + 1,
+        ),
+      ),
+    );
+  }
+}
+
+class _RankingScopeBar extends StatelessWidget {
+  const _RankingScopeBar({
+    required this.selectedScope,
+    required this.onChanged,
+  });
+
+  final String selectedScope;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scopes = const <(String, String)>[
+      ('local', 'Cidade'),
+      ('state', 'Estado'),
+      ('national', 'Pais'),
+      ('global', 'Global'),
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: scopes.map((scope) {
+            final selected = scope.$1 == selectedScope;
+            return ChoiceChip(
+              label: Text(scope.$2),
+              selected: selected,
+              onSelected: (_) => onChanged(scope.$1),
+            );
+          }).toList(),
         ),
       ),
     );

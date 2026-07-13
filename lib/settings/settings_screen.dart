@@ -158,6 +158,74 @@ class SettingsScreen extends StatelessWidget {
               subtitle: strings.securityDataSubtitle,
               onTap: () => _pushPage(context, const SecurityScreen()),
             ),
+            _SettingsTile(
+              icon: Icons.help_outline,
+              title: strings.helpCenter,
+              subtitle: strings.helpCenterSubtitle,
+              onTap: () => _pushPage(
+                context,
+                _InfoScreen(
+                  title: strings.helpCenter,
+                  icon: Icons.help_outline,
+                  body: [
+                    strings.helpCenterIntro,
+                    strings.helpCenterTipJourney,
+                    strings.helpCenterTipBilling,
+                    strings.helpCenterTipSupport,
+                  ],
+                ),
+              ),
+            ),
+            _SettingsTile(
+              icon: Icons.info_outline,
+              title: strings.aboutOmnyaDriver,
+              subtitle: strings.aboutOmnyaDriverSubtitle,
+              onTap: () => _pushPage(
+                context,
+                _InfoScreen(
+                  title: strings.aboutOmnyaDriver,
+                  icon: Icons.info_outline,
+                  body: [
+                    strings.aboutOmnyaDriverBody,
+                    strings.aboutOmnyaDriverBrand,
+                  ],
+                ),
+              ),
+            ),
+            _SettingsTile(
+              icon: Icons.article_outlined,
+              title: strings.termsOfUse,
+              subtitle: strings.termsOfUseSubtitle,
+              onTap: () => _pushPage(
+                context,
+                _InfoScreen(
+                  title: strings.termsOfUse,
+                  icon: Icons.article_outlined,
+                  body: [
+                    strings.termsOfUseBody,
+                    strings.termsOfUseBilling,
+                    strings.termsOfUseData,
+                  ],
+                ),
+              ),
+            ),
+            _SettingsTile(
+              icon: Icons.shield_outlined,
+              title: strings.privacyPolicy,
+              subtitle: strings.privacyPolicySubtitle,
+              onTap: () => _pushPage(
+                context,
+                _InfoScreen(
+                  title: strings.privacyPolicy,
+                  icon: Icons.shield_outlined,
+                  body: [
+                    strings.privacyPolicyBody,
+                    strings.privacyPolicyStorage,
+                    strings.privacyPolicyContact,
+                  ],
+                ),
+              ),
+            ),
             if (canOpenDeveloper)
               _SettingsTile(
                 icon: Icons.admin_panel_settings_outlined,
@@ -226,6 +294,71 @@ class SettingsStandaloneScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(AppStrings.of(context).settingsTitle)),
       body: const SettingsScreen(),
+    );
+  }
+}
+
+class _InfoScreen extends StatelessWidget {
+  const _InfoScreen({
+    required this.title,
+    required this.icon,
+    required this.body,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<String> body;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF0B0E16),
+                  Color(0xFF151A29),
+                  Color(0xFF0000CD),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: Colors.white, size: 32),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...body.map(
+            (paragraph) => Card(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Text(paragraph, style: theme.textTheme.bodyLarge),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1184,6 +1317,7 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final theme = Theme.of(context);
     final format = AppFormat.of(context);
+    final strings = AppStrings.of(context);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(12, 0, 12, bottomInset + 12),
@@ -1213,10 +1347,21 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text('Reserva automatica', style: theme.textTheme.titleLarge),
+                Text(
+                  strings.pick(
+                    pt: 'Reserva automatica',
+                    en: 'Automatic reserve',
+                    es: 'Reserva automatica',
+                  ),
+                  style: theme.textTheme.titleLarge,
+                ),
                 const SizedBox(height: 6),
                 Text(
-                  'Escolha quanto voce costuma guardar para despesa, meta ou seguranca.',
+                  strings.pick(
+                    pt: 'Escolha quanto voce costuma guardar para despesa, meta ou seguranca.',
+                    en: 'Choose how much you usually set aside for expenses, goals or safety.',
+                    es: 'Elige cuanto sueles guardar para gastos, metas o seguridad.',
+                  ),
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 18),
@@ -1225,20 +1370,38 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                   runSpacing: 10,
                   children: [
                     ChoiceChip(
-                      label: const Text('Sem reserva'),
+                      label: Text(
+                        strings.pick(
+                          pt: 'Sem reserva',
+                          en: 'No reserve',
+                          es: 'Sin reserva',
+                        ),
+                      ),
                       selected: _mode == DriverReserveMode.none,
                       onSelected: (_) =>
                           setState(() => _mode = DriverReserveMode.none),
                     ),
                     ChoiceChip(
-                      label: const Text('% do que sobrar'),
+                      label: Text(
+                        strings.pick(
+                          pt: '% do que sobrar',
+                          en: '% of what is left',
+                          es: '% de lo que sobra',
+                        ),
+                      ),
                       selected: _mode == DriverReserveMode.dailyPercent,
                       onSelected: (_) => setState(
                         () => _mode = DriverReserveMode.dailyPercent,
                       ),
                     ),
                     ChoiceChip(
-                      label: const Text('Valor por entrega'),
+                      label: Text(
+                        strings.pick(
+                          pt: 'Valor por entrega',
+                          en: 'Amount per delivery',
+                          es: 'Valor por entrega',
+                        ),
+                      ),
                       selected: _mode == DriverReserveMode.perDeliveryFixed,
                       onSelected: (_) => setState(
                         () => _mode = DriverReserveMode.perDeliveryFixed,
@@ -1253,15 +1416,26 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(
-                      labelText: 'Percentual do que sobrar',
-                      hintText: 'Ex: 30',
-                      suffixText: '%',
+                    decoration: const InputDecoration(suffixText: '%').copyWith(
+                      labelText: strings.pick(
+                        pt: 'Percentual do que sobrar',
+                        en: 'Percent of what is left',
+                        es: 'Porcentaje de lo que sobra',
+                      ),
+                      hintText: strings.pick(
+                        pt: 'Ex: 30',
+                        en: 'Ex: 30',
+                        es: 'Ej: 30',
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'A sugestao usa o valor que sobrou no periodo atual.',
+                    strings.pick(
+                      pt: 'A sugestao usa o valor que sobrou no periodo atual.',
+                      en: 'The suggestion uses what is left in the current period.',
+                      es: 'La sugerencia usa lo que sobra en el periodo actual.',
+                    ),
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
@@ -1272,21 +1446,37 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                       decimal: true,
                     ),
                     decoration: InputDecoration(
-                      labelText: 'Valor reservado por entrega',
-                      hintText: 'Ex: 2.50',
+                      labelText: strings.pick(
+                        pt: 'Valor reservado por entrega',
+                        en: 'Reserved amount per delivery',
+                        es: 'Valor reservado por entrega',
+                      ),
+                      hintText: strings.pick(
+                        pt: 'Ex: 2.50',
+                        en: 'Ex: 2.50',
+                        es: 'Ej: 2.50',
+                      ),
                       prefixText:
                           '${format.currency(0).replaceAll(RegExp(r'[0-9.,\s]'), '')} ',
                     ),
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Cada entrega concluida gera uma sugestao proporcional ao valor definido por voce.',
+                    strings.pick(
+                      pt: 'Cada entrega concluida gera uma sugestao proporcional ao valor definido por voce.',
+                      en: 'Each completed delivery creates a suggestion based on the amount you set.',
+                      es: 'Cada entrega terminada crea una sugerencia segun el valor definido por ti.',
+                    ),
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
                 if (_mode == DriverReserveMode.none)
                   Text(
-                    'Nenhuma reserva automatica sera sugerida no painel ou nas notificacoes.',
+                    strings.pick(
+                      pt: 'Nenhuma reserva automatica sera sugerida no painel ou nas notificacoes.',
+                      en: 'No automatic reserve will be suggested on the dashboard or notifications.',
+                      es: 'No se sugerira reserva automatica en el panel ni en las notificaciones.',
+                    ),
                     style: theme.textTheme.bodySmall,
                   ),
                 if (_errorMessage != null) ...[
@@ -1304,7 +1494,7 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                         onPressed: _saving
                             ? null
                             : () => Navigator.of(context).pop(),
-                        child: const Text('Cancelar'),
+                        child: Text(strings.cancel),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1319,7 +1509,13 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text('Salvar regra'),
+                            : Text(
+                                strings.pick(
+                                  pt: 'Salvar regra',
+                                  en: 'Save rule',
+                                  es: 'Guardar regla',
+                                ),
+                              ),
                       ),
                     ),
                   ],
@@ -1344,7 +1540,11 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
     if (_mode == DriverReserveMode.dailyPercent &&
         (percentage == null || percentage < 0 || percentage > 100)) {
       setState(() {
-        _errorMessage = 'Informe um percentual valido entre 0 e 100.';
+        _errorMessage = AppStrings.of(context).pick(
+          pt: 'Informe um percentual valido entre 0 e 100.',
+          en: 'Enter a valid percentage between 0 and 100.',
+          es: 'Ingresa un porcentaje valido entre 0 y 100.',
+        );
       });
       return;
     }
@@ -1352,7 +1552,11 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
     if (_mode == DriverReserveMode.perDeliveryFixed &&
         (perDelivery == null || perDelivery < 0)) {
       setState(() {
-        _errorMessage = 'Informe um valor valido por entrega.';
+        _errorMessage = AppStrings.of(context).pick(
+          pt: 'Informe um valor valido por entrega.',
+          en: 'Enter a valid amount per delivery.',
+          es: 'Ingresa un valor valido por entrega.',
+        );
       });
       return;
     }
@@ -1372,8 +1576,14 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Preferencia de reserva atualizada com sucesso.'),
+        SnackBar(
+          content: Text(
+            AppStrings.of(context).pick(
+              pt: 'Preferencia de reserva atualizada com sucesso.',
+              en: 'Reserve preference updated.',
+              es: 'Preferencia de reserva actualizada.',
+            ),
+          ),
         ),
       );
     } catch (error) {

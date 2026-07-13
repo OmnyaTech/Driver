@@ -239,11 +239,22 @@ class PublicProfileService {
 
   Future<List<AppPublicDriverPreview>> listRankingPreview({
     int limit = 20,
+    String scope = 'global',
   }) async {
     final client = _authService.requireClient();
-    final rows = await client
-        .schema('driver')
-        .rpc('get_public_ranking_preview', params: {'p_limit': limit});
+    Object rows;
+    try {
+      rows = await client
+          .schema('driver')
+          .rpc(
+            'get_public_ranking_by_scope',
+            params: {'p_scope': scope, 'p_limit': limit},
+          );
+    } catch (_) {
+      rows = await client
+          .schema('driver')
+          .rpc('get_public_ranking_preview', params: {'p_limit': limit});
+    }
 
     return (rows as List)
         .map<AppPublicDriverPreview>(
@@ -252,7 +263,8 @@ class PublicProfileService {
             publicSlug: item['public_slug']?.toString() ?? '',
             displayName: item['display_name']?.toString() ?? 'Motorista',
             avatarUrl: item['avatar_url']?.toString(),
-            publicCity: null,
+            publicCity:
+                item['public_city']?.toString() ?? item['city']?.toString(),
             level: _toInt(item['level']),
             levelTitle: item['level_title']?.toString() ?? 'Motorista',
             medalsCount: _toInt(item['medals_count']),
