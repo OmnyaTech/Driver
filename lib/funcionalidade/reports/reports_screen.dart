@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../models/app_operational_report.dart';
+import '../../services/report_export_service.dart';
 import '../../services/reporting_service.dart';
 import '../../utilities/localization/app_format.dart';
 
@@ -15,7 +16,9 @@ class ReportsScreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<ReportsScreen> {
   final ReportingService _reportingService = ReportingService();
+  final ReportExportService _reportExportService = ReportExportService();
   bool _loading = true;
+  bool _exporting = false;
   String? _errorMessage;
   DateTimeRange? _range;
   AppOperationalReport? _report;
@@ -78,31 +81,73 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Relatorios operacionais',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              OutlinedButton.icon(
-                onPressed: _pickRange,
-                icon: const Icon(Icons.date_range_outlined),
-                label: Text(_rangeLabel),
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: _range == null
-                    ? null
-                    : () {
-                        setState(() => _range = null);
-                        _loadReport();
-                      },
-                child: const Text('Limpar'),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 560;
+              final actions = Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: compact ? WrapAlignment.start : WrapAlignment.end,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _pickRange,
+                    icon: const Icon(Icons.date_range_outlined),
+                    label: Text(_rangeLabel),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _exporting ? null : () => _exportReport('pdf'),
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    label: const Text('PDF'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _exporting ? null : () => _exportReport('excel'),
+                    icon: const Icon(Icons.table_chart_outlined),
+                    label: const Text('Excel'),
+                  ),
+                  TextButton(
+                    onPressed: _range == null
+                        ? null
+                        : () {
+                            setState(() => _range = null);
+                            _loadReport();
+                          },
+                    child: const Text('Limpar'),
+                  ),
+                ],
+              );
+
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Relatorios operacionais',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 12),
+                    actions,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Relatorios operacionais',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  actions,
+                ],
+              );
+            },
           ),
+          if (_exporting)
+            const Padding(
+              padding: EdgeInsets.only(top: 10),
+              child: LinearProgressIndicator(minHeight: 2),
+            ),
           const SizedBox(height: 16),
           if (_errorMessage != null)
             Card(
@@ -174,6 +219,40 @@ class _ReportsScreenState extends State<ReportsScreen> {
     if (picked == null || !mounted) return;
     setState(() => _range = picked);
     await _loadReport();
+  }
+
+  Future<void> _exportReport(String type) async {
+    final report = _report;
+    if (report == null || _exporting) return;
+
+    setState(() {
+      _exporting = true;
+      _errorMessage = null;
+    });
+
+    try {
+      if (type == 'pdf') {
+        await _reportExportService.sharePdf(
+          report: report,
+          currency: _currency,
+        );
+      } else {
+        await _reportExportService.shareExcel(
+          report: report,
+          currency: _currency,
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage =
+            'Nao foi possivel gerar o arquivo agora. Tente novamente em instantes.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _exporting = false);
+      }
+    }
   }
 
   String get _rangeLabel {
