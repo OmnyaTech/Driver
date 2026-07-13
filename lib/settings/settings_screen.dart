@@ -179,11 +179,20 @@ class SettingsScreen extends StatelessWidget {
                   _InfoScreen(
                     title: strings.helpCenter,
                     icon: Icons.help_outline,
+                    subtitle: strings.helpCenterSubtitle,
+                    searchHint: strings.helpCenterSearchHint,
+                    actionLabel: strings.helpCenterAction,
+                    highlights: strings.helpCenterHighlights,
+                    sectionLabels: strings.helpCenterSectionLabels,
                     body: [
                       strings.helpCenterIntro,
+                      strings.helpCenterFirstSteps,
+                      strings.helpCenterVehicles,
                       strings.helpCenterTipJourney,
+                      strings.helpCenterGoals,
                       strings.helpCenterTipBilling,
                       strings.helpCenterTipSupport,
+                      strings.helpCenterFooter,
                     ],
                   ),
                 ),
@@ -197,9 +206,15 @@ class SettingsScreen extends StatelessWidget {
                   _InfoScreen(
                     title: strings.aboutOmnyaDriver,
                     icon: Icons.info_outline,
+                    subtitle: strings.aboutOmnyaDriverSubtitle,
+                    highlights: strings.aboutHighlights,
+                    sectionLabels: strings.aboutSectionLabels,
                     body: [
                       strings.aboutOmnyaDriverBody,
+                      strings.aboutOmnyaDriverWhy,
+                      strings.aboutOmnyaDriverCanDo,
                       strings.aboutOmnyaDriverBrand,
+                      strings.aboutOmnyaDriverTech,
                     ],
                   ),
                 ),
@@ -213,10 +228,17 @@ class SettingsScreen extends StatelessWidget {
                   _InfoScreen(
                     title: strings.termsOfUse,
                     icon: Icons.article_outlined,
+                    subtitle: strings.termsOfUseSubtitle,
+                    highlights: strings.termsHighlights,
+                    sectionLabels: strings.termsSectionLabels,
                     body: [
                       strings.termsOfUseBody,
+                      strings.termsOfUseService,
+                      strings.termsOfUseAccount,
                       strings.termsOfUseBilling,
                       strings.termsOfUseData,
+                      strings.termsOfUseConduct,
+                      strings.termsOfUseContact,
                     ],
                   ),
                 ),
@@ -230,10 +252,17 @@ class SettingsScreen extends StatelessWidget {
                   _InfoScreen(
                     title: strings.privacyPolicy,
                     icon: Icons.shield_outlined,
+                    subtitle: strings.privacyPolicySubtitle,
+                    highlights: strings.privacyHighlights,
+                    sectionLabels: strings.privacySectionLabels,
                     body: [
                       strings.privacyPolicyBody,
+                      strings.privacyPolicyCollected,
+                      strings.privacyPolicyUse,
                       strings.privacyPolicyStorage,
+                      strings.privacyPolicyPublicProfile,
                       strings.privacyPolicyContact,
+                      strings.privacyPolicyDpo,
                     ],
                   ),
                 ),
@@ -317,61 +346,221 @@ class _InfoScreen extends StatelessWidget {
     required this.title,
     required this.icon,
     required this.body,
+    this.subtitle,
+    this.searchHint,
+    this.actionLabel,
+    this.highlights = const [],
+    this.sectionLabels = const [],
   });
 
   final String title;
   final IconData icon;
   final List<String> body;
+  final String? subtitle;
+  final String? searchHint;
+  final String? actionLabel;
+  final List<String> highlights;
+  final List<String> sectionLabels;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final intro = body.isNotEmpty ? body.first : '';
+    final sections = body.length > 1 ? body.skip(1).toList() : <String>[];
+
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: OmnyaAtmosphere(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          children: [
+            OmnyaAnimatedEntrance(
+              child: OmnyaHeroCard(
+                compact: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: Icon(icon, color: Colors.white, size: 28),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  color: Colors.white,
+                                ),
+                              ),
+                              if (subtitle != null) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  subtitle!,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.82),
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      intro,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.94),
+                        height: 1.45,
+                      ),
+                    ),
+                    if (highlights.isNotEmpty) ...[
+                      const SizedBox(height: 18),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final highlight in highlights)
+                            OmnyaGlowChip(label: highlight),
+                        ],
+                      ),
+                    ],
+                    if (searchHint != null) ...[
+                      const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 13,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.22),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.search,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                searchHint!,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.78),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (actionLabel != null) ...[
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(actionLabel!)),
+                            );
+                          },
+                          icon: const Icon(Icons.support_agent_outlined),
+                          label: Text(actionLabel!),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            for (var index = 0; index < sections.length; index++)
+              OmnyaAnimatedEntrance(
+                delay: Duration(milliseconds: 80 * (index + 1)),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _InfoSectionCard(
+                    index: index + 1,
+                    title: index < sectionLabels.length
+                        ? sectionLabels[index]
+                        : '${index + 1}',
+                    body: sections[index],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoSectionCard extends StatelessWidget {
+  const _InfoSectionCard({
+    required this.index,
+    required this.title,
+    required this.body,
+  });
+
+  final int index;
+  final String title;
+  final String body;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+    return OmnyaGlassCard(
+      padding: const EdgeInsets.all(18),
+      borderRadius: 24,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(22),
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF0B0E16),
-                  Color(0xFF151A29),
-                  Color(0xFF0000CD),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(color: Colors.white24),
+              color: const Color(0xFF0000CD).withValues(alpha: 0.18),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF5265FF)),
             ),
-            child: Row(
-              children: [
-                Icon(icon, color: Colors.white, size: 32),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
+            child: Text(
+              index.toString().padLeft(2, '0'),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
-          const SizedBox(height: 16),
-          ...body.map(
-            (paragraph) => Card(
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: SelectableText(
-                  paragraph,
-                  style: theme.textTheme.bodyLarge?.copyWith(height: 1.45),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: theme.textTheme.titleMedium),
+                const SizedBox(height: 8),
+                SelectableText(
+                  body,
+                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.48),
                 ),
-              ),
+              ],
             ),
           ),
         ],

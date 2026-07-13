@@ -4,8 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 final class AppTheme {
   static const Color brandBlue = Color(0xFF0000CD);
   static const Color brandBlueGlow = Color(0xFF2E45FF);
+  static const Color brandBlueSoft = Color(0xFFD9D9F8);
   static const Color brandBlack = Color(0xFF000000);
   static const Color brandGray = Color(0xFFD3D3D3);
+  static const Color income = Color(0xFF1FAE6B);
+  static const Color expense = Color(0xFFE5484D);
+  static const Color reserved = Color(0xFF6C63FF);
+  static const Color neutralData = Color(0xFFF2A93B);
   static const List<String> _fontFallback = [
     'Noto Sans',
     'Noto Sans Symbols',
@@ -23,14 +28,14 @@ final class AppTheme {
       onSecondary: Colors.white,
       error: Color(0xFFCF2E2E),
       onError: Colors.white,
-      surface: Color(0xFFF5F7FB),
-      onSurface: Color(0xFF10131A),
+      surface: Color(0xFFFFFFFF),
+      onSurface: Color(0xFF16181D),
     );
 
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: const Color(0xFFF5F7FB),
+      scaffoldBackgroundColor: const Color(0xFFF6F6F9),
     );
 
     return _apply(base, isDark: false);
@@ -39,20 +44,20 @@ final class AppTheme {
   static ThemeData dark() {
     const scheme = ColorScheme(
       brightness: Brightness.dark,
-      primary: Color(0xFF4E63FF),
+      primary: Color(0xFF3D5AFF),
       onPrimary: Colors.white,
       secondary: Color(0xFF91A0FF),
       onSecondary: Color(0xFF05070D),
       error: Color(0xFFFF6F6F),
       onError: Color(0xFF16090A),
-      surface: Color(0xFF090B12),
-      onSurface: Color(0xFFF4F7FF),
+      surface: Color(0xFF181C23),
+      onSurface: Color(0xFFF2F3F5),
     );
 
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: const Color(0xFF060811),
+      scaffoldBackgroundColor: const Color(0xFF0E1116),
     );
 
     return _apply(base, isDark: true);
@@ -60,64 +65,79 @@ final class AppTheme {
 
   static ThemeData _apply(ThemeData base, {required bool isDark}) {
     final textTheme = _withFontFallback(
-      GoogleFonts.poppinsTextTheme(base.textTheme).copyWith(
+      GoogleFonts.interTextTheme(base.textTheme).copyWith(
         headlineMedium: GoogleFonts.poppins(
-          fontSize: 29,
+          fontSize: 30,
           fontWeight: FontWeight.w700,
           color: base.colorScheme.onSurface,
         ),
-        headlineSmall: GoogleFonts.poppins(
-          fontSize: 20,
+        headlineSmall: GoogleFonts.sora(
+          fontSize: 22,
           fontWeight: FontWeight.w700,
           color: base.colorScheme.onSurface,
         ),
-        titleLarge: GoogleFonts.poppins(
+        titleLarge: GoogleFonts.sora(
           fontSize: 19,
           fontWeight: FontWeight.w700,
           color: base.colorScheme.onSurface,
         ),
-        titleMedium: GoogleFonts.poppins(
+        titleMedium: GoogleFonts.sora(
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: base.colorScheme.onSurface,
         ),
-        titleSmall: GoogleFonts.poppins(
+        titleSmall: GoogleFonts.sora(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: base.colorScheme.onSurface,
         ),
-        bodyLarge: GoogleFonts.poppins(
+        bodyLarge: GoogleFonts.inter(
           fontSize: 15,
           height: 1.45,
           color: base.colorScheme.onSurface,
         ),
-        bodyMedium: GoogleFonts.poppins(
+        bodyMedium: GoogleFonts.inter(
           fontSize: 13,
           height: 1.45,
           color: base.colorScheme.onSurface.withValues(alpha: 0.86),
         ),
-        labelLarge: GoogleFonts.poppins(
+        bodySmall: GoogleFonts.inter(
+          fontSize: 12,
+          height: 1.38,
+          color: base.colorScheme.onSurface.withValues(alpha: 0.7),
+        ),
+        labelLarge: GoogleFonts.inter(
           fontSize: 12,
           fontWeight: FontWeight.w600,
+          letterSpacing: 0.2,
           color: base.colorScheme.onSurface.withValues(alpha: 0.78),
         ),
       ),
     );
 
-    final surfaceColor = isDark ? const Color(0xFF121622) : Colors.white;
+    final surfaceColor = isDark ? const Color(0xFF181C23) : Colors.white;
     final cardBorder = isDark
-        ? const Color(0xFF232A3D)
-        : const Color(0xFFE3E8F5);
+        ? const Color(0xFF2A303C)
+        : const Color(0xFFE7E7EC);
     final navBackground = isDark
-        ? const Color(0xFF121521)
-        : const Color(0xFFFDFEFF);
+        ? const Color(0xFF0A0D14)
+        : const Color(0xFFFFFFFF);
 
     return base.copyWith(
       textTheme: textTheme,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: _OmnyaPageTransitionsBuilder(),
+          TargetPlatform.iOS: _OmnyaPageTransitionsBuilder(),
+          TargetPlatform.macOS: _OmnyaPageTransitionsBuilder(),
+          TargetPlatform.windows: _OmnyaPageTransitionsBuilder(),
+          TargetPlatform.linux: _OmnyaPageTransitionsBuilder(),
+        },
+      ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
-        backgroundColor: isDark ? const Color(0xFF10131D) : Colors.white,
+        backgroundColor: isDark ? const Color(0xFF12151F) : Colors.white,
         foregroundColor: base.colorScheme.onSurface,
         surfaceTintColor: Colors.transparent,
         titleTextStyle: textTheme.headlineSmall,
@@ -127,7 +147,7 @@ final class AppTheme {
         elevation: 0,
         shadowColor: brandBlue.withValues(alpha: isDark ? 0.28 : 0.08),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(18),
           side: BorderSide(color: cardBorder),
         ),
         surfaceTintColor: Colors.transparent,
@@ -137,12 +157,12 @@ final class AppTheme {
         backgroundColor: navBackground,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        height: 76,
-        indicatorColor: brandBlue.withValues(alpha: isDark ? 0.28 : 0.12),
+        height: 72,
+        indicatorColor: brandBlueSoft.withValues(alpha: isDark ? 0.18 : 0.62),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return GoogleFonts.poppins(
-            fontSize: 10.5,
+            fontSize: 10.2,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             color: selected
                 ? base.colorScheme.onSurface
@@ -169,11 +189,8 @@ final class AppTheme {
         unselectedLabelColor: base.colorScheme.onSurface.withValues(
           alpha: 0.62,
         ),
-        labelStyle: GoogleFonts.poppins(
-          fontWeight: FontWeight.w700,
-          fontSize: 13,
-        ),
-        unselectedLabelStyle: GoogleFonts.poppins(
+        labelStyle: GoogleFonts.sora(fontWeight: FontWeight.w700, fontSize: 13),
+        unselectedLabelStyle: GoogleFonts.inter(
           fontWeight: FontWeight.w500,
           fontSize: 13,
         ),
@@ -186,11 +203,11 @@ final class AppTheme {
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? const Color(0xFF111724) : const Color(0xFFF8FAFF),
+        fillColor: isDark ? const Color(0xFF141925) : const Color(0xFFF9FAFE),
         labelStyle: textTheme.bodyMedium,
         hintStyle: textTheme.bodyMedium?.copyWith(
           color: base.colorScheme.onSurface.withValues(alpha: 0.45),
@@ -200,15 +217,15 @@ final class AppTheme {
           vertical: 13,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: cardBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: cardBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: brandBlueGlow, width: 1.6),
         ),
       ),
@@ -217,7 +234,7 @@ final class AppTheme {
         style: FilledButton.styleFrom(
           backgroundColor: brandBlue,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           textStyle: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             fontSize: 14,
@@ -259,7 +276,7 @@ final class AppTheme {
         color: surfaceColor,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: cardBorder),
         ),
         textStyle: textTheme.bodyMedium,
@@ -298,14 +315,14 @@ final class AppTheme {
             : const Color(0xFF161925),
         contentTextStyle: GoogleFonts.poppins(color: Colors.white),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: surfaceColor,
         surfaceTintColor: Colors.transparent,
         modalBackgroundColor: surfaceColor,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
       ),
     );
@@ -332,6 +349,36 @@ final class AppTheme {
       labelLarge: apply(theme.labelLarge),
       labelMedium: apply(theme.labelMedium),
       labelSmall: apply(theme.labelSmall),
+    );
+  }
+}
+
+class _OmnyaPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _OmnyaPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.035),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
+      ),
     );
   }
 }

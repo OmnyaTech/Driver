@@ -435,27 +435,79 @@ class AppStrings {
   );
 
   String get helpCenterIntro => pick(
-    pt: 'Encontre respostas rapidas ou fale com a gente.\n\nA Central de ajuda existe para resolver duvidas do dia a dia sem complicar: primeiros passos, veiculos, jornadas, abastecimentos, manutencoes, objetivos, assinatura, conta e seguranca.',
-    en: 'Find quick answers or talk to us.\n\nThe Help Center is here to solve daily questions without making things harder: first steps, vehicles, shifts, fuel, maintenance, goals, subscription, account and security.',
-    es: 'Encuentra respuestas rapidas o habla con nosotros.\n\nEl Centro de ayuda existe para resolver dudas del dia a dia sin complicar: primeros pasos, vehiculos, jornadas, combustible, mantenimientos, objetivos, suscripcion, cuenta y seguridad.',
+    pt: 'Encontre respostas rapidas ou fale com a gente quando alguma coisa travar na rotina.',
+    en: 'Find quick answers or talk to us whenever something blocks your routine.',
+    es: 'Encuentra respuestas rapidas o habla con nosotros cuando algo frene tu rutina.',
+  );
+
+  String get helpCenterSearchHint => pick(
+    pt: 'Pesquise por jornada, veiculo, assinatura ou seguranca',
+    en: 'Search for shifts, vehicles, subscription or security',
+    es: 'Busca jornadas, vehiculos, suscripcion o seguridad',
+  );
+
+  String get helpCenterAction => pick(
+    pt: 'Falar com o suporte',
+    en: 'Talk to support',
+    es: 'Hablar con soporte',
+  );
+
+  String get helpCenterFirstSteps => pick(
+    pt: 'Primeiros passos: crie sua conta com e-mail, Google ou Microsoft, complete o perfil e cadastre seu primeiro veiculo e plataforma para liberar os numeros do painel.',
+    en: 'First steps: create your account with email, Google or Microsoft, complete your profile and add your first vehicle and platform to unlock the dashboard numbers.',
+    es: 'Primeros pasos: crea tu cuenta con e-mail, Google o Microsoft, completa tu perfil y registra tu primer vehiculo y plataforma para liberar los numeros del panel.',
+  );
+
+  String get helpCenterVehicles => pick(
+    pt: 'Veiculos: no Free voce usa 1 veiculo ativo. Se trocar de moto ou carro, arquive o antigo para manter o historico sem baguncar a frota.',
+    en: 'Vehicles: on Free you use 1 active vehicle. If you change bikes or cars, archive the old one to keep history without cluttering your fleet.',
+    es: 'Vehiculos: en Free usas 1 vehiculo activo. Si cambias de moto o auto, archiva el anterior para mantener el historial sin desordenar la flota.',
   );
 
   String get helpCenterTipJourney => pick(
-    pt: 'Jornadas: inicie quando sair para trabalhar e encerre informando km final, entregas, ganhos e custos. Se uma jornada ficar aberta por muito tempo, o app lembra voce de fechar.',
-    en: 'Shifts: start when you go to work and finish by entering final mileage, deliveries, earnings and costs. If a shift stays open too long, the app reminds you to close it.',
-    es: 'Jornadas: inicia cuando salgas a trabajar y finaliza informando kilometraje final, entregas, ingresos y costos. Si una jornada queda abierta mucho tiempo, la app te recuerda cerrarla.',
+    pt: 'Jornadas: inicie quando sair para trabalhar e encerre informando km final, entregas, ganhos e custos. Se esquecer aberta, o app lembra voce.',
+    en: 'Shifts: start when you go to work and finish by entering final mileage, deliveries, earnings and costs. If you leave one open, the app reminds you.',
+    es: 'Jornadas: inicia cuando salgas a trabajar y finaliza con kilometraje final, entregas, ingresos y costos. Si la dejas abierta, la app te avisa.',
+  );
+
+  String get helpCenterGoals => pick(
+    pt: 'Objetivos: aportes nao movimentam dinheiro real. Eles so ajudam voce a separar mentalmente o que sobrou para revisao, pneu, IPVA, emergencia ou outro plano.',
+    en: 'Goals: deposits do not move real money. They simply help you mentally set aside what is left for maintenance, tires, taxes, emergencies or another plan.',
+    es: 'Objetivos: los aportes no mueven dinero real. Solo ayudan a separar mentalmente lo que sobro para revision, llantas, impuestos, emergencia u otro plan.',
   );
 
   String get helpCenterTipBilling => pick(
-    pt: 'Planos e assinatura: o Premium libera historico ampliado, multiplas plataformas, exportacoes e controles avancados. O acesso so muda quando o pagamento for confirmado pelo Asaas.',
-    en: 'Plans and subscription: Premium unlocks deeper history, multiple platforms, exports and advanced controls. Access only changes when Asaas confirms payment.',
-    es: 'Planes y suscripcion: Premium libera historial ampliado, multiples plataformas, exportaciones y controles avanzados. El acceso solo cambia cuando Asaas confirma el pago.',
+    pt: 'Planos e assinatura: o Premium libera historico ampliado, multiplas plataformas, exportacoes e controles avancados. O acesso muda quando o Asaas confirma o pagamento.',
+    en: 'Plans and subscription: Premium unlocks deeper history, multiple platforms, exports and advanced controls. Access changes when Asaas confirms payment.',
+    es: 'Planes y suscripcion: Premium libera historial ampliado, multiples plataformas, exportaciones y controles avanzados. El acceso cambia cuando Asaas confirma el pago.',
   );
 
   String get helpCenterTipSupport => pick(
-    pt: 'Precisa de ajuda? Tenha em maos seu e-mail da conta e, se possivel, gere um backup em Seguranca e dados. Isso ajuda o suporte OmnyaTech a entender seu caso com mais rapidez.',
-    en: 'Need help? Keep your account email ready and, if possible, generate a backup in Security and data. This helps OmnyaTech support understand your case faster.',
-    es: 'Necesitas ayuda? Ten a mano el e-mail de tu cuenta y, si puedes, genera un backup en Seguridad y datos. Eso ayuda al soporte OmnyaTech a entender tu caso mas rapido.',
+    pt: 'Suporte: tenha em maos o e-mail da conta e, se der, gere um backup em Seguranca e dados. Isso acelera bastante o atendimento.',
+    en: 'Support: keep your account email ready and, if possible, generate a backup in Security and data. That makes support much faster.',
+    es: 'Soporte: ten a mano el e-mail de tu cuenta y, si puedes, genera un backup en Seguridad y datos. Eso acelera mucho la atencion.',
+  );
+
+  List<String> get helpCenterSectionLabels => [
+    pick(pt: 'Primeiros passos', en: 'First steps', es: 'Primeros pasos'),
+    pick(pt: 'Veiculos', en: 'Vehicles', es: 'Vehiculos'),
+    pick(pt: 'Jornadas', en: 'Shifts', es: 'Jornadas'),
+    pick(pt: 'Objetivos', en: 'Goals', es: 'Objetivos'),
+    pick(pt: 'Planos', en: 'Plans', es: 'Planes'),
+    pick(pt: 'Suporte', en: 'Support', es: 'Soporte'),
+    pick(pt: 'Ainda precisa?', en: 'Still need help?', es: 'Aun necesitas?'),
+  ];
+
+  List<String> get helpCenterHighlights => [
+    pick(pt: 'Busca rapida', en: 'Quick search', es: 'Busqueda rapida'),
+    pick(pt: 'Suporte humano', en: 'Human support', es: 'Soporte humano'),
+    pick(pt: 'Rotina sem complicar', en: 'Simple routine', es: 'Rutina simple'),
+  ];
+
+  String get helpCenterFooter => pick(
+    pt: 'Nao achou o que precisava? Fale com a OmnyaTech pelo suporte do app ou pelo e-mail suporte@omnyatech.com.',
+    en: 'Did not find what you need? Contact OmnyaTech through app support or suporte@omnyatech.com.',
+    es: 'No encontraste lo que necesitabas? Habla con OmnyaTech por el soporte de la app o suporte@omnyatech.com.',
   );
 
   String get aboutOmnyaDriver =>
@@ -468,16 +520,51 @@ class AppStrings {
   );
 
   String get aboutOmnyaDriverBody => pick(
-    pt: 'O Omnya Driver foi criado para entregadores e motoristas que querem entender melhor a propria rotina. Aqui voce registra jornadas, ganhos, custos, veiculos, plataformas, metas, progresso e perfil publico em um lugar so.',
-    en: 'Omnya Driver was created for couriers and drivers who want to understand their routine better. Here you track shifts, earnings, costs, vehicles, platforms, goals, progress and public profile in one place.',
-    es: 'Omnya Driver fue creado para repartidores y conductores que quieren entender mejor su rutina. Aqui registras jornadas, ingresos, costos, vehiculos, plataformas, metas, progreso y perfil publico en un solo lugar.',
+    pt: 'O Omnya Driver foi criado para quem vive de entregas e precisa entender o que realmente sobra no fim do dia.',
+    en: 'Omnya Driver was created for people who live from deliveries and need to understand what is really left at the end of the day.',
+    es: 'Omnya Driver fue creado para quienes viven de entregas y necesitan entender lo que realmente queda al final del dia.',
+  );
+
+  String get aboutOmnyaDriverWhy => pick(
+    pt: 'O que os apps de entrega mostram nem sempre e o que fica no bolso. Combustivel, manutencao, desgaste e despesas entram na conta. O app transforma tudo isso em numeros simples.',
+    en: 'What delivery apps show is not always what stays in your pocket. Fuel, maintenance, wear and trip costs matter. The app turns all of that into simple numbers.',
+    es: 'Lo que muestran las apps de entrega no siempre es lo que queda en el bolsillo. Combustible, mantenimiento, desgaste y gastos cuentan. La app transforma todo eso en numeros simples.',
+  );
+
+  String get aboutOmnyaDriverCanDo => pick(
+    pt: 'Com ele voce registra jornadas, acompanha ganhos por plataforma, controla custos, entende lucro real, cria objetivos e acompanha relatorios feitos para quem esta na rua.',
+    en: 'With it you track shifts, follow earnings by platform, control costs, understand real profit, create goals and read reports built for people on the road.',
+    es: 'Con el registras jornadas, sigues ingresos por plataforma, controlas costos, entiendes ganancia real, creas objetivos y ves reportes hechos para quien esta en la calle.',
   );
 
   String get aboutOmnyaDriverBrand => pick(
-    pt: 'Principios do app: clareza para decidir, organizacao sem burocracia, privacidade nos ganhos e tecnologia com identidade OmnyaTech: simples, confiavel e focada em resultado real.',
-    en: 'App principles: clarity for decisions, organization without bureaucracy, private earnings and OmnyaTech identity: simple, reliable technology focused on real outcomes.',
-    es: 'Principios de la app: claridad para decidir, organizacion sin burocracia, privacidad en ingresos e identidad OmnyaTech: tecnologia simple, confiable y enfocada en resultados reales.',
+    pt: 'Principios: rapidez para registrar, privacidade por padrao e clareza no lugar de complicacao. Tecnologia simples, confiavel e focada em resultado real.',
+    en: 'Principles: fast records, privacy by default and clarity instead of complexity. Simple, reliable technology focused on real results.',
+    es: 'Principios: rapidez para registrar, privacidad por defecto y claridad en lugar de complicacion. Tecnologia simple, confiable y enfocada en resultados reales.',
   );
+
+  String get aboutOmnyaDriverTech => pick(
+    pt: 'Desenvolvido pela OmnyaTech para autonomos que querem organizar a renda sem depender de planilha. Contato: suporte@omnyatech.com.',
+    en: 'Built by OmnyaTech for independent workers who want to organize income without depending on spreadsheets. Contact: suporte@omnyatech.com.',
+    es: 'Desarrollado por OmnyaTech para autonomos que quieren organizar ingresos sin depender de planillas. Contacto: suporte@omnyatech.com.',
+  );
+
+  List<String> get aboutSectionLabels => [
+    pick(pt: 'Por que existe', en: 'Why it exists', es: 'Por que existe'),
+    pick(
+      pt: 'O que voce controla',
+      en: 'What you control',
+      es: 'Que controlas',
+    ),
+    pick(pt: 'Principios', en: 'Principles', es: 'Principios'),
+    pick(pt: 'OmnyaTech', en: 'OmnyaTech', es: 'OmnyaTech'),
+  ];
+
+  List<String> get aboutHighlights => [
+    pick(pt: 'Lucro real', en: 'Real profit', es: 'Ganancia real'),
+    pick(pt: 'Sem planilha', en: 'No spreadsheet', es: 'Sin planilla'),
+    pick(pt: 'Privado', en: 'Private', es: 'Privado'),
+  ];
 
   String get termsOfUse =>
       pick(pt: 'Termos de uso', en: 'Terms of use', es: 'Terminos de uso');
@@ -489,9 +576,21 @@ class AppStrings {
   );
 
   String get termsOfUseBody => pick(
-    pt: 'Ao usar o Omnya Driver, voce concorda em informar dados verdadeiros e manter sua conta em seguranca. Voce e responsavel pelos registros que cria. O app organiza informacoes e estimativas, mas nao substitui orientacao contabil, fiscal, financeira ou juridica.',
-    en: 'By using Omnya Driver, you agree to provide true data and keep your account secure. You are responsible for the records you create. The app organizes information and estimates, but does not replace accounting, tax, financial or legal advice.',
-    es: 'Al usar Omnya Driver, aceptas informar datos reales y mantener tu cuenta segura. Eres responsable por los registros que creas. La app organiza informacion y estimaciones, pero no reemplaza asesoria contable, fiscal, financiera o juridica.',
+    pt: 'Ao criar uma conta ou usar o Omnya Driver, voce concorda com estes termos. Se algo aqui nao fizer sentido para voce, fale com a gente antes de continuar.',
+    en: 'By creating an account or using Omnya Driver, you agree to these terms. If anything here does not make sense to you, talk to us before continuing.',
+    es: 'Al crear una cuenta o usar Omnya Driver, aceptas estos terminos. Si algo aqui no tiene sentido para ti, habla con nosotros antes de continuar.',
+  );
+
+  String get termsOfUseService => pick(
+    pt: 'Servico: o app organiza jornadas, ganhos, despesas, veiculos, plataformas e objetivos. Os calculos dependem dos dados que voce informa e servem como apoio para sua rotina.',
+    en: 'Service: the app organizes shifts, earnings, expenses, vehicles, platforms and goals. Calculations depend on the data you enter and support your routine.',
+    es: 'Servicio: la app organiza jornadas, ingresos, gastos, vehiculos, plataformas y objetivos. Los calculos dependen de los datos que ingresas y apoyan tu rutina.',
+  );
+
+  String get termsOfUseAccount => pick(
+    pt: 'Conta: voce pode entrar com e-mail, Google ou Microsoft. Mantenha seus dados atualizados, proteja sua senha e use 2FA se quiser uma camada extra de seguranca.',
+    en: 'Account: you can sign in with email, Google or Microsoft. Keep your data updated, protect your password and use 2FA if you want extra security.',
+    es: 'Cuenta: puedes entrar con e-mail, Google o Microsoft. Mantén tus datos actualizados, protege tu clave y usa 2FA si quieres mas seguridad.',
   );
 
   String get termsOfUseBilling => pick(
@@ -506,6 +605,41 @@ class AppStrings {
     es: 'Puedes solicitar backup, exportacion y cierre de cuenta en Seguridad y datos. Perfil publico, ranking y gamificacion son opcionales y no muestran tus ingresos financieros.',
   );
 
+  String get termsOfUseConduct => pick(
+    pt: 'Uso adequado: nao use o app para fraude, dados falsos, acesso indevido ou copia nao autorizada. Contas que violem as regras podem ser suspensas.',
+    en: 'Fair use: do not use the app for fraud, fake data, unauthorized access or unauthorized copying. Accounts that break the rules may be suspended.',
+    es: 'Uso adecuado: no uses la app para fraude, datos falsos, acceso indebido o copia no autorizada. Cuentas que rompan las reglas pueden ser suspendidas.',
+  );
+
+  String get termsOfUseContact => pick(
+    pt: 'Duvidas sobre estes termos podem ser enviadas para juridico@omnyatech.com.',
+    en: 'Questions about these terms can be sent to juridico@omnyatech.com.',
+    es: 'Dudas sobre estos terminos pueden enviarse a juridico@omnyatech.com.',
+  );
+
+  List<String> get termsSectionLabels => [
+    pick(pt: 'Servico', en: 'Service', es: 'Servicio'),
+    pick(pt: 'Conta', en: 'Account', es: 'Cuenta'),
+    pick(pt: 'Assinatura', en: 'Subscription', es: 'Suscripcion'),
+    pick(pt: 'Dados', en: 'Data', es: 'Datos'),
+    pick(pt: 'Uso correto', en: 'Fair use', es: 'Uso correcto'),
+    pick(pt: 'Contato', en: 'Contact', es: 'Contacto'),
+  ];
+
+  List<String> get termsHighlights => [
+    pick(pt: 'Dados verdadeiros', en: 'True data', es: 'Datos reales'),
+    pick(
+      pt: 'Premium via Asaas',
+      en: 'Premium via Asaas',
+      es: 'Premium via Asaas',
+    ),
+    pick(
+      pt: 'Ganhos privados',
+      en: 'Private earnings',
+      es: 'Ingresos privados',
+    ),
+  ];
+
   String get privacyPolicy => pick(
     pt: 'Politica de privacidade',
     en: 'Privacy policy',
@@ -519,9 +653,21 @@ class AppStrings {
   );
 
   String get privacyPolicyBody => pick(
-    pt: 'Coletamos dados de conta, perfil, jornadas, veiculos, plataformas, custos, metas, assinatura, dispositivo e preferencias para operar o app, gerar relatorios, enviar avisos, proteger a conta e melhorar a experiencia.',
-    en: 'We collect account, profile, shift, vehicle, platform, cost, goal, subscription, device and preference data to operate the app, generate reports, send alerts, protect the account and improve the experience.',
-    es: 'Recolectamos datos de cuenta, perfil, jornadas, vehiculos, plataformas, costos, metas, suscripcion, dispositivo y preferencias para operar la app, generar reportes, enviar avisos, proteger la cuenta y mejorar la experiencia.',
+    pt: 'A OmnyaTech respeita sua privacidade e trata seus dados para fazer o app funcionar com seguranca, clareza e conforme a LGPD.',
+    en: 'OmnyaTech respects your privacy and handles your data so the app works safely, clearly and in line with privacy laws.',
+    es: 'OmnyaTech respeta tu privacidad y trata tus datos para que la app funcione con seguridad, claridad y segun la ley.',
+  );
+
+  String get privacyPolicyCollected => pick(
+    pt: 'Coletamos dados de conta, perfil, veiculos, plataformas, jornadas, entregas, custos, metas, assinatura, dispositivo, preferencias e notificacoes.',
+    en: 'We collect account, profile, vehicle, platform, shift, delivery, cost, goal, subscription, device, preference and notification data.',
+    es: 'Recolectamos datos de cuenta, perfil, vehiculos, plataformas, jornadas, entregas, costos, metas, suscripcion, dispositivo, preferencias y notificaciones.',
+  );
+
+  String get privacyPolicyUse => pick(
+    pt: 'Usamos esses dados para calcular lucro real, gerar relatorios, enviar avisos uteis, proteger sua conta, processar assinatura e melhorar a experiencia.',
+    en: 'We use this data to calculate real profit, generate reports, send useful alerts, protect your account, process subscription and improve the experience.',
+    es: 'Usamos esos datos para calcular ganancia real, generar reportes, enviar avisos utiles, proteger tu cuenta, procesar suscripcion y mejorar la experiencia.',
   );
 
   String get privacyPolicyStorage => pick(
@@ -535,6 +681,41 @@ class AppStrings {
     en: 'You can request access, correction, portability, deletion or consent review. For privacy questions, contact OmnyaTech support through the official app channels.',
     es: 'Puedes pedir acceso, correccion, portabilidad, eliminacion o revision de consentimientos. Para dudas de privacidad, habla con soporte OmnyaTech por los canales oficiales de la app.',
   );
+
+  String get privacyPolicyPublicProfile => pick(
+    pt: 'Perfil publico e ranking sao opcionais. Eles podem mostrar nivel, medalhas, titulo e estatisticas nao sensiveis, mas nunca seus ganhos financeiros.',
+    en: 'Public profile and ranking are optional. They may show level, medals, title and non-sensitive stats, but never your financial earnings.',
+    es: 'Perfil publico y ranking son opcionales. Pueden mostrar nivel, medallas, titulo y estadisticas no sensibles, pero nunca tus ingresos financieros.',
+  );
+
+  String get privacyPolicyDpo => pick(
+    pt: 'Para exercer seus direitos de privacidade, use Seguranca e dados no app ou fale pelo e-mail privacidade@omnyatech.com.',
+    en: 'To exercise your privacy rights, use Security and data in the app or contact privacidade@omnyatech.com.',
+    es: 'Para ejercer tus derechos de privacidad, usa Seguridad y datos en la app o escribe a privacidade@omnyatech.com.',
+  );
+
+  List<String> get privacySectionLabels => [
+    pick(pt: 'Dados coletados', en: 'Collected data', es: 'Datos recolectados'),
+    pick(pt: 'Uso dos dados', en: 'Data use', es: 'Uso de datos'),
+    pick(pt: 'Seguranca', en: 'Security', es: 'Seguridad'),
+    pick(pt: 'Perfil publico', en: 'Public profile', es: 'Perfil publico'),
+    pick(pt: 'Seus direitos', en: 'Your rights', es: 'Tus derechos'),
+    pick(pt: 'Contato', en: 'Contact', es: 'Contacto'),
+  ];
+
+  List<String> get privacyHighlights => [
+    pick(pt: 'LGPD', en: 'Privacy rights', es: 'Privacidad'),
+    pick(
+      pt: 'Ganhos privados',
+      en: 'Private earnings',
+      es: 'Ingresos privados',
+    ),
+    pick(
+      pt: 'Permissoes por conta',
+      en: 'Account permissions',
+      es: 'Permisos por cuenta',
+    ),
+  ];
 
   String get developerTools => pick(
     pt: 'Ferramentas internas da OmnyaTech',

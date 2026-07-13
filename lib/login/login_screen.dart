@@ -406,7 +406,7 @@ class _AccessCard extends StatelessWidget {
           children: [
             Center(
               child: Container(
-                width: 52,
+                width: 56,
                 height: 5,
                 decoration: BoxDecoration(
                   color: theme.dividerColor,
@@ -415,9 +415,54 @@ class _AccessCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 22),
-            Text(title, style: theme.textTheme.headlineSmall),
-            const SizedBox(height: 8),
-            Text(subtitle),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        OmnyaVisualTokens.omnyaPrimaryDark,
+                        OmnyaVisualTokens.electricBlue,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: OmnyaVisualTokens.electricBlue.withValues(
+                          alpha: 0.28,
+                        ),
+                        blurRadius: 22,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    isRecovering
+                        ? Icons.lock_reset
+                        : isRegister
+                        ? Icons.person_add_alt_1
+                        : Icons.route,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: theme.textTheme.headlineSmall),
+                      const SizedBox(height: 8),
+                      Text(subtitle),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
             if (!isRecovering) ...[
               _ModeTabs(mode: mode, onChanged: isBusy ? null : onModeChanged),
@@ -431,6 +476,7 @@ class _AccessCard extends StatelessWidget {
                     TextFormField(
                       controller: fullNameController,
                       textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.name],
                       decoration: const InputDecoration(
                         prefixIcon: Icon(Icons.badge_outlined),
                         labelText: 'Nome completo',
@@ -450,6 +496,7 @@ class _AccessCard extends StatelessWidget {
                     textInputAction: isRecovering
                         ? TextInputAction.done
                         : TextInputAction.next,
+                    autofillHints: const [AutofillHints.email],
                     decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.mail_outline),
                       labelText: 'E-mail',
@@ -470,6 +517,9 @@ class _AccessCard extends StatelessWidget {
                     TextFormField(
                       controller: passwordController,
                       textInputAction: TextInputAction.done,
+                      autofillHints: isRegister
+                          ? const [AutofillHints.newPassword]
+                          : const [AutofillHints.password],
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.lock_outline),
                         labelText: isRegister ? 'Crie uma senha' : 'Senha',
@@ -541,20 +591,44 @@ class _AccessCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              _SocialLoginButton(
-                assetPath: _googleIconAsset,
-                label: 'Google',
-                onPressed: isBusy
-                    ? null
-                    : () => onOAuth(OauthProviderOption.google),
-              ),
-              const SizedBox(height: 10),
-              _SocialLoginButton(
-                assetPath: _microsoftIconAsset,
-                label: 'Microsoft',
-                onPressed: isBusy
-                    ? null
-                    : () => onOAuth(OauthProviderOption.microsoft),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final stacked = constraints.maxWidth < 430;
+                  final buttons = [
+                    _SocialLoginButton(
+                      assetPath: _googleIconAsset,
+                      label: 'Google',
+                      onPressed: isBusy
+                          ? null
+                          : () => onOAuth(OauthProviderOption.google),
+                    ),
+                    _SocialLoginButton(
+                      assetPath: _microsoftIconAsset,
+                      label: 'Microsoft',
+                      onPressed: isBusy
+                          ? null
+                          : () => onOAuth(OauthProviderOption.microsoft),
+                    ),
+                  ];
+
+                  if (stacked) {
+                    return Column(
+                      children: [
+                        buttons.first,
+                        const SizedBox(height: 10),
+                        buttons.last,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      Expanded(child: buttons.first),
+                      const SizedBox(width: 10),
+                      Expanded(child: buttons.last),
+                    ],
+                  );
+                },
               ),
             ],
             if (errorMessage != null) ...[

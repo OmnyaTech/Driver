@@ -327,66 +327,124 @@ class _OmnyaBottomTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
 
-    return Container(
+    if (keyboardOpen) return const SizedBox.shrink();
+
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        border: Border(top: BorderSide(color: theme.dividerColor)),
+        color: Colors.transparent,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
+            blurRadius: 28,
+            offset: const Offset(0, -12),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(8, 8, 8, compact ? 8 : 10),
+        child: Container(
+          margin: EdgeInsets.fromLTRB(12, 0, 12, compact ? 8 : 10),
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 6 : 8,
+            vertical: compact ? 7 : 8,
+          ),
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF070A12).withValues(alpha: 0.96)
+                : Colors.white.withValues(alpha: 0.96),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : Colors.black.withValues(alpha: 0.08),
+            ),
+          ),
           child: Row(
             children: List.generate(tabs.length, (index) {
               final tab = tabs[index];
               final selected = currentIndex == index;
-              final activeColor = const Color(0xFF7582FF);
+              final activeColor = isDark
+                  ? const Color(0xFF9DA6FF)
+                  : OmnyaVisualTokens.omnyaPrimary;
               final inactiveColor = theme.colorScheme.onSurfaceVariant;
 
               return Expanded(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: () => onSelected(index),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOutCubic,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: compact ? 12 : 14,
-                            vertical: 8,
+                child: AnimatedSlide(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  offset: selected ? const Offset(0, -0.06) : Offset.zero,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () => onSelected(index),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 240),
+                            curve: Curves.easeOutCubic,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: compact ? 11 : 13,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: selected
+                                  ? const LinearGradient(
+                                      colors: [
+                                        OmnyaVisualTokens.omnyaPrimaryDark,
+                                        OmnyaVisualTokens.electricBlue,
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    )
+                                  : null,
+                              color: selected ? null : Colors.transparent,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: selected
+                                  ? [
+                                      BoxShadow(
+                                        color: OmnyaVisualTokens.electricBlue
+                                            .withValues(alpha: 0.28),
+                                        blurRadius: 18,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Icon(
+                              selected ? tab.selectedIcon : tab.icon,
+                              size: compact ? 18 : 20,
+                              color: selected ? Colors.white : inactiveColor,
+                            ),
                           ),
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? const Color(
-                                    0xFF0000CD,
-                                  ).withValues(alpha: isDark ? 0.32 : 0.16)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(16),
+                          const SizedBox(height: 4),
+                          AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOutCubic,
+                            style:
+                                theme.textTheme.labelSmall?.copyWith(
+                                  fontSize: compact ? 9.5 : 10.5,
+                                  color: selected ? activeColor : inactiveColor,
+                                  fontWeight: selected
+                                      ? FontWeight.w800
+                                      : FontWeight.w600,
+                                  letterSpacing: selected ? 0.05 : 0,
+                                ) ??
+                                TextStyle(
+                                  fontSize: compact ? 9.5 : 10.5,
+                                  color: selected ? activeColor : inactiveColor,
+                                ),
+                            child: Text(
+                              tab.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          child: Icon(
-                            selected ? tab.selectedIcon : tab.icon,
-                            size: compact ? 19 : 21,
-                            color: selected ? activeColor : inactiveColor,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          tab.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontSize: compact ? 10 : 11,
-                            color: selected
-                                ? theme.colorScheme.onSurface
-                                : inactiveColor,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

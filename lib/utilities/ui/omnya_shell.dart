@@ -112,6 +112,11 @@ class _OmnyaFloatingActionMenuState extends State<OmnyaFloatingActionMenu>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+
+    if (keyboardOpen) return const SizedBox.shrink();
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -141,15 +146,24 @@ class _OmnyaFloatingActionMenuState extends State<OmnyaFloatingActionMenu>
                         children: [
                           OmnyaGlassCard(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
+                              horizontal: 16,
+                              vertical: 11,
                             ),
-                            child: Text(action.label),
+                            borderRadius: 18,
+                            child: Text(
+                              action.label,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           ),
                           const SizedBox(width: 10),
                           FloatingActionButton.small(
                             heroTag:
                                 '${widget.heroTagPrefix}-action-$index-${action.label}',
+                            elevation: 10,
+                            backgroundColor: OmnyaVisualTokens.omnyaPrimary,
+                            foregroundColor: Colors.white,
                             onPressed: () {
                               _toggle();
                               action.onTap();
@@ -168,11 +182,15 @@ class _OmnyaFloatingActionMenuState extends State<OmnyaFloatingActionMenu>
         FloatingActionButton.extended(
           heroTag: '${widget.heroTagPrefix}-main-fab',
           onPressed: _toggle,
+          elevation: 14,
+          backgroundColor: OmnyaVisualTokens.electricBlue,
+          foregroundColor: Colors.white,
           icon: AnimatedRotation(
             turns: _open ? 0.125 : 0,
             duration: const Duration(milliseconds: 240),
             child: const Icon(Icons.add),
           ),
+          extendedPadding: const EdgeInsets.symmetric(horizontal: 22),
           label: Text(
             _open
                 ? AppStrings.of(context).close

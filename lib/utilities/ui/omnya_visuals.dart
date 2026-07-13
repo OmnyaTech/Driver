@@ -6,9 +6,16 @@ class OmnyaVisualTokens {
   const OmnyaVisualTokens._();
 
   static const electricBlue = Color(0xFF0500FF);
+  static const omnyaPrimary = Color(0xFF0000CD);
+  static const omnyaPrimaryDark = Color(0xFF00009E);
+  static const omnyaPrimaryLight = Color(0xFFD9D9F8);
   static const neonBlue = Color(0xFF2C6CFF);
   static const cyan = Color(0xFF00E5FF);
   static const violet = Color(0xFF6C4DFF);
+  static const income = Color(0xFF1FAE6B);
+  static const expense = Color(0xFFE5484D);
+  static const reserved = Color(0xFF6C63FF);
+  static const neutralData = Color(0xFFF2A93B);
   static const graphite = Color(0xFF111724);
   static const deepSpace = Color(0xFF050811);
   static const cardDark = Color(0xFF121825);
@@ -121,7 +128,7 @@ class OmnyaGlassCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final radius = BorderRadius.circular(borderRadius);
     final borderColor = highlight
-        ? OmnyaVisualTokens.cyan.withValues(alpha: isDark ? 0.58 : 0.36)
+        ? OmnyaVisualTokens.neonBlue.withValues(alpha: isDark ? 0.58 : 0.38)
         : Theme.of(
             context,
           ).dividerColor.withValues(alpha: isDark ? 0.86 : 0.65);
@@ -143,15 +150,22 @@ class OmnyaGlassCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: (glowColor ?? OmnyaVisualTokens.electricBlue).withValues(
-              alpha: highlight ? 0.20 : 0.06,
-            ),
-            blurRadius: highlight ? 28 : 18,
-            offset: const Offset(0, 14),
-          ),
-        ],
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: (glowColor ?? OmnyaVisualTokens.electricBlue)
+                      .withValues(alpha: highlight ? 0.18 : 0.035),
+                  blurRadius: highlight ? 26 : 14,
+                  offset: const Offset(0, 12),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.045),
+                  blurRadius: 22,
+                  offset: const Offset(0, 10),
+                ),
+              ],
       ),
       child: child,
     );
@@ -340,6 +354,115 @@ class OmnyaMetricTile extends StatelessWidget {
   }
 }
 
+class OmnyaCard extends StatelessWidget {
+  const OmnyaCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.onTap,
+    this.highlight = false,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final VoidCallback? onTap;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    return OmnyaGlassCard(
+      padding: padding,
+      borderRadius: 18,
+      highlight: highlight,
+      onTap: onTap,
+      child: child,
+    );
+  }
+}
+
+class OmnyaEmptyState extends StatelessWidget {
+  const OmnyaEmptyState({
+    super.key,
+    required this.title,
+    required this.message,
+    this.icon = Icons.auto_awesome_outlined,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final String title;
+  final String message;
+  final IconData icon;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return OmnyaCard(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: OmnyaVisualTokens.omnyaPrimary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: OmnyaVisualTokens.neonBlue),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: theme.textTheme.titleSmall),
+                const SizedBox(height: 5),
+                Text(message, style: theme.textTheme.bodyMedium),
+                if (actionLabel != null && onAction != null) ...[
+                  const SizedBox(height: 12),
+                  FilledButton(onPressed: onAction, child: Text(actionLabel!)),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class OmnyaProgressRing extends StatelessWidget {
+  const OmnyaProgressRing({
+    super.key,
+    required this.value,
+    required this.child,
+    this.size = 96,
+    this.color = OmnyaVisualTokens.neonBlue,
+  });
+
+  final double value;
+  final Widget child;
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: size,
+      child: CustomPaint(
+        painter: _OmnyaProgressRingPainter(
+          value: value.clamp(0, 1),
+          color: color,
+          trackColor: Theme.of(context).dividerColor.withValues(alpha: 0.38),
+        ),
+        child: Center(child: child),
+      ),
+    );
+  }
+}
+
 class OmnyaMiniBars extends StatelessWidget {
   const OmnyaMiniBars({super.key, required this.values, this.height = 88});
 
@@ -452,6 +575,53 @@ class _OmnyaHeroGridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _OmnyaProgressRingPainter extends CustomPainter {
+  const _OmnyaProgressRingPainter({
+    required this.value,
+    required this.color,
+    required this.trackColor,
+  });
+
+  final double value;
+  final Color color;
+  final Color trackColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (math.min(size.width, size.height) - 10) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 8;
+    final progressPaint = Paint()
+      ..shader = SweepGradient(
+        colors: [color.withValues(alpha: 0.45), color],
+      ).createShader(rect)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 8;
+
+    canvas.drawCircle(center, radius, trackPaint);
+    canvas.drawArc(
+      rect,
+      -math.pi / 2,
+      math.pi * 2 * value,
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _OmnyaProgressRingPainter oldDelegate) {
+    return oldDelegate.value != value ||
+        oldDelegate.color != color ||
+        oldDelegate.trackColor != trackColor;
+  }
 }
 
 class _OmnyaMiniBarsPainter extends CustomPainter {
