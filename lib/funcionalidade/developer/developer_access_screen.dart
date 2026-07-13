@@ -231,17 +231,17 @@ class _DeveloperMetricsCard extends StatelessWidget {
       ),
       (
         'Assinantes',
-        _value(metrics, 'billing', 'active_subscribers'),
+        _value(metrics, 'billing', 'active'),
         Icons.workspace_premium_outlined,
       ),
       (
         'Checkouts pendentes',
-        _value(metrics, 'billing', 'pending_checkouts'),
+        _value(metrics, 'billing', 'pending'),
         Icons.hourglass_top_rounded,
       ),
       (
         'Dispositivos push',
-        _value(metrics, 'push', 'enabled_devices'),
+        _value(metrics, 'devices', 'push_enabled'),
         Icons.notifications_active_outlined,
       ),
     ];

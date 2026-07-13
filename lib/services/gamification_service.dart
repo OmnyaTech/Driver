@@ -67,6 +67,7 @@ class GamificationService {
         .rpc('get_driver_growth_summary');
     final data = Map<String, dynamic>.from(response as Map);
     final missionsRaw = (data['missions'] as List? ?? const []).cast<dynamic>();
+    final claimedMissionKeys = await _loadClaimedMissionKeys();
     return AppGrowthSummary(
       tier: data['tier']?.toString() ?? 'Bronze',
       nextTierScore: _toInt(data['next_tier_score']),
@@ -80,13 +81,46 @@ class GamificationService {
           key: row['key']?.toString() ?? 'mission',
           title: row['title']?.toString() ?? 'Missao',
           description: row['description']?.toString() ?? '',
-          target: _toInt(row['target']),
-          current: _toInt(row['current']),
+          target: _toInt(row['target_value'] ?? row['target']),
+          current: _toInt(row['current_value'] ?? row['current']),
           rewardXp: _toInt(row['reward_xp']),
+          rewardTitle: row['reward_title']?.toString(),
           completed: row['completed'] as bool? ?? false,
+          claimed: claimedMissionKeys.contains(row['key']?.toString()),
         );
       }).toList(),
     );
+  }
+
+  Future<Set<String>> _loadClaimedMissionKeys() async {
+    try {
+      final client = _authService.requireClient();
+      final now = DateTime.now().toUtc();
+      final weekStart = DateTime.utc(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(Duration(days: now.weekday - 1));
+      final rows = await client
+          .schema('driver')
+          .from('driver_mission_claims')
+          .select('mission_key')
+          .gte('claimed_at', weekStart.toIso8601String());
+      return rows
+          .map((row) => (row as Map)['mission_key']?.toString())
+          .whereType<String>()
+          .toSet();
+    } catch (_) {
+      return const <String>{};
+    }
+  }
+
+  Future<Map<String, dynamic>> claimMission(String missionKey) async {
+    final client = _authService.requireClient();
+    final response = await client
+        .schema('driver')
+        .rpc('claim_driver_mission', params: {'p_mission_key': missionKey});
+    return Map<String, dynamic>.from((response as Map?) ?? const {});
   }
 
   int _toInt(Object? value) => int.tryParse('$value') ?? 0;

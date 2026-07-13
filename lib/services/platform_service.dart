@@ -74,6 +74,52 @@ class PlatformService {
     );
   }
 
+  Future<List<PlatformCatalogSuggestion>> findCatalogSuggestions({
+    required String name,
+    required String type,
+  }) async {
+    final client = _authService.requireClient();
+    final user = client.auth.currentUser;
+    if (user == null || name.trim().length < 2) return const [];
+
+    final location = await _loadProfileLocation(user.id);
+    try {
+      dynamic query = client
+          .schema('driver')
+          .from('platform_catalog')
+          .select('id, name, type, city, state, country, logo_url')
+          .ilike('name', '%${name.trim()}%')
+          .ilike('type', type.trim())
+          .eq('country', location.country);
+
+      if ((location.state ?? '').trim().isNotEmpty) {
+        query = query.ilike('state', location.state!.trim());
+      }
+      if ((location.city ?? '').trim().isNotEmpty) {
+        query = query.ilike('city', location.city!.trim());
+      }
+
+      final rows = await query.limit(5);
+      if (rows is! List) return const [];
+      return rows
+          .map(
+            (row) => PlatformCatalogSuggestion(
+              id: (row as Map)['id']?.toString() ?? '',
+              name: row['name']?.toString() ?? '',
+              type: row['type']?.toString() ?? '',
+              city: row['city']?.toString(),
+              state: row['state']?.toString(),
+              country: row['country']?.toString() ?? location.country,
+              logoUrl: row['logo_url']?.toString(),
+            ),
+          )
+          .where((item) => item.id.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
   Future<void> updatePlatform({
     required String id,
     required String name,
@@ -257,6 +303,32 @@ class PlatformService {
       // Safe fallback for environments where sql/manual/023 is not applied yet.
     }
   }
+}
+
+class PlatformCatalogSuggestion {
+  const PlatformCatalogSuggestion({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.city,
+    required this.state,
+    required this.country,
+    required this.logoUrl,
+  });
+
+  final String id;
+  final String name;
+  final String type;
+  final String? city;
+  final String? state;
+  final String country;
+  final String? logoUrl;
+
+  String get locationLabel => [
+    city,
+    state,
+    country,
+  ].where((item) => item != null && item.trim().isNotEmpty).join(' - ');
 }
 
 class _PlatformLocation {

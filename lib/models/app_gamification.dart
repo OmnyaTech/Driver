@@ -92,6 +92,8 @@ class AppDriverMission {
     required this.current,
     required this.rewardXp,
     required this.completed,
+    required this.claimed,
+    this.rewardTitle,
   });
 
   final String key;
@@ -101,6 +103,8 @@ class AppDriverMission {
   final int current;
   final int rewardXp;
   final bool completed;
+  final bool claimed;
+  final String? rewardTitle;
 
   double get progress => target <= 0 ? 0 : (current / target).clamp(0, 1);
 }

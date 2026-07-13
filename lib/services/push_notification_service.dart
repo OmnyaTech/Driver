@@ -74,11 +74,11 @@ class PushNotificationService {
         .rpc(
           'enqueue_driver_push',
           params: {
-            'p_target_user_id': targetUserId,
-            'p_notification_type': notificationType,
+            'p_user_id': targetUserId,
+            'p_event_type': notificationType,
             'p_title': title,
             'p_body': body,
-            'p_data': data,
+            'p_payload': data,
             'p_notification_key':
                 '$notificationType:${scheduledAt?.toUtc().toIso8601String() ?? DateTime.now().toUtc().toIso8601String()}',
             'p_scheduled_at': scheduledAt?.toUtc().toIso8601String(),

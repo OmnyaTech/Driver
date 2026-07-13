@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -570,12 +572,16 @@ class _PlatformFormDialog extends StatefulWidget {
 
 class _PlatformFormDialogState extends State<_PlatformFormDialog> {
   final _formKey = GlobalKey<FormState>();
+  final PlatformService _platformService = PlatformService();
   late final TextEditingController _nameController;
   late final TextEditingController _incomeController;
   late final TextEditingController _deliveriesController;
   late String _type;
   late bool _active;
   bool _saving = false;
+  bool _loadingSuggestions = false;
+  Timer? _suggestionDebounce;
+  List<PlatformCatalogSuggestion> _suggestions = const [];
   String? _submitError;
 
   @override
@@ -591,10 +597,13 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
     );
     _type = initialPlatform?.type ?? 'platform';
     _active = initialPlatform?.active ?? true;
+    _nameController.addListener(_scheduleSuggestionRefresh);
   }
 
   @override
   void dispose() {
+    _suggestionDebounce?.cancel();
+    _nameController.removeListener(_scheduleSuggestionRefresh);
     _nameController.dispose();
     _incomeController.dispose();
     _deliveriesController.dispose();
@@ -603,11 +612,20 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return AlertDialog(
       title: Text(
         widget.initialPlatform == null
-            ? 'Nova plataforma'
-            : 'Editar plataforma',
+            ? strings.pick(
+                pt: 'Nova plataforma',
+                en: 'New platform',
+                es: 'Nueva plataforma',
+              )
+            : strings.pick(
+                pt: 'Editar plataforma',
+                en: 'Edit platform',
+                es: 'Editar plataforma',
+              ),
       ),
       content: Form(
         key: _formKey,
@@ -617,31 +635,106 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Nome'),
+                decoration: InputDecoration(
+                  labelText: strings.pick(pt: 'Nome', en: 'Name', es: 'Nombre'),
+                ),
                 validator: _required,
               ),
+              if (_loadingSuggestions)
+                const Padding(
+                  padding: EdgeInsets.only(top: 10),
+                  child: LinearProgressIndicator(),
+                )
+              else if (_suggestions.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          strings.pick(
+                            pt: 'Encontramos parecidos na sua regiao',
+                            en: 'Similar places found near you',
+                            es: 'Encontramos parecidos en tu region',
+                          ),
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ..._suggestions.map(
+                        (suggestion) => ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          leading: _SuggestionLogo(url: suggestion.logoUrl),
+                          title: Text(suggestion.name),
+                          subtitle: Text(suggestion.locationLabel),
+                          trailing: const Icon(Icons.north_west_rounded),
+                          onTap: () {
+                            setState(() {
+                              _nameController.text = suggestion.name;
+                              _type = suggestion.type;
+                              _suggestions = const [];
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               DropdownButtonFormField<String>(
                 initialValue: _type,
-                decoration: const InputDecoration(labelText: 'Tipo'),
-                items: const [
+                decoration: InputDecoration(
+                  labelText: strings.pick(pt: 'Tipo', en: 'Type', es: 'Tipo'),
+                ),
+                items: [
                   DropdownMenuItem(
                     value: 'platform',
-                    child: Text('Plataforma'),
+                    child: Text(
+                      strings.pick(
+                        pt: 'Plataforma',
+                        en: 'Platform',
+                        es: 'Plataforma',
+                      ),
+                    ),
                   ),
                   DropdownMenuItem(
                     value: 'restaurant',
-                    child: Text('Restaurante'),
+                    child: Text(
+                      strings.pick(
+                        pt: 'Restaurante',
+                        en: 'Restaurant',
+                        es: 'Restaurante',
+                      ),
+                    ),
                   ),
-                  DropdownMenuItem(value: 'market', child: Text('Mercado')),
-                  DropdownMenuItem(value: 'other', child: Text('Outro')),
+                  DropdownMenuItem(
+                    value: 'market',
+                    child: Text(
+                      strings.pick(pt: 'Mercado', en: 'Market', es: 'Mercado'),
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'other',
+                    child: Text(
+                      strings.pick(pt: 'Outro', en: 'Other', es: 'Otro'),
+                    ),
+                  ),
                 ],
-                onChanged: (value) =>
-                    setState(() => _type = value ?? 'platform'),
+                onChanged: (value) {
+                  setState(() => _type = value ?? 'platform');
+                  _scheduleSuggestionRefresh();
+                },
               ),
               TextFormField(
                 controller: _incomeController,
-                decoration: const InputDecoration(
-                  labelText: 'Media diaria de ganhos',
+                decoration: InputDecoration(
+                  labelText: strings.pick(
+                    pt: 'Media diaria de ganhos',
+                    en: 'Average daily income',
+                    es: 'Promedio diario de ingresos',
+                  ),
                 ),
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -649,18 +742,36 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
               ),
               TextFormField(
                 controller: _deliveriesController,
-                decoration: const InputDecoration(
-                  labelText: 'Media diaria de entregas',
+                decoration: InputDecoration(
+                  labelText: strings.pick(
+                    pt: 'Media diaria de entregas',
+                    en: 'Average daily deliveries',
+                    es: 'Promedio diario de entregas',
+                  ),
                 ),
                 keyboardType: TextInputType.number,
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Plataforma ativa'),
+                title: Text(
+                  strings.pick(
+                    pt: 'Plataforma ativa',
+                    en: 'Active platform',
+                    es: 'Plataforma activa',
+                  ),
+                ),
                 subtitle: Text(
                   widget.canEditActiveState
-                      ? 'Quando desligada, a plataforma fica arquivada.'
-                      : 'O plano atual nao permite ativar mais plataformas.',
+                      ? strings.pick(
+                          pt: 'Quando desligada, ela fica arquivada.',
+                          en: 'When turned off, it stays archived.',
+                          es: 'Cuando se apaga, queda archivada.',
+                        )
+                      : strings.pick(
+                          pt: 'Seu plano atual nao permite ativar mais plataformas.',
+                          en: 'Your current plan does not allow more active platforms.',
+                          es: 'Tu plan actual no permite activar mas plataformas.',
+                        ),
                 ),
                 value: _active,
                 onChanged: (_saving || (!widget.canEditActiveState && !_active))
@@ -684,7 +795,7 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancelar'),
+          child: Text(strings.cancel),
         ),
         FilledButton(
           onPressed: _saving
@@ -715,7 +826,7 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
                     }
                   }
                 },
-          child: const Text('Salvar'),
+          child: Text(strings.save),
         ),
       ],
     );
@@ -723,8 +834,65 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
 
   String? _required(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Campo obrigatorio.';
+      return AppStrings.of(context).pick(
+        pt: 'Campo obrigatorio.',
+        en: 'Required field.',
+        es: 'Campo obligatorio.',
+      );
     }
     return null;
+  }
+
+  void _scheduleSuggestionRefresh() {
+    if (widget.initialPlatform != null) return;
+    _suggestionDebounce?.cancel();
+    _suggestionDebounce = Timer(
+      const Duration(milliseconds: 450),
+      _refreshSuggestions,
+    );
+  }
+
+  Future<void> _refreshSuggestions() async {
+    final name = _nameController.text.trim();
+    if (name.length < 2) {
+      if (mounted) setState(() => _suggestions = const []);
+      return;
+    }
+
+    setState(() => _loadingSuggestions = true);
+    final suggestions = await _platformService.findCatalogSuggestions(
+      name: name,
+      type: _type,
+    );
+    if (!mounted) return;
+    setState(() {
+      _suggestions = suggestions;
+      _loadingSuggestions = false;
+    });
+  }
+}
+
+class _SuggestionLogo extends StatelessWidget {
+  const _SuggestionLogo({required this.url});
+
+  final String? url;
+
+  @override
+  Widget build(BuildContext context) {
+    final logoUrl = url?.trim();
+    final placeholder = CircleAvatar(
+      backgroundColor: const Color(0xFF0000CD).withValues(alpha: 0.14),
+      child: const Icon(Icons.storefront_outlined, color: Color(0xFF7582FF)),
+    );
+    if (logoUrl == null || logoUrl.isEmpty) return placeholder;
+    return ClipOval(
+      child: Image.network(
+        logoUrl,
+        width: 40,
+        height: 40,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => placeholder,
+      ),
+    );
   }
 }

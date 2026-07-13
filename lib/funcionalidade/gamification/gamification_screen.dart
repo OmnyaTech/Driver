@@ -176,6 +176,7 @@ class _GamificationScreenState extends State<GamificationScreen>
               _TierAndMissionsCard(
                 growth: _growth!,
                 animation: _pulseController,
+                onClaim: _claimMission,
               ),
               const SizedBox(height: 16),
             ],
@@ -303,13 +304,43 @@ class _GamificationScreenState extends State<GamificationScreen>
     final local = value.toLocal();
     return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}';
   }
+
+  Future<void> _claimMission(AppDriverMission mission) async {
+    try {
+      final result = await _service.claimMission(mission.key);
+      if (!mounted) return;
+      final ok = result['ok'] == true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ok
+                ? 'Missao resgatada. Seus pontos foram atualizados.'
+                : 'Essa missao ainda nao pode ser resgatada.',
+          ),
+        ),
+      );
+      await _load();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nao foi possivel resgatar agora. Tente de novo.'),
+        ),
+      );
+    }
+  }
 }
 
 class _TierAndMissionsCard extends StatelessWidget {
-  const _TierAndMissionsCard({required this.growth, required this.animation});
+  const _TierAndMissionsCard({
+    required this.growth,
+    required this.animation,
+    required this.onClaim,
+  });
 
   final AppGrowthSummary growth;
   final Animation<double> animation;
+  final Future<void> Function(AppDriverMission mission) onClaim;
 
   @override
   Widget build(BuildContext context) {
@@ -384,7 +415,10 @@ class _TierAndMissionsCard extends StatelessWidget {
             ...growth.missions.map(
               (mission) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: _MissionProgressRow(mission: mission),
+                child: _MissionProgressRow(
+                  mission: mission,
+                  onClaim: () => onClaim(mission),
+                ),
               ),
             ),
           ],
@@ -413,9 +447,10 @@ class _MissionPill extends StatelessWidget {
 }
 
 class _MissionProgressRow extends StatelessWidget {
-  const _MissionProgressRow({required this.mission});
+  const _MissionProgressRow({required this.mission, required this.onClaim});
 
   final AppDriverMission mission;
+  final VoidCallback onClaim;
 
   @override
   Widget build(BuildContext context) {
@@ -429,7 +464,9 @@ class _MissionProgressRow extends StatelessWidget {
               child: Text(mission.title, style: theme.textTheme.titleSmall),
             ),
             Text(
-              mission.completed
+              mission.claimed
+                  ? 'Resgatada'
+                  : mission.completed
                   ? '+${mission.rewardXp} XP'
                   : '${mission.current}/${mission.target}',
               style: theme.textTheme.labelLarge,
@@ -448,6 +485,17 @@ class _MissionProgressRow extends StatelessWidget {
             child: LinearProgressIndicator(value: value, minHeight: 8),
           ),
         ),
+        if (mission.completed && !mission.claimed) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              onPressed: onClaim,
+              icon: const Icon(Icons.card_giftcard_rounded, size: 18),
+              label: const Text('Resgatar'),
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -2,6 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 type PushBody = {
   jobId?: string | null;
+  limit?: number | null;
   userId?: string | null;
   title?: string | null;
   body?: string | null;
@@ -43,6 +44,111 @@ const stringifyData = (data: Record<string, unknown> | null | undefined) =>
     Object.entries(data ?? {}).map(([key, value]) => [key, String(value)]),
   );
 
+const markJob = async (
+  admin: ReturnType<typeof createClient>,
+  jobId: string,
+  status: "sent" | "failed",
+  failureReason: string | null = null,
+) => {
+  await admin
+    .schema("driver")
+    .from("driver_push_jobs")
+    .update({
+      status,
+      sent_at: status === "sent" ? new Date().toISOString() : null,
+      failed_at: status === "failed" ? new Date().toISOString() : null,
+      failure_reason: failureReason,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", jobId);
+};
+
+const sendToUser = async ({
+  admin,
+  serverKey,
+  userId,
+  title,
+  message,
+  data,
+}: {
+  admin: ReturnType<typeof createClient>;
+  serverKey: string;
+  userId: string;
+  title: string;
+  message: string;
+  data: Record<string, string>;
+}) => {
+  const { data: devices, error } = await admin
+    .schema("driver")
+    .from("driver_push_devices")
+    .select("id, fcm_token")
+    .eq("user_id", userId)
+    .eq("enabled", true)
+    .not("fcm_token", "is", null);
+
+  if (error) {
+    return {
+      ok: false,
+      delivered: 0,
+      failed: 0,
+      message: "Falha ao buscar dispositivos.",
+      status: 500,
+    };
+  }
+
+  const tokens = (devices ?? [])
+    .map((device) => String(device.fcm_token ?? "").trim())
+    .filter((token) => token.length > 0);
+
+  if (tokens.length === 0) {
+    return {
+      ok: true,
+      delivered: 0,
+      failed: 0,
+      message: "Sem dispositivo ativo.",
+      status: 200,
+    };
+  }
+
+  const response = await fetch("https://fcm.googleapis.com/fcm/send", {
+    method: "POST",
+    headers: {
+      Authorization: `key=${serverKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      registration_ids: tokens,
+      priority: "high",
+      notification: {
+        title,
+        body: message,
+      },
+      data,
+    }),
+  });
+
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    return {
+      ok: false,
+      delivered: 0,
+      failed: tokens.length,
+      message: "FCM recusou o envio.",
+      status: 502,
+      details: result,
+    };
+  }
+
+  return {
+    ok: true,
+    delivered: Number(result.success ?? 0),
+    failed: Number(result.failure ?? 0),
+    message: "Push enviado.",
+    status: 200,
+    details: result,
+  };
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -72,6 +178,59 @@ Deno.serve(async (req) => {
   let message = (body.body ?? "").trim();
   let payloadData = stringifyData(body.data);
   const jobId = (body.jobId ?? "").trim();
+
+  if (!jobId && serviceCall && !targetUserId && !title && !message) {
+    const limit = Math.min(Math.max(Number(body.limit ?? 25), 1), 100);
+    await admin
+      .schema("driver")
+      .rpc("enqueue_operational_push_jobs")
+      .catch(() => null);
+
+    const { data: jobs, error: jobsError } = await admin
+      .schema("driver")
+      .from("driver_push_jobs")
+      .select("id, user_id, title, body, payload")
+      .eq("status", "queued")
+      .lte("scheduled_at", new Date().toISOString())
+      .order("scheduled_at", { ascending: true })
+      .limit(limit);
+
+    if (jobsError) {
+      return json({ success: false, message: "Falha ao buscar fila de push." }, 500);
+    }
+
+    const results = [];
+    for (const job of jobs ?? []) {
+      const result = await sendToUser({
+        admin,
+        serverKey,
+        userId: String(job.user_id),
+        title: String(job.title ?? "").trim(),
+        message: String(job.body ?? "").trim(),
+        data: stringifyData(job.payload as Record<string, unknown> | null),
+      });
+
+      await markJob(
+        admin,
+        String(job.id),
+        result.ok ? "sent" : "failed",
+        result.ok ? null : result.message,
+      );
+
+      results.push({
+        jobId: job.id,
+        delivered: result.delivered,
+        failed: result.failed,
+        ok: result.ok,
+      });
+    }
+
+    return json({
+      success: true,
+      processed: results.length,
+      results,
+    });
+  }
 
   if (jobId) {
     if (!serviceCall) {
@@ -125,92 +284,43 @@ Deno.serve(async (req) => {
     return json({ success: false, message: "Usuario de destino obrigatorio." }, 400);
   }
 
-  const { data: devices, error } = await admin
-    .schema("driver")
-    .from("driver_push_devices")
-    .select("id, fcm_token")
-    .eq("user_id", targetUserId)
-    .eq("enabled", true)
-    .not("fcm_token", "is", null);
+  const result = await sendToUser({
+    admin,
+    serverKey,
+    userId: targetUserId,
+    title,
+    message,
+    data: payloadData,
+  });
 
-  if (error) {
-    return json({ success: false, message: "Falha ao buscar dispositivos." }, 500);
-  }
-
-  const tokens = (devices ?? [])
-    .map((device) => String(device.fcm_token ?? "").trim())
-    .filter((token) => token.length > 0);
-
-  if (tokens.length === 0) {
+  if (result.message === "Sem dispositivo ativo.") {
     if (jobId) {
-      await admin
-        .schema("driver")
-        .from("driver_push_jobs")
-        .update({
-          status: "failed",
-          failed_at: new Date().toISOString(),
-          failure_reason: "Sem dispositivo ativo.",
-        })
-        .eq("id", jobId);
+      await markJob(admin, jobId, "failed", "Sem dispositivo ativo.");
     }
     return json({ success: true, delivered: 0, message: "Sem dispositivo ativo." });
   }
 
-  const response = await fetch("https://fcm.googleapis.com/fcm/send", {
-    method: "POST",
-    headers: {
-      Authorization: `key=${serverKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      registration_ids: tokens,
-      priority: "high",
-      notification: {
-        title,
-        body: message,
-      },
-      data: payloadData,
-    }),
-  });
-
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) {
+  if (!result.ok) {
     if (jobId) {
-      await admin
-        .schema("driver")
-        .from("driver_push_jobs")
-        .update({
-          status: "failed",
-          failed_at: new Date().toISOString(),
-          failure_reason: "FCM recusou o envio.",
-        })
-        .eq("id", jobId);
+      await markJob(admin, jobId, "failed", result.message);
     }
     return json(
       {
         success: false,
-        message: "FCM recusou o envio.",
-        details: result,
+        message: result.message,
+        details: result.details,
       },
-      502,
+      result.status,
     );
   }
 
   if (jobId) {
-    await admin
-      .schema("driver")
-      .from("driver_push_jobs")
-      .update({
-        status: "sent",
-        sent_at: new Date().toISOString(),
-        failure_reason: null,
-      })
-      .eq("id", jobId);
+    await markJob(admin, jobId, "sent");
   }
 
   return json({
     success: true,
-    delivered: result.success ?? 0,
-    failed: result.failure ?? 0,
+    delivered: result.delivered,
+    failed: result.failed,
   });
 });

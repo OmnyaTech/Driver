@@ -5,6 +5,7 @@ import '../../models/app_platform.dart';
 import '../../models/app_vehicle.dart';
 import '../finance/widgets/financial_filter_toolbar.dart';
 import '../../services/active_journey_storage_service.dart';
+import '../../services/active_journey_notification_service.dart';
 import '../../services/journey_service.dart';
 import '../../services/platform_service.dart';
 import '../../services/vehicle_service.dart';
@@ -78,6 +79,23 @@ class _JourneysScreenState extends State<JourneysScreen> {
         _journeys = journeys;
         _activeJourney = activeJourney;
       });
+      if (activeJourney == null) {
+        await ActiveJourneyNotificationService.instance.cancelActiveJourney();
+      } else {
+        await ActiveJourneyNotificationService.instance.showActiveJourney(
+          activeJourney,
+        );
+        final shouldFinishFromNotification =
+            await ActiveJourneyNotificationService.instance
+                .consumeFinishRequest();
+        if (shouldFinishFromNotification && mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _activeJourney != null) {
+              _finishAutomaticJourney();
+            }
+          });
+        }
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -111,6 +129,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
 
     if (draft == null) return;
     await _activeJourneyStorage.save(draft);
+    await ActiveJourneyNotificationService.instance.showActiveJourney(draft);
     if (!mounted) return;
     setState(() => _activeJourney = draft);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -143,6 +162,8 @@ class _JourneysScreenState extends State<JourneysScreen> {
                 platforms: platforms,
               );
               await _activeJourneyStorage.clear();
+              await ActiveJourneyNotificationService.instance
+                  .cancelActiveJourney();
             },
       ),
     );
@@ -522,6 +543,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
     );
     if (confirmed != true) return;
     await _activeJourneyStorage.clear();
+    await ActiveJourneyNotificationService.instance.cancelActiveJourney();
     if (!mounted) return;
     setState(() => _activeJourney = null);
   }
