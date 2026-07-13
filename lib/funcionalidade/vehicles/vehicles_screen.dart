@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/app_vehicle.dart';
 import '../../services/plan_access_service.dart';
 import '../../services/vehicle_service.dart';
+import '../../utilities/localization/app_strings.dart';
 import '../../utilities/state/app_session.dart';
 import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
@@ -62,6 +63,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
   }
 
   Future<void> _openVehicleDialog({AppVehicle? initialVehicle}) async {
+    final strings = AppStrings.of(context);
     final session = context.read<AppSession>();
     final profile = session.profile;
     final activeVehicles = _vehicles.where((item) => item.active).length;
@@ -72,9 +74,13 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
 
     if (initialVehicle == null && activeVehicles >= 1 && !canUseMultiple) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'O plano free permite apenas um veiculo ativo. Use presente, premium ou developer para expandir.',
+            strings.pick(
+              pt: 'No plano free, voce usa um veiculo ativo por vez. O premium libera mais veiculos.',
+              en: 'On the free plan, you can use one active vehicle at a time. Premium unlocks more vehicles.',
+              es: 'En el plan gratis, usas un vehiculo activo por vez. Premium libera mas vehiculos.',
+            ),
           ),
         ),
       );
@@ -104,7 +110,11 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                     1;
                 if (wouldHaveActive > 1) {
                   throw StateError(
-                    'O plano atual permite apenas um veiculo ativo.',
+                    strings.pick(
+                      pt: 'Seu plano atual permite apenas um veiculo ativo.',
+                      en: 'Your current plan allows only one active vehicle.',
+                      es: 'Tu plan actual permite solo un vehiculo activo.',
+                    ),
                   );
                 }
               }
@@ -146,21 +156,34 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
   }
 
   Future<void> _deleteVehicle(AppVehicle vehicle) async {
+    final strings = AppStrings.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Excluir veiculo'),
+        title: Text(
+          strings.pick(
+            pt: 'Excluir veiculo',
+            en: 'Delete vehicle',
+            es: 'Eliminar vehiculo',
+          ),
+        ),
         content: Text(
-          'Deseja excluir "${vehicle.brand} ${vehicle.model}"? Abastecimentos e manutencoes vinculados a este veiculo tambem serao removidos.',
+          strings.pick(
+            pt: 'Quer excluir "${vehicle.brand} ${vehicle.model}"? Abastecimentos e manutencoes ligados a ele tambem saem.',
+            en: 'Delete "${vehicle.brand} ${vehicle.model}"? Linked fuelings and maintenance records will also be removed.',
+            es: 'Quieres eliminar "${vehicle.brand} ${vehicle.model}"? Tambien se quitaran cargas y mantenimientos vinculados.',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+            child: Text(strings.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Excluir'),
+            child: Text(
+              strings.pick(pt: 'Excluir', en: 'Delete', es: 'Eliminar'),
+            ),
           ),
         ],
       ),
@@ -171,13 +194,22 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
     await _vehicleService.deleteVehicle(vehicle.id);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Veiculo removido com sucesso.')),
+      SnackBar(
+        content: Text(
+          strings.pick(
+            pt: 'Veiculo removido.',
+            en: 'Vehicle removed.',
+            es: 'Vehiculo eliminado.',
+          ),
+        ),
+      ),
     );
     await _loadVehicles();
   }
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final session = context.watch<AppSession>();
     final activeVehicles = _vehicles.where((item) => item.active).length;
     final canUseMultiple = session.profile == null
@@ -189,7 +221,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
       if (widget.embedded) {
         return loading;
       }
-      return const OmnyaSubPageScaffold(title: 'Veiculos', body: loading);
+      return OmnyaSubPageScaffold(title: strings.vehicles, body: loading);
     }
 
     final content = RefreshIndicator(
@@ -202,7 +234,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Veiculos',
+                    strings.vehicles,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -210,27 +242,35 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                   FilledButton.icon(
                     onPressed: _openCreateDialog,
                     icon: const Icon(Icons.add),
-                    label: const Text('Novo'),
+                    label: Text(strings.newItem),
                   ),
               ],
             ),
             const SizedBox(height: 16),
           ],
           if (!canUseMultiple && activeVehicles >= 1)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Text(
-                  'Plano free: somente um veiculo ativo por conta. Assinatura, presente ou papel developer liberam multiplos veiculos.',
+                  strings.pick(
+                    pt: 'Plano free: um veiculo ativo por vez. Premium, presente ou developer liberam mais veiculos.',
+                    en: 'Free plan: one active vehicle at a time. Premium, gift or developer access unlocks more vehicles.',
+                    es: 'Plan gratis: un vehiculo activo por vez. Premium, regalo o developer liberan mas vehiculos.',
+                  ),
                 ),
               ),
             ),
           if (_vehicles.isEmpty)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Text(
-                  'Nenhum veiculo cadastrado ainda. Adicione o primeiro para iniciar o controle.',
+                  strings.pick(
+                    pt: 'Nenhum veiculo cadastrado ainda. Adicione o primeiro para acompanhar sua rotina.',
+                    en: 'No vehicles yet. Add the first one to follow your routine.',
+                    es: 'Aun no hay vehiculos. Agrega el primero para seguir tu rutina.',
+                  ),
                 ),
               ),
             ),
@@ -240,11 +280,22 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                 title: Text('${vehicle.brand} ${vehicle.model}'),
                 subtitle: Text(
                   [
-                    if (vehicle.modelYear != null) 'Ano ${vehicle.modelYear}',
+                    if (vehicle.modelYear != null)
+                      strings.pick(
+                        pt: 'Ano ${vehicle.modelYear}',
+                        en: 'Year ${vehicle.modelYear}',
+                        es: 'Ano ${vehicle.modelYear}',
+                      ),
                     if (vehicle.fuelType != null) vehicle.fuelType,
                     if (vehicle.plate != null) vehicle.plate,
-                    vehicle.active ? 'Ativo' : 'Arquivado',
-                  ].join(' • '),
+                    vehicle.active
+                        ? strings.pick(pt: 'Ativo', en: 'Active', es: 'Activo')
+                        : strings.pick(
+                            pt: 'Arquivado',
+                            en: 'Archived',
+                            es: 'Archivado',
+                          ),
+                  ].join(' - '),
                 ),
                 trailing: PopupMenuButton<String>(
                   onSelected: (value) async {
@@ -261,15 +312,32 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                     }
                   },
                   itemBuilder: (_) => [
-                    const PopupMenuItem(value: 'edit', child: Text('Editar')),
-                    if (vehicle.active)
-                      const PopupMenuItem(
-                        value: 'archive',
-                        child: Text('Arquivar'),
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Text(
+                        strings.pick(pt: 'Editar', en: 'Edit', es: 'Editar'),
                       ),
-                    const PopupMenuItem(
+                    ),
+                    if (vehicle.active)
+                      PopupMenuItem(
+                        value: 'archive',
+                        child: Text(
+                          strings.pick(
+                            pt: 'Arquivar',
+                            en: 'Archive',
+                            es: 'Archivar',
+                          ),
+                        ),
+                      ),
+                    PopupMenuItem(
                       value: 'delete',
-                      child: Text('Excluir'),
+                      child: Text(
+                        strings.pick(
+                          pt: 'Excluir',
+                          en: 'Delete',
+                          es: 'Eliminar',
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -285,11 +353,11 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
     }
 
     return OmnyaSubPageScaffold(
-      title: 'Veiculos',
+      title: strings.vehicles,
       heroTagPrefix: 'vehicles',
       floatingActions: [
         OmnyaFabAction(
-          label: 'Novo veiculo',
+          label: strings.newVehicle,
           icon: Icons.add,
           onTap: _openCreateDialog,
         ),

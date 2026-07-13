@@ -6,6 +6,7 @@ import '../../services/plan_access_service.dart';
 import '../../services/platform_logo_service.dart';
 import '../../services/platform_service.dart';
 import '../../utilities/localization/app_format.dart';
+import '../../utilities/localization/app_strings.dart';
 import '../../utilities/state/app_session.dart';
 import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
@@ -77,6 +78,7 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
   }
 
   Future<void> _openPlatformDialog({AppPlatform? initialPlatform}) async {
+    final strings = AppStrings.of(context);
     final session = context.read<AppSession>();
     final profile = session.profile;
     final activePlatforms = _platforms.where((item) => item.active).length;
@@ -87,9 +89,13 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
 
     if (initialPlatform == null && activePlatforms >= 1 && !canUseMultiple) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'O plano free permite apenas uma plataforma ativa. Presente, premium ou developer liberam multiplas fontes.',
+            strings.pick(
+              pt: 'No plano free, voce usa uma plataforma ativa por vez. Premium libera mais fontes.',
+              en: 'On the free plan, you can use one active platform at a time. Premium unlocks more sources.',
+              es: 'En el plan gratis, usas una plataforma activa por vez. Premium libera mas fuentes.',
+            ),
           ),
         ),
       );
@@ -117,7 +123,11 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
                     1;
                 if (wouldHaveActive > 1) {
                   throw StateError(
-                    'O plano atual permite apenas uma plataforma ativa.',
+                    strings.pick(
+                      pt: 'Seu plano atual permite apenas uma plataforma ativa.',
+                      en: 'Your current plan allows only one active platform.',
+                      es: 'Tu plan actual permite solo una plataforma activa.',
+                    ),
                   );
                 }
               }
@@ -166,8 +176,17 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
         logoUrl: logoUrl,
       );
       if (!mounted) return;
+      final strings = AppStrings.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Logo atualizada com sucesso.')),
+        SnackBar(
+          content: Text(
+            strings.pick(
+              pt: 'Logo atualizada.',
+              en: 'Logo updated.',
+              es: 'Logo actualizada.',
+            ),
+          ),
+        ),
       );
       await _loadPlatforms();
     } finally {
@@ -183,8 +202,17 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
       await _platformLogoService.removeLogo(platformId: platform.id);
       await _platformService.updatePlatformLogo(id: platform.id, logoUrl: null);
       if (!mounted) return;
+      final strings = AppStrings.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Logo removida com sucesso.')),
+        SnackBar(
+          content: Text(
+            strings.pick(
+              pt: 'Logo removida.',
+              en: 'Logo removed.',
+              es: 'Logo eliminada.',
+            ),
+          ),
+        ),
       );
       await _loadPlatforms();
     } finally {
@@ -195,21 +223,34 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
   }
 
   Future<void> _deletePlatform(AppPlatform platform) async {
+    final strings = AppStrings.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Excluir plataforma'),
+        title: Text(
+          strings.pick(
+            pt: 'Excluir plataforma',
+            en: 'Delete platform',
+            es: 'Eliminar plataforma',
+          ),
+        ),
         content: Text(
-          'Deseja excluir "${platform.name}"? Vinculos de jornadas com essa plataforma serao removidos.',
+          strings.pick(
+            pt: 'Quer excluir "${platform.name}"? Jornadas ligadas a ela tambem saem.',
+            en: 'Delete "${platform.name}"? Linked shifts will also be removed.',
+            es: 'Quieres eliminar "${platform.name}"? Tambien se quitaran turnos vinculados.',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+            child: Text(strings.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Excluir'),
+            child: Text(
+              strings.pick(pt: 'Excluir', en: 'Delete', es: 'Eliminar'),
+            ),
           ),
         ],
       ),
@@ -220,13 +261,23 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
     await _platformService.deletePlatform(platform.id);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Plataforma removida com sucesso.')),
+      SnackBar(
+        content: Text(
+          strings.pick(
+            pt: 'Plataforma removida.',
+            en: 'Platform removed.',
+            es: 'Plataforma eliminada.',
+          ),
+        ),
+      ),
     );
     await _loadPlatforms();
   }
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final format = AppFormat.of(context);
     final session = context.watch<AppSession>();
     final activePlatforms = _platforms.where((item) => item.active).length;
     final canUseMultiple = session.profile == null
@@ -238,7 +289,7 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
       if (widget.embedded) {
         return loading;
       }
-      return const OmnyaSubPageScaffold(title: 'Plataformas', body: loading);
+      return OmnyaSubPageScaffold(title: strings.platforms, body: loading);
     }
 
     final content = RefreshIndicator(
@@ -251,7 +302,7 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Plataformas',
+                    strings.platforms,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -259,25 +310,33 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
                   FilledButton.icon(
                     onPressed: _openCreateDialog,
                     icon: const Icon(Icons.add),
-                    label: const Text('Nova'),
+                    label: Text(strings.newItem),
                   ),
               ],
             ),
             const SizedBox(height: 16),
           ],
           if (!canUseMultiple && activePlatforms >= 1)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Text(
-                  'Plano free: somente uma plataforma ativa por conta. Assinatura, presente ou papel developer liberam multiplas plataformas.',
+                  strings.pick(
+                    pt: 'Plano free: uma plataforma ativa por vez. Premium, presente ou developer liberam mais fontes.',
+                    en: 'Free plan: one active platform at a time. Premium, gift or developer access unlocks more sources.',
+                    es: 'Plan gratis: una plataforma activa por vez. Premium, regalo o developer liberan mas fuentes.',
+                  ),
                 ),
               ),
             ),
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Buscar plataforma, tipo ou status',
+              hintText: strings.pick(
+                pt: 'Buscar plataforma, tipo ou status',
+                en: 'Search platform, type or status',
+                es: 'Buscar plataforma, tipo o estado',
+              ),
               prefixIcon: const Icon(Icons.search),
               suffixIcon: _searchController.text.isEmpty
                   ? null
@@ -294,19 +353,29 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
               child: LinearProgressIndicator(),
             ),
           if (_platforms.isEmpty)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Text(
-                  'Nenhuma plataforma cadastrada ainda. Adicione ifood, 99, restaurantes e outras fontes de corrida.',
+                  strings.pick(
+                    pt: 'Nenhuma plataforma cadastrada ainda. Adicione apps, restaurantes e outras fontes de corrida.',
+                    en: 'No platforms yet. Add apps, restaurants and other income sources.',
+                    es: 'Aun no hay plataformas. Agrega apps, restaurantes y otras fuentes.',
+                  ),
                 ),
               ),
             ),
           if (_platforms.isNotEmpty && _filteredPlatforms.isEmpty)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Text('Nenhuma plataforma encontrada na busca atual.'),
+                padding: const EdgeInsets.all(20),
+                child: Text(
+                  strings.pick(
+                    pt: 'Nenhuma plataforma encontrada nessa busca.',
+                    en: 'No platforms found for this search.',
+                    es: 'No se encontraron plataformas en esta busqueda.',
+                  ),
+                ),
               ),
             ),
           ..._filteredPlatforms.map(
@@ -318,11 +387,17 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
                   [
                     platform.type,
                     if (platform.averageIncome != null)
-                      AppFormat.of(context).currency(platform.averageIncome!),
+                      format.currency(platform.averageIncome!),
                     if (platform.averageDeliveries != null)
-                      '${platform.averageDeliveries} entregas',
-                    platform.active ? 'Ativa' : 'Arquivada',
-                  ].join(' • '),
+                      strings.deliveriesCount(platform.averageDeliveries!),
+                    platform.active
+                        ? strings.pick(pt: 'Ativa', en: 'Active', es: 'Activa')
+                        : strings.pick(
+                            pt: 'Arquivada',
+                            en: 'Archived',
+                            es: 'Archivada',
+                          ),
+                  ].join(' - '),
                 ),
                 trailing: PopupMenuButton<String>(
                   onSelected: (value) async {
@@ -347,24 +422,53 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
                     }
                   },
                   itemBuilder: (_) => [
-                    const PopupMenuItem(value: 'edit', child: Text('Editar')),
-                    const PopupMenuItem(
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Text(
+                        strings.pick(pt: 'Editar', en: 'Edit', es: 'Editar'),
+                      ),
+                    ),
+                    PopupMenuItem(
                       value: 'logo',
-                      child: Text('Alterar logo'),
+                      child: Text(
+                        strings.pick(
+                          pt: 'Alterar logo',
+                          en: 'Change logo',
+                          es: 'Cambiar logo',
+                        ),
+                      ),
                     ),
                     if ((platform.logoUrl ?? '').trim().isNotEmpty)
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'remove_logo',
-                        child: Text('Remover logo'),
+                        child: Text(
+                          strings.pick(
+                            pt: 'Remover logo',
+                            en: 'Remove logo',
+                            es: 'Quitar logo',
+                          ),
+                        ),
                       ),
                     if (platform.active)
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'archive',
-                        child: Text('Arquivar'),
+                        child: Text(
+                          strings.pick(
+                            pt: 'Arquivar',
+                            en: 'Archive',
+                            es: 'Archivar',
+                          ),
+                        ),
                       ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'delete',
-                      child: Text('Excluir'),
+                      child: Text(
+                        strings.pick(
+                          pt: 'Excluir',
+                          en: 'Delete',
+                          es: 'Eliminar',
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -380,11 +484,11 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
     }
 
     return OmnyaSubPageScaffold(
-      title: 'Plataformas',
+      title: strings.platforms,
       heroTagPrefix: 'platforms',
       floatingActions: [
         OmnyaFabAction(
-          label: 'Nova plataforma',
+          label: strings.newPlatform,
           icon: Icons.add,
           onTap: _openCreateDialog,
         ),

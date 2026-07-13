@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
     const { data: job, error: jobError } = await admin
       .schema("driver")
       .from("driver_push_jobs")
-      .select("id, target_user_id, title, body, data, status")
+      .select("id, user_id, title, body, payload, status")
       .eq("id", jobId)
       .maybeSingle();
 
@@ -93,10 +93,10 @@ Deno.serve(async (req) => {
       return json({ success: true, delivered: 0, message: "Job ja processado." });
     }
 
-    targetUserId = String(job.target_user_id);
+    targetUserId = String(job.user_id);
     title = String(job.title ?? "").trim();
     message = String(job.body ?? "").trim();
-    payloadData = stringifyData(job.data as Record<string, unknown> | null);
+    payloadData = stringifyData(job.payload as Record<string, unknown> | null);
   }
 
   if (!title || !message) {
@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
         .update({
           status: "failed",
           failed_at: new Date().toISOString(),
-          error_message: "Sem dispositivo ativo.",
+          failure_reason: "Sem dispositivo ativo.",
         })
         .eq("id", jobId);
     }
@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
         .update({
           status: "failed",
           failed_at: new Date().toISOString(),
-          error_message: "FCM recusou o envio.",
+          failure_reason: "FCM recusou o envio.",
         })
         .eq("id", jobId);
     }
@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
       .update({
         status: "sent",
         sent_at: new Date().toISOString(),
-        error_message: null,
+        failure_reason: null,
       })
       .eq("id", jobId);
   }

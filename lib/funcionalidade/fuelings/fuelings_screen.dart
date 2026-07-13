@@ -7,6 +7,7 @@ import '../../services/fueling_service.dart';
 import '../../services/journey_service.dart';
 import '../../services/vehicle_service.dart';
 import '../../utilities/localization/app_format.dart';
+import '../../utilities/localization/app_strings.dart';
 import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
@@ -181,12 +182,17 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final format = AppFormat.of(context);
     if (_loading) {
       const loading = Center(child: CircularProgressIndicator());
       if (widget.embedded) {
         return loading;
       }
-      return const OmnyaSubPageScaffold(title: 'Abastecimentos', body: loading);
+      return OmnyaSubPageScaffold(
+        title: strings.pick(pt: 'Abastecimentos', en: 'Fuelings', es: 'Cargas'),
+        body: loading,
+      );
     }
 
     final content = RefreshIndicator(
@@ -199,7 +205,11 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Abastecimentos',
+                    strings.pick(
+                      pt: 'Abastecimentos',
+                      en: 'Fuelings',
+                      es: 'Cargas',
+                    ),
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -207,7 +217,7 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
                   FilledButton.icon(
                     onPressed: _openCreateDialog,
                     icon: const Icon(Icons.add),
-                    label: const Text('Novo'),
+                    label: Text(strings.newItem),
                   ),
               ],
             ),
@@ -216,7 +226,11 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
           FinancialFilterToolbar(
             searchController: _searchController,
             range: _range,
-            hintText: 'Buscar veiculo, posto ou combustivel',
+            hintText: strings.pick(
+              pt: 'Buscar veiculo, posto ou combustivel',
+              en: 'Search vehicle, station or fuel',
+              es: 'Buscar vehiculo, estacion o combustible',
+            ),
             onPickRange: _pickRange,
             onClear: _clearFilters,
           ),
@@ -224,11 +238,17 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
           if (_filteredFuelings.isNotEmpty)
             Card(
               child: ListTile(
-                title: const Text('Resumo'),
-                subtitle: Text(
-                  '${_filteredFuelings.length} abastecimentos no filtro atual',
+                title: Text(
+                  strings.pick(pt: 'Resumo', en: 'Summary', es: 'Resumen'),
                 ),
-                trailing: Text(AppFormat.of(context).currency(_totalAmount)),
+                subtitle: Text(
+                  strings.pick(
+                    pt: '${_filteredFuelings.length} abastecimentos no filtro atual',
+                    en: '${_filteredFuelings.length} fuelings in the current filter',
+                    es: '${_filteredFuelings.length} cargas en el filtro actual',
+                  ),
+                ),
+                trailing: Text(format.currency(_totalAmount)),
               ),
             ),
           if (_errorMessage != null)
@@ -242,39 +262,54 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
               ),
             ),
           if (_fuelings.isEmpty)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Text(
-                  'Nenhum abastecimento ainda. Cadastre litros, valor e veiculo para acompanhar seus custos.',
+                  strings.pick(
+                    pt: 'Nenhum abastecimento ainda. Cadastre litros, valor e veiculo para acompanhar seus custos.',
+                    en: 'No fuelings yet. Add liters, amount and vehicle to track your costs.',
+                    es: 'Aun no hay cargas. Agrega litros, valor y vehiculo para seguir tus costos.',
+                  ),
                 ),
               ),
             ),
           if (_fuelings.isNotEmpty && _filteredFuelings.isEmpty)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Text(
-                  'Nenhum abastecimento encontrado para os filtros informados.',
+                  strings.pick(
+                    pt: 'Nenhum abastecimento encontrado para os filtros informados.',
+                    en: 'No fuelings found for these filters.',
+                    es: 'No se encontraron cargas para estos filtros.',
+                  ),
                 ),
               ),
             ),
           ..._filteredFuelings.map(
             (fueling) => Card(
               child: ListTile(
-                title: Text(fueling.vehicleLabel ?? 'Veiculo'),
+                title: Text(
+                  fueling.vehicleLabel ??
+                      strings.pick(
+                        pt: 'Veiculo',
+                        en: 'Vehicle',
+                        es: 'Vehiculo',
+                      ),
+                ),
                 subtitle: Text(
                   [
                     _formatDate(fueling.fueledAt),
                     if (fueling.stationName != null) fueling.stationName!,
                     '${fueling.liters.toStringAsFixed(2)} L',
-                    '${AppFormat.of(context).currency(fueling.pricePerLiter)}/L',
+                    '${format.currency(fueling.pricePerLiter)}/L',
                   ].join(' - '),
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(AppFormat.of(context).currency(fueling.totalAmount)),
+                    Text(format.currency(fueling.totalAmount)),
                     PopupMenuButton<String>(
                       onSelected: (value) async {
                         if (value == 'edit') {
@@ -285,9 +320,27 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
                           await _deleteFueling(fueling);
                         }
                       },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'edit', child: Text('Editar')),
-                        PopupMenuItem(value: 'delete', child: Text('Excluir')),
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Text(
+                            strings.pick(
+                              pt: 'Editar',
+                              en: 'Edit',
+                              es: 'Editar',
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text(
+                            strings.pick(
+                              pt: 'Excluir',
+                              en: 'Delete',
+                              es: 'Eliminar',
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -304,11 +357,11 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
     }
 
     return OmnyaSubPageScaffold(
-      title: 'Abastecimentos',
+      title: strings.pick(pt: 'Abastecimentos', en: 'Fuelings', es: 'Cargas'),
       heroTagPrefix: 'fuelings',
       floatingActions: [
         OmnyaFabAction(
-          label: 'Novo abastecimento',
+          label: strings.newFueling,
           icon: Icons.add,
           onTap: _openCreateDialog,
         ),

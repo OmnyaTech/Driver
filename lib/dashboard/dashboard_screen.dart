@@ -622,7 +622,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        strings.periodSummary(intelligence.periodLabel),
+                        strings.periodSummary(_periodDisplayLabel),
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(color: Colors.white),
                       ),
@@ -701,7 +701,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                         ),
                       ),
                       Text(
-                        intelligence.periodLabel,
+                        _periodDisplayLabel,
                         style: Theme.of(context).textTheme.labelLarge,
                       ),
                     ],
@@ -872,6 +872,16 @@ class _OverviewTabState extends State<_OverviewTab> {
   }
 
   String _currency(double value) => AppFormat.of(context).currency(value);
+
+  String get _periodDisplayLabel {
+    final strings = AppStrings.of(context);
+    return switch (_preset) {
+      OperationalRangePreset.today => strings.today,
+      OperationalRangePreset.week => strings.week,
+      OperationalRangePreset.month => strings.month,
+      OperationalRangePreset.custom => _rangeLabel,
+    };
+  }
 
   Future<void> _pickRange() async {
     final now = DateTime.now();

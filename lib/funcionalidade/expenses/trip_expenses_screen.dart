@@ -5,6 +5,7 @@ import '../finance/widgets/financial_filter_toolbar.dart';
 import '../../services/journey_service.dart';
 import '../../services/trip_expense_service.dart';
 import '../../utilities/localization/app_format.dart';
+import '../../utilities/localization/app_strings.dart';
 import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
@@ -165,12 +166,17 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final format = AppFormat.of(context);
     if (_loading) {
       const loading = Center(child: CircularProgressIndicator());
       if (widget.embedded) {
         return loading;
       }
-      return const OmnyaSubPageScaffold(title: 'Despesas', body: loading);
+      return OmnyaSubPageScaffold(
+        title: strings.pick(pt: 'Despesas', en: 'Expenses', es: 'Gastos'),
+        body: loading,
+      );
     }
 
     final content = RefreshIndicator(
@@ -183,7 +189,11 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Despesas de percurso',
+                    strings.pick(
+                      pt: 'Despesas de percurso',
+                      en: 'Trip expenses',
+                      es: 'Gastos del recorrido',
+                    ),
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -191,7 +201,7 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                   FilledButton.icon(
                     onPressed: _openCreateDialog,
                     icon: const Icon(Icons.add),
-                    label: const Text('Nova'),
+                    label: Text(strings.newItem),
                   ),
               ],
             ),
@@ -200,7 +210,11 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
           FinancialFilterToolbar(
             searchController: _searchController,
             range: _range,
-            hintText: 'Buscar tipo, jornada ou descricao',
+            hintText: strings.pick(
+              pt: 'Buscar tipo, jornada ou descricao',
+              en: 'Search type, shift or description',
+              es: 'Buscar tipo, jornada o descripcion',
+            ),
             onPickRange: _pickRange,
             onClear: _clearFilters,
           ),
@@ -208,11 +222,17 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
           if (_filteredExpenses.isNotEmpty)
             Card(
               child: ListTile(
-                title: const Text('Resumo'),
-                subtitle: Text(
-                  '${_filteredExpenses.length} despesas no filtro atual',
+                title: Text(
+                  strings.pick(pt: 'Resumo', en: 'Summary', es: 'Resumen'),
                 ),
-                trailing: Text(AppFormat.of(context).currency(_totalAmount)),
+                subtitle: Text(
+                  strings.pick(
+                    pt: '${_filteredExpenses.length} despesas no filtro atual',
+                    en: '${_filteredExpenses.length} expenses in the current filter',
+                    es: '${_filteredExpenses.length} gastos en el filtro actual',
+                  ),
+                ),
+                trailing: Text(format.currency(_totalAmount)),
               ),
             ),
           if (_errorMessage != null)
@@ -226,20 +246,28 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
               ),
             ),
           if (_expenses.isEmpty)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Text(
-                  'Nenhuma despesa registrada ainda. Cadastre pedagio, estacionamento e outros custos de percurso.',
+                  strings.pick(
+                    pt: 'Nenhuma despesa registrada ainda. Cadastre pedagio, estacionamento e outros custos de percurso.',
+                    en: 'No expenses yet. Add tolls, parking and other trip costs here.',
+                    es: 'Aun no hay gastos. Agrega peajes, estacionamiento y otros costos del recorrido.',
+                  ),
                 ),
               ),
             ),
           if (_expenses.isNotEmpty && _filteredExpenses.isEmpty)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Text(
-                  'Nenhuma despesa encontrada para os filtros informados.',
+                  strings.pick(
+                    pt: 'Nenhuma despesa encontrada para os filtros informados.',
+                    en: 'No expenses found for these filters.',
+                    es: 'No se encontraron gastos para estos filtros.',
+                  ),
                 ),
               ),
             ),
@@ -259,7 +287,7 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(AppFormat.of(context).currency(expense.amount)),
+                    Text(format.currency(expense.amount)),
                     PopupMenuButton<String>(
                       onSelected: (value) async {
                         if (value == 'edit') {
@@ -270,9 +298,27 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                           await _deleteExpense(expense);
                         }
                       },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'edit', child: Text('Editar')),
-                        PopupMenuItem(value: 'delete', child: Text('Excluir')),
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Text(
+                            strings.pick(
+                              pt: 'Editar',
+                              en: 'Edit',
+                              es: 'Editar',
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text(
+                            strings.pick(
+                              pt: 'Excluir',
+                              en: 'Delete',
+                              es: 'Eliminar',
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -289,11 +335,11 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
     }
 
     return OmnyaSubPageScaffold(
-      title: 'Despesas',
+      title: strings.pick(pt: 'Despesas', en: 'Expenses', es: 'Gastos'),
       heroTagPrefix: 'expenses',
       floatingActions: [
         OmnyaFabAction(
-          label: 'Nova despesa',
+          label: strings.newExpense,
           icon: Icons.add,
           onTap: _openCreateDialog,
         ),
@@ -308,12 +354,21 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
   }
 
   String _expenseLabel(String type) {
+    final strings = AppStrings.of(context);
     return switch (type) {
-      'toll' => 'Pedagio',
-      'parking' => 'Estacionamento',
-      'fuel' => 'Combustivel',
-      'maintenance' => 'Manutencao',
-      _ => 'Outro',
+      'toll' => strings.pick(pt: 'Pedagio', en: 'Toll', es: 'Peaje'),
+      'parking' => strings.pick(
+        pt: 'Estacionamento',
+        en: 'Parking',
+        es: 'Estacionamiento',
+      ),
+      'fuel' => strings.pick(pt: 'Combustivel', en: 'Fuel', es: 'Combustible'),
+      'maintenance' => strings.pick(
+        pt: 'Manutencao',
+        en: 'Maintenance',
+        es: 'Mantenimiento',
+      ),
+      _ => strings.pick(pt: 'Outro', en: 'Other', es: 'Otro'),
     };
   }
 

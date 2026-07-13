@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../utilities/localization/app_strings.dart';
+
 class FinancialFilterToolbar extends StatelessWidget {
   const FinancialFilterToolbar({
     super.key,
@@ -20,6 +22,7 @@ class FinancialFilterToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 720;
     final theme = Theme.of(context);
+    final strings = AppStrings.of(context);
 
     final searchField = SizedBox(
       height: 44,
@@ -28,7 +31,9 @@ class FinancialFilterToolbar extends StatelessWidget {
         style: theme.textTheme.bodyMedium,
         decoration: InputDecoration(
           isDense: true,
-          hintText: compact ? 'Buscar' : hintText,
+          hintText: compact
+              ? strings.pick(pt: 'Buscar', en: 'Search', es: 'Buscar')
+              : hintText,
           prefixIcon: const Icon(Icons.search, size: 18),
           prefixIconConstraints: const BoxConstraints(minWidth: 38),
           suffixIcon: searchController.text.isEmpty
@@ -58,7 +63,11 @@ class FinancialFilterToolbar extends StatelessWidget {
       height: 44,
       width: 44,
       child: IconButton(
-        tooltip: 'Limpar filtros',
+        tooltip: strings.pick(
+          pt: 'Limpar filtros',
+          en: 'Clear filters',
+          es: 'Limpiar filtros',
+        ),
         onPressed: onClear,
         icon: const Icon(Icons.tune_outlined, size: 18),
       ),
@@ -81,7 +90,10 @@ class FinancialFilterToolbar extends StatelessWidget {
         const SizedBox(width: 12),
         dateButton,
         const SizedBox(width: 6),
-        TextButton(onPressed: onClear, child: const Text('Limpar')),
+        TextButton(
+          onPressed: onClear,
+          child: Text(strings.pick(pt: 'Limpar', en: 'Clear', es: 'Limpiar')),
+        ),
       ],
     );
   }

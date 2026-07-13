@@ -6,6 +6,7 @@ import '../finance/widgets/financial_filter_toolbar.dart';
 import '../../services/maintenance_service.dart';
 import '../../services/vehicle_service.dart';
 import '../../utilities/localization/app_format.dart';
+import '../../utilities/localization/app_strings.dart';
 import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
@@ -174,12 +175,21 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final format = AppFormat.of(context);
     if (_loading) {
       const loading = Center(child: CircularProgressIndicator());
       if (widget.embedded) {
         return loading;
       }
-      return const OmnyaSubPageScaffold(title: 'Manutencoes', body: loading);
+      return OmnyaSubPageScaffold(
+        title: strings.pick(
+          pt: 'Manutencoes',
+          en: 'Maintenance',
+          es: 'Mantenimientos',
+        ),
+        body: loading,
+      );
     }
 
     final content = RefreshIndicator(
@@ -192,7 +202,11 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Manutencoes',
+                    strings.pick(
+                      pt: 'Manutencoes',
+                      en: 'Maintenance',
+                      es: 'Mantenimientos',
+                    ),
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -200,7 +214,7 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
                   FilledButton.icon(
                     onPressed: _openCreateDialog,
                     icon: const Icon(Icons.add),
-                    label: const Text('Nova'),
+                    label: Text(strings.newItem),
                   ),
               ],
             ),
@@ -209,7 +223,11 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
           FinancialFilterToolbar(
             searchController: _searchController,
             range: _range,
-            hintText: 'Buscar veiculo, oficina, motivo ou item',
+            hintText: strings.pick(
+              pt: 'Buscar veiculo, oficina, motivo ou item',
+              en: 'Search vehicle, shop, reason or item',
+              es: 'Buscar vehiculo, taller, motivo o item',
+            ),
             onPickRange: _pickRange,
             onClear: _clearFilters,
           ),
@@ -217,11 +235,17 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
           if (_filteredMaintenances.isNotEmpty)
             Card(
               child: ListTile(
-                title: const Text('Resumo'),
-                subtitle: Text(
-                  '${_filteredMaintenances.length} manutencoes no filtro atual',
+                title: Text(
+                  strings.pick(pt: 'Resumo', en: 'Summary', es: 'Resumen'),
                 ),
-                trailing: Text(AppFormat.of(context).currency(_totalAmount)),
+                subtitle: Text(
+                  strings.pick(
+                    pt: '${_filteredMaintenances.length} manutencoes no filtro atual',
+                    en: '${_filteredMaintenances.length} maintenance records in the current filter',
+                    es: '${_filteredMaintenances.length} mantenimientos en el filtro actual',
+                  ),
+                ),
+                trailing: Text(format.currency(_totalAmount)),
               ),
             ),
           if (_errorMessage != null)
@@ -235,20 +259,28 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
               ),
             ),
           if (_maintenances.isEmpty)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Text(
-                  'Nenhuma manutencao ainda. Cadastre oficina, motivo e valor para cuidar melhor do veiculo.',
+                  strings.pick(
+                    pt: 'Nenhuma manutencao ainda. Cadastre oficina, motivo e valor para cuidar melhor do veiculo.',
+                    en: 'No maintenance yet. Add shop, reason and amount to take better care of your vehicle.',
+                    es: 'Aun no hay mantenimiento. Agrega taller, motivo y valor para cuidar mejor el vehiculo.',
+                  ),
                 ),
               ),
             ),
           if (_maintenances.isNotEmpty && _filteredMaintenances.isEmpty)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Text(
-                  'Nenhuma manutencao encontrada para os filtros informados.',
+                  strings.pick(
+                    pt: 'Nenhuma manutencao encontrada para os filtros informados.',
+                    en: 'No maintenance found for these filters.',
+                    es: 'No se encontro mantenimiento para estos filtros.',
+                  ),
                 ),
               ),
             ),
@@ -258,7 +290,14 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
                 title: Row(
                   children: [
                     Expanded(
-                      child: Text(maintenance.vehicleLabel ?? 'Veiculo'),
+                      child: Text(
+                        maintenance.vehicleLabel ??
+                            strings.pick(
+                              pt: 'Veiculo',
+                              en: 'Vehicle',
+                              es: 'Vehiculo',
+                            ),
+                      ),
                     ),
                     PopupMenuButton<String>(
                       onSelected: (value) async {
@@ -270,9 +309,27 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
                           await _deleteMaintenance(maintenance);
                         }
                       },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'edit', child: Text('Editar')),
-                        PopupMenuItem(value: 'delete', child: Text('Excluir')),
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Text(
+                            strings.pick(
+                              pt: 'Editar',
+                              en: 'Edit',
+                              es: 'Editar',
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text(
+                            strings.pick(
+                              pt: 'Excluir',
+                              en: 'Delete',
+                              es: 'Eliminar',
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -282,7 +339,7 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
                     _formatDate(maintenance.maintenanceDate),
                     if (maintenance.workshop != null) maintenance.workshop!,
                     if (maintenance.reason != null) maintenance.reason!,
-                    AppFormat.of(context).currency(maintenance.totalAmount),
+                    format.currency(maintenance.totalAmount),
                   ].join(' - '),
                 ),
                 children: [
@@ -298,9 +355,7 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
                   ...maintenance.items.map(
                     (item) => ListTile(
                       title: Text(item.description),
-                      trailing: Text(
-                        AppFormat.of(context).currency(item.amount),
-                      ),
+                      trailing: Text(format.currency(item.amount)),
                     ),
                   ),
                 ],
@@ -316,11 +371,15 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
     }
 
     return OmnyaSubPageScaffold(
-      title: 'Manutencoes',
+      title: strings.pick(
+        pt: 'Manutencoes',
+        en: 'Maintenance',
+        es: 'Mantenimientos',
+      ),
       heroTagPrefix: 'maintenances',
       floatingActions: [
         OmnyaFabAction(
-          label: 'Nova manutencao',
+          label: strings.newMaintenance,
           icon: Icons.add,
           onTap: _openCreateDialog,
         ),

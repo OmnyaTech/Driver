@@ -531,11 +531,22 @@ class _JourneysScreenState extends State<JourneysScreen> {
     final start = journey.startedAt.toLocal();
     final startLabel =
         '${start.day.toString().padLeft(2, '0')}/${start.month.toString().padLeft(2, '0')} ${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}';
-    if (end == null) return '$startLabel em andamento';
+    final strings = AppStrings.of(context);
+    if (end == null) {
+      return strings.pick(
+        pt: '$startLabel em andamento',
+        en: '$startLabel in progress',
+        es: '$startLabel en curso',
+      );
+    }
     final localEnd = end.toLocal();
     final endLabel =
         '${localEnd.hour.toString().padLeft(2, '0')}:${localEnd.minute.toString().padLeft(2, '0')}';
-    return '$startLabel ate $endLabel';
+    return strings.pick(
+      pt: '$startLabel ate $endLabel',
+      en: '$startLabel to $endLabel',
+      es: '$startLabel a $endLabel',
+    );
   }
 
   String _formatDate(DateTime value) {
