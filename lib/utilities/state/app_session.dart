@@ -38,6 +38,14 @@ class AppSession extends ChangeNotifier {
   AppProfile? _profile;
 
   ThemeMode get themeMode => _themeMode;
+  Locale get locale {
+    return switch (_profile?.languageCode) {
+      'en-US' => const Locale('en', 'US'),
+      'es-ES' => const Locale('es', 'ES'),
+      _ => const Locale('pt', 'BR'),
+    };
+  }
+
   bool get isAuthenticated => _authenticated;
   bool get isReady => _isReady;
   bool get isBusy => _isBusy;

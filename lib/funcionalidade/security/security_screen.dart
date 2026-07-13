@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../services/data_privacy_service.dart';
+import '../../services/mfa_service.dart';
+import '../../utilities/localization/app_strings.dart';
 
 class SecurityScreen extends StatefulWidget {
   const SecurityScreen({super.key});
@@ -12,9 +14,19 @@ class SecurityScreen extends StatefulWidget {
 
 class _SecurityScreenState extends State<SecurityScreen> {
   final _service = DataPrivacyService();
+  final _mfaService = const MfaService();
   final _reasonController = TextEditingController();
   bool _exporting = false;
   bool _requestingDeletion = false;
+  bool _loadingMfa = true;
+  bool _disablingMfa = false;
+  String? _totpFactorId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMfa();
+  }
 
   @override
   void dispose() {
@@ -25,9 +37,10 @@ class _SecurityScreenState extends State<SecurityScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final strings = AppStrings.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Seguranca e dados')),
+      appBar: AppBar(title: Text(strings.securityData)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
         children: [
@@ -51,14 +64,14 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'Seus dados continuam com voce',
+                  strings.dataStaysWithYou,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Aqui voce consegue copiar um backup da sua rotina e pedir encerramento da conta quando precisar.',
+                  strings.securityHeroBody,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: Colors.white.withValues(alpha: 0.78),
                   ),
@@ -73,22 +86,39 @@ class _SecurityScreenState extends State<SecurityScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Levar meus dados', style: theme.textTheme.titleMedium),
+                  Text(
+                    strings.twoFactorTitle,
+                    style: theme.textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Geramos um arquivo em texto com jornadas, despesas, abastecimentos, metas e configuracoes da conta.',
+                  Text(
+                    _loadingMfa
+                        ? strings.preparing
+                        : (_totpFactorId == null
+                              ? strings.twoFactorDisabled
+                              : strings.twoFactorEnabled),
                   ),
                   const SizedBox(height: 16),
                   FilledButton.icon(
-                    onPressed: _exporting ? null : _copyExport,
-                    icon: _exporting
+                    onPressed: _loadingMfa || _disablingMfa
+                        ? null
+                        : (_totpFactorId == null ? _openMfaSetup : _disableMfa),
+                    icon: _loadingMfa || _disablingMfa
                         ? const SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.copy_all_outlined),
-                    label: Text(_exporting ? 'Preparando...' : 'Copiar backup'),
+                        : Icon(
+                            _totpFactorId == null
+                                ? Icons.lock_outline
+                                : Icons.lock_open_outlined,
+                          ),
+                    label: Text(
+                      _totpFactorId == null
+                          ? strings.configureTwoFactor
+                          : strings.disableTwoFactor,
+                    ),
                   ),
                 ],
               ),
@@ -101,19 +131,48 @@ class _SecurityScreenState extends State<SecurityScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Encerrar conta', style: theme.textTheme.titleMedium),
+                  Text(strings.takeMyData, style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Para evitar perda sem querer, o app registra um pedido. A equipe confere assinaturas, pagamentos e dados antes de apagar tudo.',
+                  Text(strings.takeMyDataBody),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: _exporting ? null : _copyExport,
+                    icon: _exporting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.copy_all_outlined),
+                    label: Text(
+                      _exporting ? strings.preparing : strings.copyBackup,
+                    ),
                   ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    strings.closeAccount,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(strings.closeAccountBody),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _reasonController,
                     minLines: 3,
                     maxLines: 5,
-                    decoration: const InputDecoration(
-                      labelText: 'Quer contar o motivo? Opcional',
-                      hintText: 'Ex: parei de entregar por enquanto',
+                    decoration: InputDecoration(
+                      labelText: strings.reasonOptional,
+                      hintText: strings.reasonHint,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -130,8 +189,8 @@ class _SecurityScreenState extends State<SecurityScreen> {
                         : const Icon(Icons.delete_outline),
                     label: Text(
                       _requestingDeletion
-                          ? 'Enviando pedido...'
-                          : 'Pedir encerramento',
+                          ? strings.sendingRequest
+                          : strings.requestClosure,
                     ),
                   ),
                 ],
@@ -143,6 +202,57 @@ class _SecurityScreenState extends State<SecurityScreen> {
     );
   }
 
+  Future<void> _loadMfa() async {
+    setState(() => _loadingMfa = true);
+    try {
+      final factors = await _mfaService.listTotpFactors();
+      if (!mounted) return;
+      setState(() {
+        _totpFactorId = factors.isEmpty ? null : factors.first.id;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _totpFactorId = null);
+    } finally {
+      if (mounted) setState(() => _loadingMfa = false);
+    }
+  }
+
+  Future<void> _openMfaSetup() async {
+    final configured = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _MfaSetupSheet(),
+    );
+
+    if (configured == true) {
+      await _loadMfa();
+    }
+  }
+
+  Future<void> _disableMfa() async {
+    final factorId = _totpFactorId;
+    if (factorId == null) return;
+
+    setState(() => _disablingMfa = true);
+    try {
+      await _mfaService.disableTotp(factorId);
+      await _loadMfa();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('2FA desativado com seguranca.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Nao deu para desativar o 2FA: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _disablingMfa = false);
+    }
+  }
+
   Future<void> _copyExport() async {
     setState(() => _exporting = true);
     try {
@@ -150,9 +260,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
       await Clipboard.setData(ClipboardData(text: exportJson));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Backup copiado para a area de transferencia.'),
-        ),
+        SnackBar(content: Text(AppStrings.of(context).backupCopied)),
       );
     } catch (error) {
       if (!mounted) return;
@@ -206,6 +314,254 @@ class _SecurityScreenState extends State<SecurityScreen> {
       );
     } finally {
       if (mounted) setState(() => _requestingDeletion = false);
+    }
+  }
+}
+
+class _MfaSetupSheet extends StatefulWidget {
+  const _MfaSetupSheet();
+
+  @override
+  State<_MfaSetupSheet> createState() => _MfaSetupSheetState();
+}
+
+class _MfaSetupSheetState extends State<_MfaSetupSheet> {
+  final _service = const MfaService();
+  final _codeController = TextEditingController();
+  MfaEnrollmentDraft? _draft;
+  bool _loading = true;
+  bool _verifying = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _start();
+  }
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final strings = AppStrings.of(context);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(12, 0, 12, bottomInset + 12),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 720),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: theme.dividerColor),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: theme.dividerColor,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(strings.twoFactorTitle, style: theme.textTheme.titleLarge),
+                const SizedBox(height: 8),
+                Text(
+                  strings.pick(
+                    pt: 'Abra seu app autenticador, adicione uma nova conta e confirme o codigo de 6 digitos.',
+                    en: 'Open your authenticator app, add a new account and confirm the 6-digit code.',
+                    es: 'Abre tu app autenticadora, agrega una cuenta nueva y confirma el codigo de 6 digitos.',
+                  ),
+                ),
+                const SizedBox(height: 18),
+                if (_loading)
+                  const Center(child: CircularProgressIndicator())
+                else if (_draft != null) ...[
+                  Text(
+                    strings.pick(
+                      pt: 'Chave manual',
+                      en: 'Manual key',
+                      es: 'Clave manual',
+                    ),
+                    style: theme.textTheme.labelLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  SelectableText(_draft!.secret),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () => _copy(_draft!.secret),
+                        icon: const Icon(Icons.copy_outlined),
+                        label: Text(
+                          strings.pick(
+                            pt: 'Copiar chave',
+                            en: 'Copy key',
+                            es: 'Copiar clave',
+                          ),
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () => _copy(_draft!.uri),
+                        icon: const Icon(Icons.qr_code_2_outlined),
+                        label: Text(
+                          strings.pick(
+                            pt: 'Copiar link do QR',
+                            en: 'Copy QR link',
+                            es: 'Copiar enlace QR',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  TextField(
+                    controller: _codeController,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    decoration: InputDecoration(
+                      labelText: strings.pick(
+                        pt: 'Codigo do autenticador',
+                        en: 'Authenticator code',
+                        es: 'Codigo del autenticador',
+                      ),
+                      counterText: '',
+                    ),
+                  ),
+                ],
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _errorMessage!,
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                ],
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _verifying
+                            ? null
+                            : () => Navigator.of(context).pop(false),
+                        child: Text(strings.cancel),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _loading || _verifying ? null : _verify,
+                        child: _verifying
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                strings.pick(
+                                  pt: 'Ativar 2FA',
+                                  en: 'Enable 2FA',
+                                  es: 'Activar 2FA',
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _start() async {
+    try {
+      final draft = await _service.startTotpEnrollment();
+      if (!mounted) return;
+      setState(() => _draft = draft);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _copy(String value) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppStrings.of(
+            context,
+          ).pick(pt: 'Copiado.', en: 'Copied.', es: 'Copiado.'),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _verify() async {
+    final draft = _draft;
+    if (draft == null) return;
+    final code = _codeController.text.trim();
+    if (code.length != 6) {
+      setState(() {
+        _errorMessage = AppStrings.of(context).pick(
+          pt: 'Informe o codigo de 6 digitos.',
+          en: 'Enter the 6-digit code.',
+          es: 'Ingresa el codigo de 6 digitos.',
+        );
+      });
+      return;
+    }
+
+    setState(() {
+      _verifying = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _service.verifyTotpEnrollment(factorId: draft.factorId, code: code);
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppStrings.of(context).pick(
+              pt: '2FA ativado. Sua conta ficou mais protegida.',
+              en: '2FA enabled. Your account is safer now.',
+              es: '2FA activado. Tu cuenta esta mas protegida.',
+            ),
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.toString());
+    } finally {
+      if (mounted) setState(() => _verifying = false);
     }
   }
 }

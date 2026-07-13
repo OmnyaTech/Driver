@@ -6,6 +6,13 @@ final class AppTheme {
   static const Color brandBlueGlow = Color(0xFF2E45FF);
   static const Color brandBlack = Color(0xFF000000);
   static const Color brandGray = Color(0xFFD3D3D3);
+  static const List<String> _fontFallback = [
+    'Noto Sans',
+    'Noto Sans Symbols',
+    'Noto Color Emoji',
+    'Segoe UI Emoji',
+    'Arial Unicode MS',
+  ];
 
   static ThemeData light() {
     const scheme = ColorScheme(
@@ -52,46 +59,48 @@ final class AppTheme {
   }
 
   static ThemeData _apply(ThemeData base, {required bool isDark}) {
-    final textTheme = GoogleFonts.poppinsTextTheme(base.textTheme).copyWith(
-      headlineMedium: GoogleFonts.poppins(
-        fontSize: 30,
-        fontWeight: FontWeight.w700,
-        color: base.colorScheme.onSurface,
-      ),
-      headlineSmall: GoogleFonts.poppins(
-        fontSize: 19,
-        fontWeight: FontWeight.w700,
-        color: base.colorScheme.onSurface,
-      ),
-      titleLarge: GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
-        color: base.colorScheme.onSurface,
-      ),
-      titleMedium: GoogleFonts.poppins(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: base.colorScheme.onSurface,
-      ),
-      titleSmall: GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: base.colorScheme.onSurface,
-      ),
-      bodyLarge: GoogleFonts.poppins(
-        fontSize: 15,
-        height: 1.45,
-        color: base.colorScheme.onSurface,
-      ),
-      bodyMedium: GoogleFonts.poppins(
-        fontSize: 13,
-        height: 1.45,
-        color: base.colorScheme.onSurface.withValues(alpha: 0.86),
-      ),
-      labelLarge: GoogleFonts.poppins(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        color: base.colorScheme.onSurface.withValues(alpha: 0.78),
+    final textTheme = _withFontFallback(
+      GoogleFonts.poppinsTextTheme(base.textTheme).copyWith(
+        headlineMedium: GoogleFonts.poppins(
+          fontSize: 30,
+          fontWeight: FontWeight.w700,
+          color: base.colorScheme.onSurface,
+        ),
+        headlineSmall: GoogleFonts.poppins(
+          fontSize: 19,
+          fontWeight: FontWeight.w700,
+          color: base.colorScheme.onSurface,
+        ),
+        titleLarge: GoogleFonts.poppins(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: base.colorScheme.onSurface,
+        ),
+        titleMedium: GoogleFonts.poppins(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: base.colorScheme.onSurface,
+        ),
+        titleSmall: GoogleFonts.poppins(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: base.colorScheme.onSurface,
+        ),
+        bodyLarge: GoogleFonts.poppins(
+          fontSize: 15,
+          height: 1.45,
+          color: base.colorScheme.onSurface,
+        ),
+        bodyMedium: GoogleFonts.poppins(
+          fontSize: 13,
+          height: 1.45,
+          color: base.colorScheme.onSurface.withValues(alpha: 0.86),
+        ),
+        labelLarge: GoogleFonts.poppins(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: base.colorScheme.onSurface.withValues(alpha: 0.78),
+        ),
       ),
     );
 
@@ -299,6 +308,30 @@ final class AppTheme {
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         ),
       ),
+    );
+  }
+
+  static TextTheme _withFontFallback(TextTheme theme) {
+    TextStyle? apply(TextStyle? style) {
+      return style?.copyWith(fontFamilyFallback: _fontFallback);
+    }
+
+    return theme.copyWith(
+      displayLarge: apply(theme.displayLarge),
+      displayMedium: apply(theme.displayMedium),
+      displaySmall: apply(theme.displaySmall),
+      headlineLarge: apply(theme.headlineLarge),
+      headlineMedium: apply(theme.headlineMedium),
+      headlineSmall: apply(theme.headlineSmall),
+      titleLarge: apply(theme.titleLarge),
+      titleMedium: apply(theme.titleMedium),
+      titleSmall: apply(theme.titleSmall),
+      bodyLarge: apply(theme.bodyLarge),
+      bodyMedium: apply(theme.bodyMedium),
+      bodySmall: apply(theme.bodySmall),
+      labelLarge: apply(theme.labelLarge),
+      labelMedium: apply(theme.labelMedium),
+      labelSmall: apply(theme.labelSmall),
     );
   }
 }

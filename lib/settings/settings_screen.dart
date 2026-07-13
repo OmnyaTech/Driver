@@ -16,6 +16,7 @@ import '../services/driver_preference_service.dart';
 import '../services/profile_service.dart';
 import '../services/public_profile_service.dart';
 import '../utilities/guards/developer_guard.dart';
+import '../utilities/localization/app_strings.dart';
 import '../utilities/state/app_session.dart';
 import '../utilities/ui/profile_avatar.dart';
 
@@ -28,6 +29,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final session = context.watch<AppSession>();
     final profile = session.profile;
+    final strings = AppStrings.of(context);
     final canOpenDeveloper = profile != null
         ? DeveloperGuard().canOpen(profile.role)
         : false;
@@ -38,33 +40,33 @@ class SettingsScreen extends StatelessWidget {
         _SettingsHeroCard(session: session),
         const SizedBox(height: 18),
         _SettingsSection(
-          title: 'Conta e identidade',
+          title: strings.accountIdentity,
           children: [
             _SettingsTile(
               icon: Icons.person_outline,
-              title: 'Perfil do motorista',
-              subtitle: 'Seu nome, telefone e foto',
+              title: strings.driverProfile,
+              subtitle: strings.driverProfileSubtitle,
               onTap: () => _openProfileSheet(context),
             ),
             _SettingsTile(
               icon: Icons.public_outlined,
-              title: 'Perfil publico',
-              subtitle: 'Seu @, cidade e convite',
+              title: strings.publicProfile,
+              subtitle: strings.publicProfileSubtitle,
               onTap: () => _openPublicProfileSheet(context),
             ),
             _SettingsTile(
               icon: Icons.palette_outlined,
-              title: 'Preferencias do app',
+              title: strings.appPreferences,
               subtitle:
                   '${profile?.languageLabel ?? 'Portugues'} - ${profile?.currencyLabel ?? 'Real brasileiro'}',
               onTap: () => _openAppPreferenceSheet(context),
             ),
             _SettingsTile(
               icon: Icons.dark_mode_outlined,
-              title: 'Tema do app',
+              title: strings.themeApp,
               subtitle: session.themeMode == ThemeMode.dark
-                  ? 'Tema escuro ativo'
-                  : 'Tema claro ativo',
+                  ? strings.darkThemeActive
+                  : strings.lightThemeActive,
               trailing: Switch(
                 value: session.themeMode == ThemeMode.dark,
                 onChanged: (_) => session.toggleThemeMode(),
@@ -72,7 +74,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             _SettingsTile(
               icon: Icons.savings_outlined,
-              title: 'Reserva automatica',
+              title: strings.automaticReserve,
               subtitle:
                   profile?.reservePreference.summaryLabel ??
                   '30% do que sobrar',
@@ -82,79 +84,79 @@ class SettingsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         _SettingsSection(
-          title: 'Cadastros',
+          title: strings.records,
           children: [
             _SettingsTile(
               icon: Icons.two_wheeler_outlined,
-              title: 'Veiculos',
-              subtitle: 'Suas motos, carros e status',
+              title: strings.vehicles,
+              subtitle: strings.vehiclesSubtitle,
               onTap: () => _pushPage(context, const VehiclesScreen()),
             ),
             _SettingsTile(
               icon: Icons.storefront_outlined,
-              title: 'Plataformas',
-              subtitle: 'Apps, restaurantes e lugares de ganho',
+              title: strings.platforms,
+              subtitle: strings.platformsSubtitle,
               onTap: () => _pushPage(context, const PlatformsScreen()),
             ),
           ],
         ),
         const SizedBox(height: 18),
         _SettingsSection(
-          title: 'Comunidade e progresso',
+          title: strings.communityProgress,
           children: [
             _SettingsTile(
               icon: Icons.workspace_premium_outlined,
-              title: 'Progresso do motorista',
-              subtitle: 'Nivel, conquistas e proximos passos',
+              title: strings.driverProgress,
+              subtitle: strings.driverProgressSubtitle,
               onTap: () => _pushPage(context, const GamificationScreen()),
             ),
             _SettingsTile(
               icon: Icons.groups_outlined,
-              title: 'Comunidade',
-              subtitle: 'Chame amigos e encontre motoristas',
+              title: strings.community,
+              subtitle: strings.communitySubtitle,
               onTap: () => _pushPage(context, const CommunityHubScreen()),
             ),
             _SettingsTile(
               icon: Icons.emoji_events_outlined,
-              title: 'Ranking',
-              subtitle: 'Pontos, conquistas e disputa saudavel',
+              title: strings.ranking,
+              subtitle: strings.rankingSubtitle,
               onTap: () => _pushPage(context, const RankingScreen()),
             ),
             _SettingsTile(
               icon: Icons.notifications_outlined,
-              title: 'Avisos',
-              subtitle: 'Lembretes de jornada, metas e ganhos',
+              title: strings.notices,
+              subtitle: strings.noticesSubtitle,
               onTap: () => _pushPage(context, const NotificationsScreen()),
             ),
           ],
         ),
         const SizedBox(height: 18),
         _SettingsSection(
-          title: 'Plano e suporte',
+          title: strings.planSupport,
           children: [
             _SettingsTile(
               icon: Icons.workspace_premium_outlined,
-              title: 'Assinatura',
-              subtitle: 'Planos, pagamento e historico',
+              title: strings.subscription,
+              subtitle: strings.subscriptionSubtitle,
               onTap: () => _pushPage(context, const SubscriptionsScreen()),
             ),
             _SettingsTile(
               icon: Icons.privacy_tip_outlined,
-              title: 'Seguranca e dados',
-              subtitle: 'Backup, privacidade e encerramento',
+              title: strings.securityData,
+              subtitle: strings.securityDataSubtitle,
               onTap: () => _pushPage(context, const SecurityScreen()),
             ),
             if (canOpenDeveloper)
               _SettingsTile(
                 icon: Icons.admin_panel_settings_outlined,
                 title: 'Developer',
-                subtitle: 'Ferramentas internas da OmnyaTech',
+                subtitle: strings.developerTools,
                 onTap: () => _pushPage(context, const DeveloperAccessScreen()),
               ),
             _SettingsTile(
               icon: Icons.logout,
-              title: 'Sair da conta',
-              subtitle: 'Encerrar neste aparelho',
+              title: strings.signOut,
+              subtitle: strings.signOutSubtitle,
               onTap: session.isBusy ? null : session.signOut,
             ),
           ],
@@ -210,7 +212,7 @@ class SettingsStandaloneScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Configuracoes')),
+      appBar: AppBar(title: Text(AppStrings.of(context).settingsTitle)),
       body: const SettingsScreen(),
     );
   }
@@ -225,6 +227,7 @@ class _SettingsHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final profile = session.profile;
     final theme = Theme.of(context);
+    final strings = AppStrings.of(context);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -280,7 +283,7 @@ class _SettingsHeroCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Configuracoes OmnyaTech',
+                      '${strings.settingsTitle} OmnyaTech',
                       style: theme.textTheme.titleLarge?.copyWith(
                         color: Colors.white,
                       ),
@@ -937,6 +940,7 @@ class _AppPreferenceSheetState extends State<_AppPreferenceSheet> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final theme = Theme.of(context);
+    final strings = AppStrings.of(context);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(12, 0, 12, bottomInset + 12),
@@ -966,18 +970,18 @@ class _AppPreferenceSheetState extends State<_AppPreferenceSheet> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text('Preferencias do app', style: theme.textTheme.titleLarge),
+                Text(strings.appPreferences, style: theme.textTheme.titleLarge),
                 const SizedBox(height: 6),
                 Text(
-                  'Ajuste como o Omnya Driver deve falar com voce e mostrar os valores.',
+                  strings.appPreferencesDescription,
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 18),
                 DropdownButtonFormField<String>(
                   initialValue: _normalizeLanguage(_languageCode),
-                  decoration: const InputDecoration(
-                    labelText: 'Idioma',
-                    prefixIcon: Icon(Icons.language_outlined),
+                  decoration: InputDecoration(
+                    labelText: strings.language,
+                    prefixIcon: const Icon(Icons.language_outlined),
                   ),
                   items: const [
                     DropdownMenuItem(
@@ -997,9 +1001,9 @@ class _AppPreferenceSheetState extends State<_AppPreferenceSheet> {
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
                   initialValue: _normalizeCurrency(_currencyCode),
-                  decoration: const InputDecoration(
-                    labelText: 'Moeda',
-                    prefixIcon: Icon(Icons.payments_outlined),
+                  decoration: InputDecoration(
+                    labelText: strings.currency,
+                    prefixIcon: const Icon(Icons.payments_outlined),
                   ),
                   items: const [
                     DropdownMenuItem(
@@ -1021,7 +1025,7 @@ class _AppPreferenceSheetState extends State<_AppPreferenceSheet> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Nesta etapa os textos principais continuam em portugues; essa configuracao ja deixa o perfil preparado para traducao completa.',
+                  strings.appPreferencesSubtitle,
                   style: theme.textTheme.bodySmall,
                 ),
                 if (_errorMessage != null) ...[
@@ -1039,7 +1043,7 @@ class _AppPreferenceSheetState extends State<_AppPreferenceSheet> {
                         onPressed: _saving
                             ? null
                             : () => Navigator.of(context).pop(),
-                        child: const Text('Cancelar'),
+                        child: Text(strings.cancel),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1054,7 +1058,7 @@ class _AppPreferenceSheetState extends State<_AppPreferenceSheet> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text('Salvar'),
+                            : Text(strings.save),
                       ),
                     ),
                   ],
@@ -1083,7 +1087,7 @@ class _AppPreferenceSheetState extends State<_AppPreferenceSheet> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Preferencias atualizadas.')),
+        SnackBar(content: Text(AppStrings.of(context).preferencesSaved)),
       );
     } catch (error) {
       if (!mounted) return;

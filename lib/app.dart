@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'config/app_theme.dart';
@@ -20,6 +21,17 @@ class OmnyaDriverApp extends StatelessWidget {
           return MaterialApp(
             title: 'Omnya Driver',
             debugShowCheckedModeBanner: false,
+            locale: session.locale,
+            supportedLocales: const [
+              Locale('pt', 'BR'),
+              Locale('en', 'US'),
+              Locale('es', 'ES'),
+            ],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
             themeMode: session.themeMode,
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
