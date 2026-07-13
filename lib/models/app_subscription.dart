@@ -9,6 +9,10 @@ class AppSubscription {
     required this.cancelledAt,
     required this.giftedBy,
     required this.externalReference,
+    required this.cancelRequestedAt,
+    required this.cancelReason,
+    required this.scheduledPlanType,
+    required this.scheduledPlanStartsAt,
   });
 
   final String id;
@@ -20,8 +24,15 @@ class AppSubscription {
   final DateTime? cancelledAt;
   final String? giftedBy;
   final String? externalReference;
+  final DateTime? cancelRequestedAt;
+  final String? cancelReason;
+  final String? scheduledPlanType;
+  final DateTime? scheduledPlanStartsAt;
 
   bool get isPending => status.toLowerCase() == 'pending';
+  bool get hasCancelRequest => cancelRequestedAt != null;
+  bool get hasScheduledPlanChange =>
+      scheduledPlanType != null && scheduledPlanType!.isNotEmpty;
 
   bool get isActive {
     final normalizedStatus = status.toLowerCase();

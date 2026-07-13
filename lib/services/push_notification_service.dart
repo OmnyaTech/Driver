@@ -60,6 +60,32 @@ class PushNotificationService {
     }
   }
 
+  Future<void> enqueuePush({
+    required String targetUserId,
+    required String notificationType,
+    required String title,
+    required String body,
+    Map<String, dynamic> data = const {},
+    DateTime? scheduledAt,
+  }) async {
+    final client = _authService.requireClient();
+    await client
+        .schema('driver')
+        .rpc(
+          'enqueue_driver_push',
+          params: {
+            'p_target_user_id': targetUserId,
+            'p_notification_type': notificationType,
+            'p_title': title,
+            'p_body': body,
+            'p_data': data,
+            'p_notification_key':
+                '$notificationType:${scheduledAt?.toUtc().toIso8601String() ?? DateTime.now().toUtc().toIso8601String()}',
+            'p_scheduled_at': scheduledAt?.toUtc().toIso8601String(),
+          },
+        );
+  }
+
   Future<bool> _ensureFirebase() async {
     if (_firebaseTried) return _firebaseReady;
     _firebaseTried = true;

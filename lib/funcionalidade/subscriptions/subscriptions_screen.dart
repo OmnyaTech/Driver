@@ -19,6 +19,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
   final BillingService _billingService = BillingService();
   bool _loading = true;
   bool _creatingCheckout = false;
+  bool _managingSubscription = false;
   bool _annualBilling = false;
   List<AppSubscription> _subscriptions = const [];
   List<BillingEventItem> _billingEvents = const [];
@@ -113,6 +114,15 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
             if (hasPendingCheckout) ...[
               const SizedBox(height: 12),
               _PendingCheckoutNotice(onRefresh: _loadData),
+            ],
+            if (currentPlan != null && currentPlan.isCurrent) ...[
+              const SizedBox(height: 12),
+              _SubscriptionManagementCard(
+                subscription: currentPlan,
+                busy: _managingSubscription,
+                onCancel: _requestCancellation,
+                onChangePlan: () => _requestPlanChange('premium'),
+              ),
             ],
             const SizedBox(height: 16),
             _BillingCycleBar(
@@ -314,6 +324,58 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
     }
   }
 
+  Future<void> _requestCancellation() async {
+    if (_managingSubscription) return;
+    setState(() {
+      _managingSubscription = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _subscriptionService.requestCancellation();
+      await _loadData();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Pedido registrado. Seu acesso segue normal ate a equipe confirmar o cancelamento.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.toString());
+    } finally {
+      if (mounted) setState(() => _managingSubscription = false);
+    }
+  }
+
+  Future<void> _requestPlanChange(String planType) async {
+    if (_managingSubscription) return;
+    setState(() {
+      _managingSubscription = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _subscriptionService.requestPlanChange(planType);
+      await _loadData();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Troca registrada para o proximo ciclo. Vamos te avisar quando virar.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.toString());
+    } finally {
+      if (mounted) setState(() => _managingSubscription = false);
+    }
+  }
+
   String _formatDate(DateTime value) {
     final local = value.toLocal();
     return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
@@ -424,6 +486,83 @@ class _PendingCheckoutNotice extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _SubscriptionManagementCard extends StatelessWidget {
+  const _SubscriptionManagementCard({
+    required this.subscription,
+    required this.busy,
+    required this.onCancel,
+    required this.onChangePlan,
+  });
+
+  final AppSubscription subscription;
+  final bool busy;
+  final VoidCallback onCancel;
+  final VoidCallback onChangePlan;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasCancel = subscription.hasCancelRequest;
+    final hasChange = subscription.hasScheduledPlanChange;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Controle do plano', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              hasCancel
+                  ? 'Seu pedido de cancelamento ja esta na fila. O acesso continua ate a confirmacao.'
+                  : hasChange
+                  ? 'A troca de plano ja ficou anotada para o proximo ciclo.'
+                  : 'Aqui voce acompanha pendencias e pede alteracoes sem criar outro checkout sem querer.',
+            ),
+            if (subscription.cancelRequestedAt != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Cancelamento pedido em ${_shortDate(subscription.cancelRequestedAt!)}',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+            if (subscription.scheduledPlanStartsAt != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Troca prevista para ${_shortDate(subscription.scheduledPlanStartsAt!)}',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: busy || hasCancel ? null : onCancel,
+                  icon: const Icon(Icons.cancel_outlined),
+                  label: Text(hasCancel ? 'Ja solicitado' : 'Cancelar plano'),
+                ),
+                FilledButton.icon(
+                  onPressed: busy || hasChange ? null : onChangePlan,
+                  icon: const Icon(Icons.swap_horiz_rounded),
+                  label: Text(hasChange ? 'Troca anotada' : 'Trocar no ciclo'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _shortDate(DateTime value) {
+    final local = value.toLocal();
+    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
   }
 }
 

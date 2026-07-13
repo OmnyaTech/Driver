@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 type PushBody = {
+  jobId?: string | null;
   userId?: string | null;
   title?: string | null;
   body?: string | null;
@@ -37,6 +38,11 @@ const resolveSupabaseAdmin = () => {
 const resolveServerKey = () =>
   Deno.env.get("DRIVER_FCM_SERVER_KEY") ?? Deno.env.get("FCM_SERVER_KEY");
 
+const stringifyData = (data: Record<string, unknown> | null | undefined) =>
+  Object.fromEntries(
+    Object.entries(data ?? {}).map(([key, value]) => [key, String(value)]),
+  );
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -55,19 +61,48 @@ Deno.serve(async (req) => {
     );
   }
 
-  const body = (await req.json().catch(() => ({}))) as PushBody;
-  const title = (body.title ?? "").trim();
-  const message = (body.body ?? "").trim();
-  if (!title || !message) {
-    return json({ success: false, message: "Titulo e mensagem obrigatorios." }, 400);
-  }
-
   const pushSecret = Deno.env.get("DRIVER_PUSH_SECRET");
   const receivedSecret = req.headers.get("x-driver-push-secret");
   const serviceCall =
     pushSecret && receivedSecret && receivedSecret === pushSecret;
 
+  const body = (await req.json().catch(() => ({}))) as PushBody;
   let targetUserId = body.userId ?? null;
+  let title = (body.title ?? "").trim();
+  let message = (body.body ?? "").trim();
+  let payloadData = stringifyData(body.data);
+  const jobId = (body.jobId ?? "").trim();
+
+  if (jobId) {
+    if (!serviceCall) {
+      return json({ success: false, message: "Chave de push obrigatoria." }, 401);
+    }
+
+    const { data: job, error: jobError } = await admin
+      .schema("driver")
+      .from("driver_push_jobs")
+      .select("id, target_user_id, title, body, data, status")
+      .eq("id", jobId)
+      .maybeSingle();
+
+    if (jobError || !job) {
+      return json({ success: false, message: "Job de push nao encontrado." }, 404);
+    }
+
+    if (job.status !== "queued") {
+      return json({ success: true, delivered: 0, message: "Job ja processado." });
+    }
+
+    targetUserId = String(job.target_user_id);
+    title = String(job.title ?? "").trim();
+    message = String(job.body ?? "").trim();
+    payloadData = stringifyData(job.data as Record<string, unknown> | null);
+  }
+
+  if (!title || !message) {
+    return json({ success: false, message: "Titulo e mensagem obrigatorios." }, 400);
+  }
+
   if (!serviceCall) {
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
@@ -107,6 +142,17 @@ Deno.serve(async (req) => {
     .filter((token) => token.length > 0);
 
   if (tokens.length === 0) {
+    if (jobId) {
+      await admin
+        .schema("driver")
+        .from("driver_push_jobs")
+        .update({
+          status: "failed",
+          failed_at: new Date().toISOString(),
+          error_message: "Sem dispositivo ativo.",
+        })
+        .eq("id", jobId);
+    }
     return json({ success: true, delivered: 0, message: "Sem dispositivo ativo." });
   }
 
@@ -123,12 +169,23 @@ Deno.serve(async (req) => {
         title,
         body: message,
       },
-      data: body.data ?? {},
+      data: payloadData,
     }),
   });
 
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (jobId) {
+      await admin
+        .schema("driver")
+        .from("driver_push_jobs")
+        .update({
+          status: "failed",
+          failed_at: new Date().toISOString(),
+          error_message: "FCM recusou o envio.",
+        })
+        .eq("id", jobId);
+    }
     return json(
       {
         success: false,
@@ -137,6 +194,18 @@ Deno.serve(async (req) => {
       },
       502,
     );
+  }
+
+  if (jobId) {
+    await admin
+      .schema("driver")
+      .from("driver_push_jobs")
+      .update({
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        error_message: null,
+      })
+      .eq("id", jobId);
   }
 
   return json({

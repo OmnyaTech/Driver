@@ -179,9 +179,16 @@ class PublicProfileService {
 
   Future<AppPublicDriverProfile?> loadPublicProfile(String slug) async {
     final client = _authService.requireClient();
-    final response = await client
-        .schema('driver')
-        .rpc('get_public_driver_profile', params: {'p_slug': slug});
+    Object? response;
+    try {
+      response = await client
+          .schema('driver')
+          .rpc('get_public_driver_profile_v2', params: {'p_slug': slug});
+    } catch (_) {
+      response = await client
+          .schema('driver')
+          .rpc('get_public_driver_profile', params: {'p_slug': slug});
+    }
 
     if (response == null) {
       return null;
@@ -198,6 +205,16 @@ class PublicProfileService {
       publicSlug: data['public_slug']?.toString() ?? slug,
       publicBio: data['public_bio']?.toString(),
       publicCity: data['public_city']?.toString(),
+      publicTitle: data['public_title']?.toString(),
+      publicBannerUrl: data['public_banner_url']?.toString(),
+      tier: data['tier']?.toString() ?? 'Bronze',
+      publicScore: _toInt(data['public_score']),
+      totalDeliveries: _toInt(data['total_deliveries']),
+      accountDays: _toInt(data['account_days']),
+      badges: (data['badges'] as List? ?? const [])
+          .map((item) => item.toString())
+          .where((item) => item.trim().isNotEmpty)
+          .toList(),
       level: _toInt(data['level']),
       levelTitle: data['level_title']?.toString() ?? 'Motorista',
       xp: _toInt(data['xp']),

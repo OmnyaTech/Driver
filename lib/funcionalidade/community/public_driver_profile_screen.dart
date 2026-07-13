@@ -100,6 +100,12 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(color: Colors.white70),
                           ),
+                          if ((profile.publicTitle ?? '').isNotEmpty)
+                            Text(
+                              profile.publicTitle!,
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(color: Colors.white70),
+                            ),
                         ],
                       ),
                     ),
@@ -111,9 +117,11 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                   runSpacing: 10,
                   children: [
                     _PublicPill(label: profile.levelTitle),
+                    _PublicPill(label: 'Liga ${profile.tier}'),
                     if ((profile.publicCity ?? '').isNotEmpty)
                       _PublicPill(label: profile.publicCity!),
-                    _PublicPill(label: '${profile.medalsCount} medalhas'),
+                    _PublicPill(label: '${profile.medalsCount} conquistas'),
+                    _PublicPill(label: '${profile.publicScore} pts'),
                   ],
                 ),
                 if ((profile.publicBio ?? '').isNotEmpty) ...[
@@ -165,6 +173,51 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _PublicStatCard(
+                  title: 'Entregas',
+                  value: '${profile.totalDeliveries}',
+                  subtitle: 'total publico',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _PublicStatCard(
+                  title: 'No app ha',
+                  value: '${profile.accountDays} dias',
+                  subtitle: 'jornada com Omnya',
+                ),
+              ),
+            ],
+          ),
+          if (profile.badges.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Badges em destaque',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: profile.badges
+                          .map((badge) => Chip(label: Text(badge)))
+                          .toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           Card(
             child: Padding(

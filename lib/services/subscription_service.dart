@@ -31,9 +31,32 @@ class SubscriptionService {
             cancelledAt: _parseDate(row['cancelled_at']),
             giftedBy: row['gifted_by']?.toString(),
             externalReference: row['external_reference']?.toString(),
+            cancelRequestedAt: _parseDate(row['cancel_requested_at']),
+            cancelReason: row['cancel_reason']?.toString(),
+            scheduledPlanType: row['scheduled_plan_type']?.toString(),
+            scheduledPlanStartsAt: _parseDate(row['scheduled_plan_starts_at']),
           ),
         )
         .toList();
+  }
+
+  Future<Map<String, dynamic>> requestCancellation({String? reason}) async {
+    final client = _authService.requireClient();
+    final response = await client
+        .schema('driver')
+        .rpc('request_subscription_cancellation', params: {'p_reason': reason});
+    return Map<String, dynamic>.from((response as Map?) ?? const {});
+  }
+
+  Future<Map<String, dynamic>> requestPlanChange(String planType) async {
+    final client = _authService.requireClient();
+    final response = await client
+        .schema('driver')
+        .rpc(
+          'request_subscription_plan_change',
+          params: {'p_plan_type': planType},
+        );
+    return Map<String, dynamic>.from((response as Map?) ?? const {});
   }
 
   AppSubscription? currentSubscription(List<AppSubscription> subscriptions) {

@@ -22,6 +22,7 @@ class _GamificationScreenState extends State<GamificationScreen>
   bool _loading = true;
   String? _errorMessage;
   AppGamificationSummary? _summary;
+  AppGrowthSummary? _growth;
 
   @override
   void initState() {
@@ -47,8 +48,17 @@ class _GamificationScreenState extends State<GamificationScreen>
 
     try {
       final summary = await _service.loadSummary();
+      AppGrowthSummary? growth;
+      try {
+        growth = await _service.loadGrowthSummary();
+      } catch (_) {
+        growth = null;
+      }
       if (!mounted) return;
-      setState(() => _summary = summary);
+      setState(() {
+        _summary = summary;
+        _growth = growth;
+      });
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -162,6 +172,13 @@ class _GamificationScreenState extends State<GamificationScreen>
               ],
             ),
             const SizedBox(height: 16),
+            if (_growth != null) ...[
+              _TierAndMissionsCard(
+                growth: _growth!,
+                animation: _pulseController,
+              ),
+              const SizedBox(height: 16),
+            ],
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -285,6 +302,154 @@ class _GamificationScreenState extends State<GamificationScreen>
   String _formatDate(DateTime value) {
     final local = value.toLocal();
     return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}';
+  }
+}
+
+class _TierAndMissionsCard extends StatelessWidget {
+  const _TierAndMissionsCard({required this.growth, required this.animation});
+
+  final AppGrowthSummary growth;
+  final Animation<double> animation;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, _) => Transform.rotate(
+                    angle: animation.value * 0.08,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0000CD).withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        Icons.emoji_events_outlined,
+                        color: Color(0xFF7582FF),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Liga ${growth.tier}',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      Text(
+                        growth.nextTierScore == 0
+                            ? 'Voce chegou no topo por enquanto.'
+                            : 'Faltam ${growth.nextTierScore - growth.publicScore} pts para a proxima liga.',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '${growth.publicScore} pts',
+                  style: theme.textTheme.titleMedium,
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _MissionPill(label: '${growth.totalDeliveries} entregas'),
+                _MissionPill(label: '${growth.accountDays} dias no app'),
+                _MissionPill(label: '${growth.visibleBadges} badges'),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Text('Missoes da semana', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 10),
+            if (growth.missions.isEmpty)
+              const Text(
+                'As proximas missoes aparecem aqui quando houver dados suficientes.',
+              ),
+            ...growth.missions.map(
+              (mission) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _MissionProgressRow(mission: mission),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MissionPill extends StatelessWidget {
+  const _MissionPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0000CD).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(label, style: Theme.of(context).textTheme.labelLarge),
+    );
+  }
+}
+
+class _MissionProgressRow extends StatelessWidget {
+  const _MissionProgressRow({required this.mission});
+
+  final AppDriverMission mission;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(mission.title, style: theme.textTheme.titleSmall),
+            ),
+            Text(
+              mission.completed
+                  ? '+${mission.rewardXp} XP'
+                  : '${mission.current}/${mission.target}',
+              style: theme.textTheme.labelLarge,
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(mission.description, style: theme.textTheme.bodySmall),
+        const SizedBox(height: 8),
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: mission.progress),
+          duration: const Duration(milliseconds: 700),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, _) => ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(value: value, minHeight: 8),
+          ),
+        ),
+      ],
+    );
   }
 }
 

@@ -27,6 +27,26 @@ class MfaService {
     return response.totp;
   }
 
+  Future<List<Factor>> listVerifiedTotpFactors() async {
+    final factors = await listTotpFactors();
+    return factors
+        .where((factor) => factor.status == FactorStatus.verified)
+        .toList();
+  }
+
+  Future<bool> requiresTotpChallenge() async {
+    final factors = await listVerifiedTotpFactors();
+    if (factors.isEmpty) return false;
+
+    final assurance = _authService
+        .requireClient()
+        .auth
+        .mfa
+        .getAuthenticatorAssuranceLevel();
+    return assurance.currentLevel != AuthenticatorAssuranceLevels.aal2 &&
+        assurance.nextLevel == AuthenticatorAssuranceLevels.aal2;
+  }
+
   Future<MfaEnrollmentDraft> startTotpEnrollment() async {
     final response = await _authService.requireClient().auth.mfa.enroll(
       factorType: FactorType.totp,
@@ -50,6 +70,23 @@ class MfaService {
     required String factorId,
     required String code,
   }) async {
+    final challenge = await _authService.requireClient().auth.mfa.challenge(
+      factorId: factorId,
+    );
+    await _authService.requireClient().auth.mfa.verify(
+      factorId: factorId,
+      challengeId: challenge.id,
+      code: code.trim(),
+    );
+  }
+
+  Future<void> verifyFirstTotpChallenge(String code) async {
+    final factors = await listVerifiedTotpFactors();
+    if (factors.isEmpty) {
+      throw StateError('Nenhum autenticador ativo foi encontrado.');
+    }
+
+    final factorId = factors.first.id;
     final challenge = await _authService.requireClient().auth.mfa.challenge(
       factorId: factorId,
     );

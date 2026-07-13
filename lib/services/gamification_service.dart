@@ -60,6 +60,35 @@ class GamificationService {
     );
   }
 
+  Future<AppGrowthSummary> loadGrowthSummary() async {
+    final client = _authService.requireClient();
+    final response = await client
+        .schema('driver')
+        .rpc('get_driver_growth_summary');
+    final data = Map<String, dynamic>.from(response as Map);
+    final missionsRaw = (data['missions'] as List? ?? const []).cast<dynamic>();
+    return AppGrowthSummary(
+      tier: data['tier']?.toString() ?? 'Bronze',
+      nextTierScore: _toInt(data['next_tier_score']),
+      publicScore: _toInt(data['public_score']),
+      stats: Map<String, dynamic>.from(
+        (data['stats'] as Map?) ?? const <String, dynamic>{},
+      ),
+      missions: missionsRaw.map((item) {
+        final row = Map<String, dynamic>.from(item as Map);
+        return AppDriverMission(
+          key: row['key']?.toString() ?? 'mission',
+          title: row['title']?.toString() ?? 'Missao',
+          description: row['description']?.toString() ?? '',
+          target: _toInt(row['target']),
+          current: _toInt(row['current']),
+          rewardXp: _toInt(row['reward_xp']),
+          completed: row['completed'] as bool? ?? false,
+        );
+      }).toList(),
+    );
+  }
+
   int _toInt(Object? value) => int.tryParse('$value') ?? 0;
   int? _nullableInt(Object? value) => value == null ? null : _toInt(value);
   DateTime? _parseDate(Object? value) =>

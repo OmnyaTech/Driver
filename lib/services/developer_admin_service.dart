@@ -90,6 +90,12 @@ class DeveloperAdminService {
         .toList();
   }
 
+  Future<Map<String, dynamic>> loadMetrics() async {
+    final client = _authService.requireClient();
+    final response = await client.schema('driver').rpc('get_developer_metrics');
+    return Map<String, dynamic>.from((response as Map?) ?? const {});
+  }
+
   DateTime? _parseDate(Object? value) {
     if (value == null) return null;
     return DateTime.tryParse(value.toString());

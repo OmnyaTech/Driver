@@ -31,6 +31,13 @@ class AppPublicDriverProfile {
     required this.publicSlug,
     required this.publicBio,
     required this.publicCity,
+    required this.publicTitle,
+    required this.publicBannerUrl,
+    required this.tier,
+    required this.publicScore,
+    required this.totalDeliveries,
+    required this.accountDays,
+    required this.badges,
     required this.level,
     required this.levelTitle,
     required this.xp,
@@ -49,6 +56,13 @@ class AppPublicDriverProfile {
   final String publicSlug;
   final String? publicBio;
   final String? publicCity;
+  final String? publicTitle;
+  final String? publicBannerUrl;
+  final String tier;
+  final int publicScore;
+  final int totalDeliveries;
+  final int accountDays;
+  final List<String> badges;
   final int level;
   final String levelTitle;
   final int xp;

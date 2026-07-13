@@ -82,3 +82,45 @@ class AppDriverMedal {
   final DateTime? awardedAt;
   final Map<String, dynamic> metadata;
 }
+
+class AppDriverMission {
+  const AppDriverMission({
+    required this.key,
+    required this.title,
+    required this.description,
+    required this.target,
+    required this.current,
+    required this.rewardXp,
+    required this.completed,
+  });
+
+  final String key;
+  final String title;
+  final String description;
+  final int target;
+  final int current;
+  final int rewardXp;
+  final bool completed;
+
+  double get progress => target <= 0 ? 0 : (current / target).clamp(0, 1);
+}
+
+class AppGrowthSummary {
+  const AppGrowthSummary({
+    required this.tier,
+    required this.nextTierScore,
+    required this.publicScore,
+    required this.missions,
+    required this.stats,
+  });
+
+  final String tier;
+  final int nextTierScore;
+  final int publicScore;
+  final List<AppDriverMission> missions;
+  final Map<String, dynamic> stats;
+
+  int get totalDeliveries => int.tryParse('${stats['total_deliveries']}') ?? 0;
+  int get accountDays => int.tryParse('${stats['account_days']}') ?? 0;
+  int get visibleBadges => int.tryParse('${stats['visible_badges']}') ?? 0;
+}
