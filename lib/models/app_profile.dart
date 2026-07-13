@@ -22,6 +22,7 @@ class AppProfile {
     required this.biometricLockEnabled,
     required this.inactivityLockMinutes,
     required this.reauthOnResume,
+    required this.totpMfaEnabled,
   });
 
   final String id;
@@ -42,6 +43,7 @@ class AppProfile {
   final bool biometricLockEnabled;
   final int inactivityLockMinutes;
   final bool reauthOnResume;
+  final bool totpMfaEnabled;
 
   bool get needsOnboarding => onboardingCompletedAt == null;
 

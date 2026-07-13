@@ -93,6 +93,16 @@ class _AppSecurityGateState extends State<AppSecurityGate>
 
   void _checkMfaRequirement(AppProfile? profile) {
     if (profile == null || _checkingMfa || _mfaRequired) return;
+    if (profile.totpMfaEnabled != true) {
+      if (_mfaRequired || _mfaErrorMessage != null) {
+        setState(() {
+          _mfaRequired = false;
+          _mfaErrorMessage = null;
+          _mfaCodeController.clear();
+        });
+      }
+      return;
+    }
     if (_lastMfaCheckUserId == profile.id) return;
 
     _lastMfaCheckUserId = profile.id;

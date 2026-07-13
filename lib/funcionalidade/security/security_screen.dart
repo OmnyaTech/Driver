@@ -46,6 +46,8 @@ class _SecurityScreenState extends State<SecurityScreen> {
     final theme = Theme.of(context);
     final strings = AppStrings.of(context);
     final profile = context.watch<AppSession>().profile;
+    final hasVerifiedTotp = _totpFactorId != null;
+    final mfaActive = hasVerifiedTotp && profile?.totpMfaEnabled == true;
 
     return Scaffold(
       appBar: AppBar(title: Text(strings.securityData)),
@@ -102,7 +104,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   Text(
                     _loadingMfa
                         ? strings.preparing
-                        : (_totpFactorId == null
+                        : (!mfaActive
                               ? strings.twoFactorDisabled
                               : strings.twoFactorEnabled),
                   ),
@@ -110,7 +112,9 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   FilledButton.icon(
                     onPressed: _loadingMfa || _disablingMfa
                         ? null
-                        : (_totpFactorId == null ? _openMfaSetup : _disableMfa),
+                        : (!hasVerifiedTotp
+                              ? _openMfaSetup
+                              : (mfaActive ? _disableMfa : _enableExistingMfa)),
                     icon: _loadingMfa || _disablingMfa
                         ? const SizedBox(
                             width: 18,
@@ -118,12 +122,12 @@ class _SecurityScreenState extends State<SecurityScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : Icon(
-                            _totpFactorId == null
+                            !mfaActive
                                 ? Icons.lock_outline
                                 : Icons.lock_open_outlined,
                           ),
                     label: Text(
-                      _totpFactorId == null
+                      !mfaActive
                           ? strings.configureTwoFactor
                           : strings.disableTwoFactor,
                     ),
@@ -292,7 +296,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
   Future<void> _loadMfa() async {
     setState(() => _loadingMfa = true);
     try {
-      final factors = await _mfaService.listTotpFactors();
+      final factors = await _mfaService.listVerifiedTotpFactors();
       if (!mounted) return;
       setState(() {
         _totpFactorId = factors.isEmpty ? null : factors.first.id;
@@ -315,6 +319,8 @@ class _SecurityScreenState extends State<SecurityScreen> {
 
     if (configured == true) {
       await _loadMfa();
+      if (!mounted) return;
+      await context.read<AppSession>().refreshProfile();
     }
   }
 
@@ -325,7 +331,10 @@ class _SecurityScreenState extends State<SecurityScreen> {
     setState(() => _disablingMfa = true);
     try {
       await _mfaService.disableTotp(factorId);
+      await _mfaService.setTotpMfaEnabled(false);
       await _loadMfa();
+      if (!mounted) return;
+      await context.read<AppSession>().refreshProfile();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('2FA desativado com seguranca.')),
@@ -334,6 +343,28 @@ class _SecurityScreenState extends State<SecurityScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Nao deu para desativar o 2FA: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _disablingMfa = false);
+    }
+  }
+
+  Future<void> _enableExistingMfa() async {
+    if (_totpFactorId == null) return;
+
+    setState(() => _disablingMfa = true);
+    try {
+      await _mfaService.setTotpMfaEnabled(true);
+      if (!mounted) return;
+      await context.read<AppSession>().refreshProfile();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppStrings.of(context).twoFactorEnabled)),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Nao deu para ativar o 2FA: $error')),
       );
     } finally {
       if (mounted) setState(() => _disablingMfa = false);
@@ -701,6 +732,7 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
 
     try {
       await _service.verifyTotpEnrollment(factorId: draft.factorId, code: code);
+      await _service.setTotpMfaEnabled(true);
       if (!mounted) return;
       Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(

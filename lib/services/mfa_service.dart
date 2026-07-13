@@ -100,4 +100,21 @@ class MfaService {
   Future<void> disableTotp(String factorId) async {
     await _authService.requireClient().auth.mfa.unenroll(factorId);
   }
+
+  Future<void> setTotpMfaEnabled(bool enabled) async {
+    final client = _authService.requireClient();
+    final user = client.auth.currentUser;
+    if (user == null) {
+      throw StateError('Usuario nao autenticado.');
+    }
+
+    await client
+        .schema('driver')
+        .from('profiles')
+        .update({
+          'totp_mfa_enabled': enabled,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', user.id);
+  }
 }
