@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/app_goal.dart';
 import '../../services/goal_service.dart';
 import '../../services/journey_service.dart';
+import '../../utilities/localization/app_format.dart';
 import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
@@ -26,6 +27,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   final GoalService _goalService = GoalService();
   bool _loading = true;
   List<AppGoal> _goals = const [];
+  List<AppGoalSuggestion> _suggestions = const [];
   List<AppGoalTransaction> _transactions = const [];
   GoalBalanceSummary? _summary;
   List<JourneyOption> _journeyOptions = const [];
@@ -59,9 +61,15 @@ class _GoalsScreenState extends State<GoalsScreen> {
       ]);
       if (!mounted) return;
       setState(() {
-        _goals = results[0] as List<AppGoal>;
+        final goals = results[0] as List<AppGoal>;
+        final summary = results[2] as GoalBalanceSummary;
+        _goals = goals;
+        _suggestions = _goalService.buildAutomaticSuggestions(
+          goals: goals,
+          summary: summary,
+        );
         _transactions = results[1] as List<AppGoalTransaction>;
-        _summary = results[2] as GoalBalanceSummary;
+        _summary = summary;
         _journeyOptions = results[3] as List<JourneyOption>;
       });
     } catch (_) {
@@ -169,6 +177,14 @@ class _GoalsScreenState extends State<GoalsScreen> {
             ),
           ],
           const SizedBox(height: 16),
+          if (_suggestions.isNotEmpty) ...[
+            _GoalSuggestionsCard(
+              suggestions: _suggestions,
+              currency: _currency,
+              onAccept: _acceptSuggestion,
+            ),
+            const SizedBox(height: 16),
+          ],
           if (_goals.isEmpty)
             const Card(
               child: Padding(
@@ -341,6 +357,27 @@ class _GoalsScreenState extends State<GoalsScreen> {
     }
   }
 
+  Future<void> _acceptSuggestion(AppGoalSuggestion suggestion) async {
+    try {
+      await _goalService.createGoal(
+        title: suggestion.title,
+        targetAmount: suggestion.targetAmount.toStringAsFixed(2),
+        icon: suggestion.icon,
+        deadline: suggestion.deadline,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${suggestion.title} entrou nos objetivos.')),
+      );
+      await _loadData();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Nao consegui criar essa sugestao: $error')),
+      );
+    }
+  }
+
   Future<void> _openEditGoalDialog(AppGoal goal) async {
     final saved = await showDialog<bool>(
       context: context,
@@ -428,7 +465,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
     }
   }
 
-  String _currency(double value) => 'R\$ ${value.toStringAsFixed(2)}';
+  String _currency(double value) => AppFormat.of(context).currency(value);
 
   String _formatDate(DateTime value) {
     final local = value.toLocal();
@@ -460,6 +497,165 @@ class _GoalSummaryTile extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _GoalSuggestionsCard extends StatelessWidget {
+  const _GoalSuggestionsCard({
+    required this.suggestions,
+    required this.currency,
+    required this.onAccept,
+  });
+
+  final List<AppGoalSuggestion> suggestions;
+  final String Function(double value) currency;
+  final Future<void> Function(AppGoalSuggestion suggestion) onAccept;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Sugestoes para se organizar',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Ideias rapidas baseadas no que costuma pesar na rotina de quem entrega.',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 720;
+                final cards = suggestions.map((suggestion) {
+                  return _GoalSuggestionTile(
+                    suggestion: suggestion,
+                    currency: currency,
+                    onAccept: () => onAccept(suggestion),
+                  );
+                }).toList();
+
+                if (compact) {
+                  return Column(
+                    children: [
+                      for (final card in cards) ...[
+                        card,
+                        if (card != cards.last) const SizedBox(height: 12),
+                      ],
+                    ],
+                  );
+                }
+
+                return Wrap(spacing: 12, runSpacing: 12, children: cards);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GoalSuggestionTile extends StatelessWidget {
+  const _GoalSuggestionTile({
+    required this.suggestion,
+    required this.currency,
+    required this.onAccept,
+  });
+
+  final AppGoalSuggestion suggestion;
+  final String Function(double value) currency;
+  final VoidCallback onAccept;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: 320,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: theme.dividerColor),
+        color: theme.colorScheme.surface.withValues(alpha: 0.55),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: theme.colorScheme.primary.withValues(
+                  alpha: 0.12,
+                ),
+                child: Icon(
+                  _iconFor(suggestion.icon),
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(suggestion.title, style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 4),
+                    Text(
+                      currency(suggestion.targetAmount),
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(suggestion.description),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.tonalIcon(
+              onPressed: onAccept,
+              icon: const Icon(Icons.add),
+              label: const Text('Adicionar'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _iconFor(String value) {
+    return switch (value) {
+      'shield' => Icons.health_and_safety_outlined,
+      'oil' => Icons.oil_barrel_outlined,
+      'tire' => Icons.album_outlined,
+      'wrench' => Icons.build_outlined,
+      'calendar' => Icons.calendar_month_outlined,
+      'document' => Icons.description_outlined,
+      'lock' => Icons.lock_outline,
+      _ => Icons.flag_outlined,
+    };
   }
 }
 
@@ -702,8 +898,8 @@ class _GoalTransactionDialogState extends State<_GoalTransactionDialog> {
                 const SizedBox(height: 8),
                 Text(
                   isContribution
-                      ? 'Saldo disponivel: R\$ ${widget.availableBalance.toStringAsFixed(2)}'
-                      : 'Saldo atual do objetivo: R\$ ${widget.goal.currentAmount.toStringAsFixed(2)}',
+                      ? 'Saldo disponivel: ${AppFormat.of(context).currency(widget.availableBalance)}'
+                      : 'Saldo atual do objetivo: ${AppFormat.of(context).currency(widget.goal.currentAmount)}',
                 ),
                 const SizedBox(height: 12),
                 TextFormField(

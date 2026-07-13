@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/app_subscription.dart';
 import '../../services/billing_service.dart';
 import '../../services/subscription_service.dart';
+import '../../utilities/localization/app_format.dart';
 import '../../utilities/ui/omnya_shell.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
@@ -12,7 +13,8 @@ class SubscriptionsScreen extends StatefulWidget {
   State<SubscriptionsScreen> createState() => _SubscriptionsScreenState();
 }
 
-class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
+class _SubscriptionsScreenState extends State<SubscriptionsScreen>
+    with WidgetsBindingObserver {
   final SubscriptionService _subscriptionService = SubscriptionService();
   final BillingService _billingService = BillingService();
   bool _loading = true;
@@ -25,7 +27,21 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_loading) {
+      _loadData();
+    }
   }
 
   Future<void> _loadData() async {
@@ -577,7 +593,10 @@ class _SubscriptionPlanCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(plan.description, style: theme.textTheme.bodyMedium),
           const SizedBox(height: 18),
-          Text(plan.price, style: theme.textTheme.headlineMedium),
+          Text(
+            AppFormat.of(context).currency(plan.price),
+            style: theme.textTheme.headlineMedium,
+          ),
           const SizedBox(height: 4),
           Text(plan.caption, style: theme.textTheme.bodySmall),
           const SizedBox(height: 18),
@@ -638,7 +657,7 @@ class _DriverPlanCardData {
 
   final String title;
   final String description;
-  final String price;
+  final double price;
   final String caption;
   final List<String> features;
   final String buttonLabel;
@@ -652,7 +671,7 @@ const List<_DriverPlanCardData> _monthlyPlans = [
   _DriverPlanCardData(
     title: 'Gratis',
     description: 'Para organizar o basico do mes atual com o essencial.',
-    price: 'R\$ 0',
+    price: 0,
     caption: 'sem custo',
     features: [
       '1 plataforma ativa por conta',
@@ -667,7 +686,7 @@ const List<_DriverPlanCardData> _monthlyPlans = [
     title: 'Premium mensal',
     description:
         'Para ganhar ritmo com historico, multiplas fontes e mais controle.',
-    price: 'R\$ 14,90',
+    price: 14.90,
     caption: 'cobranca mensal',
     features: [
       'Multiplas plataformas ativas',
@@ -687,7 +706,7 @@ const List<_DriverPlanCardData> _annualPlans = [
   _DriverPlanCardData(
     title: 'Gratis',
     description: 'Entrada sem custo para iniciar os registros do dia a dia.',
-    price: 'R\$ 0',
+    price: 0,
     caption: 'sem custo',
     features: [
       '1 plataforma ativa por conta',
@@ -701,7 +720,7 @@ const List<_DriverPlanCardData> _annualPlans = [
   _DriverPlanCardData(
     title: 'Premium anual',
     description: 'Melhor custo para manter a operacao completa o ano inteiro.',
-    price: 'R\$ 149,90',
+    price: 149.90,
     caption: 'cobranca anual',
     features: [
       'Multiplas plataformas e veiculos',

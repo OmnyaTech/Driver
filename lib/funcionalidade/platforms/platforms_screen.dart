@@ -5,6 +5,7 @@ import '../../models/app_platform.dart';
 import '../../services/plan_access_service.dart';
 import '../../services/platform_logo_service.dart';
 import '../../services/platform_service.dart';
+import '../../utilities/localization/app_format.dart';
 import '../../utilities/state/app_session.dart';
 import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
@@ -317,7 +318,7 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
                   [
                     platform.type,
                     if (platform.averageIncome != null)
-                      'R\$ ${platform.averageIncome!.toStringAsFixed(2)}',
+                      AppFormat.of(context).currency(platform.averageIncome!),
                     if (platform.averageDeliveries != null)
                       '${platform.averageDeliveries} entregas',
                     platform.active ? 'Ativa' : 'Arquivada',

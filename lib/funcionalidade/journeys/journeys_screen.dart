@@ -8,6 +8,7 @@ import '../../services/active_journey_storage_service.dart';
 import '../../services/journey_service.dart';
 import '../../services/platform_service.dart';
 import '../../services/vehicle_service.dart';
+import '../../utilities/localization/app_format.dart';
 import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
@@ -259,6 +260,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
       }
       return const OmnyaSubPageScaffold(title: 'Jornadas', body: loading);
     }
+    final format = AppFormat.of(context);
 
     final content = RefreshIndicator(
       onRefresh: _loadJourneys,
@@ -307,7 +309,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
                 subtitle: Text(
                   '${_filteredJourneys.length} jornadas no filtro atual',
                 ),
-                trailing: Text('R\$ ${_filteredIncome.toStringAsFixed(2)}'),
+                trailing: Text(format.currency(_filteredIncome)),
               ),
             ),
           if (_errorMessage != null)
@@ -366,7 +368,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
                     _formatDate(journey.startedAt),
                     if (journey.vehicleLabel != null) journey.vehicleLabel!,
                     '${journey.totalDeliveries} entregas',
-                    'R\$ ${journey.totalIncome.toStringAsFixed(2)}',
+                    format.currency(journey.totalIncome),
                     journey.isFinished ? 'Finalizada' : 'Em aberto',
                   ].join(' - '),
                 ),
@@ -396,9 +398,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
                         leading: const Icon(Icons.storefront_outlined),
                         title: Text(platform.platformName),
                         subtitle: Text('${platform.deliveries} entregas'),
-                        trailing: Text(
-                          'R\$ ${platform.income.toStringAsFixed(2)}',
-                        ),
+                        trailing: Text(format.currency(platform.income)),
                       ),
                     ),
                 ],

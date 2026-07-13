@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../services/platform_service.dart';
 import '../../services/profile_service.dart';
+import '../../services/driver_preference_service.dart';
+import '../../models/driver_reserve_preference.dart';
 import '../../services/vehicle_service.dart';
 import '../../utilities/state/app_session.dart';
 
@@ -16,11 +18,17 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final _profileService = ProfileService();
+  final _preferenceService = DriverPreferenceService();
   final _vehicleService = VehicleService();
   final _platformService = PlatformService();
   final _displayNameController = TextEditingController();
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _stateController = TextEditingController();
+  final _countryController = TextEditingController(text: 'Brasil');
+  final _reservePercentageController = TextEditingController(text: '30');
+  final _reservePerDeliveryController = TextEditingController(text: '0');
   final _vehicleBrandController = TextEditingController();
   final _vehicleModelController = TextEditingController();
   final _vehicleYearController = TextEditingController();
@@ -32,6 +40,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _step = 0;
   bool _saving = false;
   String _platformType = 'platform';
+  String _languageCode = 'pt-BR';
+  String _currencyCode = 'BRL';
+  DriverReserveMode _reserveMode = DriverReserveMode.dailyPercent;
   String? _errorMessage;
 
   @override
@@ -41,6 +52,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _displayNameController.text = profile?.displayName ?? '';
     _fullNameController.text = profile?.fullName ?? '';
     _phoneController.text = profile?.phone ?? '';
+    _cityController.text = profile?.city ?? '';
+    _stateController.text = profile?.state ?? '';
+    _countryController.text = profile?.country ?? 'Brasil';
+    _languageCode = profile?.languageCode ?? 'pt-BR';
+    _currencyCode = profile?.currencyCode ?? 'BRL';
+    final reserve = profile?.reservePreference;
+    if (reserve != null) {
+      _reserveMode = reserve.mode;
+      _reservePercentageController.text = reserve.dailyPercentage
+          .toStringAsFixed(
+            reserve.dailyPercentage.truncateToDouble() ==
+                    reserve.dailyPercentage
+                ? 0
+                : 1,
+          );
+      _reservePerDeliveryController.text = reserve.amountPerDelivery
+          .toStringAsFixed(2);
+    }
   }
 
   @override
@@ -48,6 +77,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _displayNameController.dispose();
     _fullNameController.dispose();
     _phoneController.dispose();
+    _cityController.dispose();
+    _stateController.dispose();
+    _countryController.dispose();
+    _reservePercentageController.dispose();
+    _reservePerDeliveryController.dispose();
     _vehicleBrandController.dispose();
     _vehicleModelController.dispose();
     _vehicleYearController.dispose();
@@ -61,7 +95,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Onboarding')),
+      appBar: AppBar(title: const Text('Primeiros passos')),
       body: Form(
         key: _formKey,
         child: Stepper(
@@ -83,7 +117,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text(_step == 2 ? 'Finalizar' : 'Continuar'),
+                      : Text(_step == 4 ? 'Entrar no app' : 'Continuar'),
                 ),
                 if (_step > 0) ...[
                   const SizedBox(width: 12),
@@ -98,7 +132,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           steps: [
             Step(
               isActive: _step >= 0,
-              title: const Text('Perfil'),
+              title: const Text('Quem e voce'),
+              subtitle: const Text('O basico para deixar o app com sua cara'),
               content: Column(
                 children: [
                   TextFormField(
@@ -124,8 +159,119 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             Step(
               isActive: _step >= 1,
+              title: const Text('Sua regiao'),
+              subtitle: const Text(
+                'Usamos isso para organizar rankings e locais',
+              ),
+              content: Column(
+                children: [
+                  TextFormField(
+                    controller: _cityController,
+                    decoration: const InputDecoration(labelText: 'Cidade'),
+                    validator: _step == 1 ? _required : null,
+                  ),
+                  TextFormField(
+                    controller: _stateController,
+                    decoration: const InputDecoration(labelText: 'Estado'),
+                  ),
+                  TextFormField(
+                    controller: _countryController,
+                    decoration: const InputDecoration(labelText: 'Pais'),
+                  ),
+                ],
+              ),
+            ),
+            Step(
+              isActive: _step >= 2,
+              title: const Text('Preferencias'),
+              subtitle: const Text('Idioma, moeda e dinheiro para guardar'),
+              content: Column(
+                children: [
+                  DropdownButtonFormField<String>(
+                    initialValue: _languageCode,
+                    decoration: const InputDecoration(labelText: 'Idioma'),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'pt-BR',
+                        child: Text('Portugues do Brasil'),
+                      ),
+                      DropdownMenuItem(value: 'en-US', child: Text('English')),
+                      DropdownMenuItem(value: 'es-ES', child: Text('Espanol')),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _languageCode = value ?? 'pt-BR'),
+                  ),
+                  DropdownButtonFormField<String>(
+                    initialValue: _currencyCode,
+                    decoration: const InputDecoration(labelText: 'Moeda'),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'BRL',
+                        child: Text('Real brasileiro'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'USD',
+                        child: Text('Dolar americano'),
+                      ),
+                      DropdownMenuItem(value: 'EUR', child: Text('Euro')),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _currencyCode = value ?? 'BRL'),
+                  ),
+                  DropdownButtonFormField<DriverReserveMode>(
+                    initialValue: _reserveMode,
+                    decoration: const InputDecoration(
+                      labelText: 'Como voce guarda dinheiro?',
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: DriverReserveMode.dailyPercent,
+                        child: Text('Percentual do que sobrar'),
+                      ),
+                      DropdownMenuItem(
+                        value: DriverReserveMode.perDeliveryFixed,
+                        child: Text('Valor fixo por entrega'),
+                      ),
+                      DropdownMenuItem(
+                        value: DriverReserveMode.none,
+                        child: Text('Nao quero reservar agora'),
+                      ),
+                    ],
+                    onChanged: (value) => setState(
+                      () => _reserveMode =
+                          value ?? DriverReserveMode.dailyPercent,
+                    ),
+                  ),
+                  if (_reserveMode == DriverReserveMode.dailyPercent)
+                    TextFormField(
+                      controller: _reservePercentageController,
+                      decoration: const InputDecoration(
+                        labelText: 'Percentual para guardar',
+                        suffixText: '%',
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      validator: _step == 2 ? _validatePercent : null,
+                    ),
+                  if (_reserveMode == DriverReserveMode.perDeliveryFixed)
+                    TextFormField(
+                      controller: _reservePerDeliveryController,
+                      decoration: const InputDecoration(
+                        labelText: 'Valor por entrega',
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      validator: _step == 2 ? _validateMoney : null,
+                    ),
+                ],
+              ),
+            ),
+            Step(
+              isActive: _step >= 3,
               title: const Text('Primeiro veiculo'),
-              subtitle: const Text('Opcional'),
+              subtitle: const Text('Opcional, mas ajuda nos custos'),
               content: Column(
                 children: [
                   TextFormField(
@@ -149,7 +295,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
             Step(
-              isActive: _step >= 2,
+              isActive: _step >= 4,
               title: const Text('Primeira plataforma'),
               subtitle: const Text('Opcional'),
               content: Column(
@@ -214,11 +360,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _handleContinue() async {
-    if (_step == 0 && !_formKey.currentState!.validate()) {
+    if (_step <= 2 && !_formKey.currentState!.validate()) {
       return;
     }
 
-    if (_step < 2) {
+    if (_step < 4) {
       setState(() => _step += 1);
       return;
     }
@@ -233,7 +379,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         displayName: _displayNameController.text,
         fullName: _fullNameController.text,
         phone: _phoneController.text,
+        city: _cityController.text,
+        state: _stateController.text,
+        country: _countryController.text,
         completeOnboarding: true,
+      );
+      await _preferenceService.updateAppPreferences(
+        languageCode: _languageCode,
+        currencyCode: _currencyCode,
+      );
+      await _preferenceService.updateReservePreference(
+        mode: _reserveMode,
+        dailyPercentage: _parseDouble(
+          _reservePercentageController.text,
+          fallback: 30,
+        ),
+        amountPerDelivery: _parseDouble(
+          _reservePerDeliveryController.text,
+          fallback: 0,
+        ),
       );
 
       if (_vehicleBrandController.text.trim().isNotEmpty &&
@@ -289,5 +453,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       return 'Campo obrigatorio.';
     }
     return null;
+  }
+
+  String? _validatePercent(String? value) {
+    final parsed = _parseDouble(value, fallback: -1);
+    if (parsed < 0 || parsed > 100) {
+      return 'Use um percentual entre 0 e 100.';
+    }
+    return null;
+  }
+
+  String? _validateMoney(String? value) {
+    final parsed = _parseDouble(value, fallback: -1);
+    if (parsed < 0) return 'Informe um valor valido.';
+    return null;
+  }
+
+  double _parseDouble(String? value, {required double fallback}) {
+    if (value == null) return fallback;
+    return double.tryParse(value.trim().replaceAll(',', '.')) ?? fallback;
   }
 }

@@ -5,6 +5,7 @@ import '../../models/app_vehicle.dart';
 import '../finance/widgets/financial_filter_toolbar.dart';
 import '../../services/maintenance_service.dart';
 import '../../services/vehicle_service.dart';
+import '../../utilities/localization/app_format.dart';
 import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
@@ -146,7 +147,7 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
       builder: (_) => AlertDialog(
         title: const Text('Excluir manutencao'),
         content: Text(
-          'Deseja excluir esta manutencao de R\$ ${maintenance.totalAmount.toStringAsFixed(2)}?',
+          'Deseja excluir esta manutencao de ${AppFormat.of(context).currency(maintenance.totalAmount)}?',
         ),
         actions: [
           TextButton(
@@ -220,7 +221,7 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
                 subtitle: Text(
                   '${_filteredMaintenances.length} manutencoes no filtro atual',
                 ),
-                trailing: Text('R\$ ${_totalAmount.toStringAsFixed(2)}'),
+                trailing: Text(AppFormat.of(context).currency(_totalAmount)),
               ),
             ),
           if (_errorMessage != null)
@@ -281,7 +282,7 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
                     _formatDate(maintenance.maintenanceDate),
                     if (maintenance.workshop != null) maintenance.workshop!,
                     if (maintenance.reason != null) maintenance.reason!,
-                    'R\$ ${maintenance.totalAmount.toStringAsFixed(2)}',
+                    AppFormat.of(context).currency(maintenance.totalAmount),
                   ].join(' - '),
                 ),
                 children: [
@@ -297,7 +298,9 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
                   ...maintenance.items.map(
                     (item) => ListTile(
                       title: Text(item.description),
-                      trailing: Text('R\$ ${item.amount.toStringAsFixed(2)}'),
+                      trailing: Text(
+                        AppFormat.of(context).currency(item.amount),
+                      ),
                     ),
                   ),
                 ],
@@ -545,7 +548,7 @@ class _MaintenanceFormDialogState extends State<_MaintenanceFormDialog> {
                     child: Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        'Soma dos itens: R\$ ${itemsTotal.toStringAsFixed(2)}',
+                        'Soma dos itens: ${AppFormat.of(context).currency(itemsTotal)}',
                       ),
                     ),
                   ),

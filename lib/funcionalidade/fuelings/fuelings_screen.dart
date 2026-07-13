@@ -6,6 +6,7 @@ import '../finance/widgets/financial_filter_toolbar.dart';
 import '../../services/fueling_service.dart';
 import '../../services/journey_service.dart';
 import '../../services/vehicle_service.dart';
+import '../../utilities/localization/app_format.dart';
 import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
@@ -153,7 +154,7 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
       builder: (_) => AlertDialog(
         title: const Text('Excluir abastecimento'),
         content: Text(
-          'Deseja excluir este abastecimento de R\$ ${fueling.totalAmount.toStringAsFixed(2)}?',
+          'Deseja excluir este abastecimento de ${AppFormat.of(context).currency(fueling.totalAmount)}?',
         ),
         actions: [
           TextButton(
@@ -227,7 +228,7 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
                 subtitle: Text(
                   '${_filteredFuelings.length} abastecimentos no filtro atual',
                 ),
-                trailing: Text('R\$ ${_totalAmount.toStringAsFixed(2)}'),
+                trailing: Text(AppFormat.of(context).currency(_totalAmount)),
               ),
             ),
           if (_errorMessage != null)
@@ -267,13 +268,13 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
                     _formatDate(fueling.fueledAt),
                     if (fueling.stationName != null) fueling.stationName!,
                     '${fueling.liters.toStringAsFixed(2)} L',
-                    'R\$ ${fueling.pricePerLiter.toStringAsFixed(3)}/L',
+                    '${AppFormat.of(context).currency(fueling.pricePerLiter)}/L',
                   ].join(' - '),
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('R\$ ${fueling.totalAmount.toStringAsFixed(2)}'),
+                    Text(AppFormat.of(context).currency(fueling.totalAmount)),
                     PopupMenuButton<String>(
                       onSelected: (value) async {
                         if (value == 'edit') {
@@ -564,7 +565,7 @@ class _FuelingFormDialogState extends State<_FuelingFormDialog> {
                     child: Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        'Calculo atual: R\$ ${calculatedTotal.toStringAsFixed(2)}',
+                        'Calculo atual: ${AppFormat.of(context).currency(calculatedTotal)}',
                       ),
                     ),
                   ),

@@ -16,6 +16,7 @@ import '../services/driver_preference_service.dart';
 import '../services/profile_service.dart';
 import '../services/public_profile_service.dart';
 import '../utilities/guards/developer_guard.dart';
+import '../utilities/localization/app_format.dart';
 import '../utilities/localization/app_strings.dart';
 import '../utilities/state/app_session.dart';
 import '../utilities/ui/profile_avatar.dart';
@@ -30,6 +31,7 @@ class SettingsScreen extends StatelessWidget {
     final session = context.watch<AppSession>();
     final profile = session.profile;
     final strings = AppStrings.of(context);
+    final format = AppFormat.of(context);
     final canOpenDeveloper = profile != null
         ? DeveloperGuard().canOpen(profile.role)
         : false;
@@ -76,7 +78,9 @@ class SettingsScreen extends StatelessWidget {
               icon: Icons.savings_outlined,
               title: strings.automaticReserve,
               subtitle:
-                  profile?.reservePreference.summaryLabel ??
+                  profile?.reservePreference.summaryLabelWith(
+                    format.currency,
+                  ) ??
                   '30% do que sobrar',
               onTap: () => _openReservePreferenceSheet(context),
             ),
@@ -1171,6 +1175,7 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final theme = Theme.of(context);
+    final format = AppFormat.of(context);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(12, 0, 12, bottomInset + 12),
@@ -1258,10 +1263,11 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Valor reservado por entrega',
                       hintText: 'Ex: 2.50',
-                      prefixText: 'R\$ ',
+                      prefixText:
+                          '${format.currency(0).replaceAll(RegExp(r'[0-9.,\s]'), '')} ',
                     ),
                   ),
                   const SizedBox(height: 10),

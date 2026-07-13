@@ -107,9 +107,9 @@ class DriverPreferenceService {
     return switch (preference.mode) {
       DriverReserveMode.none => 'Voce deixou a reserva desligada por enquanto.',
       DriverReserveMode.dailyPercent =>
-        'Separar R\$ ${amount.toStringAsFixed(2)} em $periodLabel segue sua regra de guardar ${preference.dailyPercentage.toStringAsFixed(preference.dailyPercentage.truncateToDouble() == preference.dailyPercentage ? 0 : 1)}% do que sobrar.',
+        'Esse valor em $periodLabel segue sua regra de guardar ${preference.dailyPercentage.toStringAsFixed(preference.dailyPercentage.truncateToDouble() == preference.dailyPercentage ? 0 : 1)}% do que sobrar.',
       DriverReserveMode.perDeliveryFixed =>
-        'Separar R\$ ${amount.toStringAsFixed(2)} em $periodLabel segue sua regra de R\$ ${preference.amountPerDelivery.toStringAsFixed(2)} por entrega.',
+        'Esse valor em $periodLabel segue sua regra por entrega concluida.',
     };
   }
 

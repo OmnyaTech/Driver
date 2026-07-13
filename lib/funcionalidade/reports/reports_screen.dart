@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/app_operational_report.dart';
 import '../../services/reporting_service.dart';
+import '../../utilities/localization/app_format.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -185,7 +186,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
   }
 
-  String _currency(double value) => 'R\$ ${value.toStringAsFixed(2)}';
+  String _currency(double value) => AppFormat.of(context).currency(value);
 }
 
 class _ReportMetricData {

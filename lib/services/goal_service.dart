@@ -114,6 +114,100 @@ class GoalService {
     });
   }
 
+  List<AppGoalSuggestion> buildAutomaticSuggestions({
+    required List<AppGoal> goals,
+    required GoalBalanceSummary summary,
+  }) {
+    final existingTitles = goals
+        .map((goal) => goal.title.toLowerCase().trim())
+        .toSet();
+    final monthlyBase = summary.netOperationalResult > 0
+        ? summary.netOperationalResult
+        : 1500.0;
+    final suggestions = <AppGoalSuggestion>[
+      AppGoalSuggestion(
+        key: 'emergency',
+        title: 'Reserva de emergencia',
+        description:
+            'Um colchao para dias fracos, manutencao inesperada ou pausa forcada.',
+        targetAmount: _roundMoney(monthlyBase.clamp(500, 3000) * 0.35),
+        icon: 'shield',
+        deadline: null,
+      ),
+      const AppGoalSuggestion(
+        key: 'oil',
+        title: 'Troca de oleo',
+        description:
+            'Separe aos poucos para nao pesar quando chegar a hora da troca.',
+        targetAmount: 120,
+        icon: 'oil',
+        deadline: null,
+      ),
+      const AppGoalSuggestion(
+        key: 'tires',
+        title: 'Pneus',
+        description:
+            'Ajuda a deixar a proxima troca planejada antes de virar urgencia.',
+        targetAmount: 450,
+        icon: 'tire',
+        deadline: null,
+      ),
+      const AppGoalSuggestion(
+        key: 'review',
+        title: 'Revisao preventiva',
+        description:
+            'Uma meta para cuidar do veiculo e evitar surpresa no corre.',
+        targetAmount: 350,
+        icon: 'wrench',
+        deadline: null,
+      ),
+      AppGoalSuggestion(
+        key: 'weekly',
+        title: 'Meta da semana',
+        description:
+            'Uma meta curta para acompanhar o ritmo sem esperar fechar o mes.',
+        targetAmount: _roundMoney((monthlyBase / 4).clamp(250, 1200)),
+        icon: 'calendar',
+        deadline: DateTime.now().add(const Duration(days: 7)),
+      ),
+      AppGoalSuggestion(
+        key: 'monthly',
+        title: 'Meta do mes',
+        description:
+            'Boa para contas de casa, aluguel, internet, mercado ou familia.',
+        targetAmount: _roundMoney(monthlyBase.clamp(800, 5000)),
+        icon: 'target',
+        deadline: DateTime.now().add(const Duration(days: 30)),
+      ),
+      const AppGoalSuggestion(
+        key: 'ipva',
+        title: 'IPVA e documentos',
+        description:
+            'Para chegar no vencimento com dinheiro separado e menos aperto.',
+        targetAmount: 700,
+        icon: 'document',
+        deadline: null,
+      ),
+      const AppGoalSuggestion(
+        key: 'insurance',
+        title: 'Seguro do veiculo',
+        description:
+            'Protecao planejada para trabalhar com mais tranquilidade.',
+        targetAmount: 900,
+        icon: 'lock',
+        deadline: null,
+      ),
+    ];
+
+    return suggestions
+        .where(
+          (suggestion) =>
+              !existingTitles.contains(suggestion.title.toLowerCase()),
+        )
+        .take(4)
+        .toList();
+  }
+
   Future<void> updateGoal({
     required String id,
     required String title,
@@ -338,6 +432,8 @@ class GoalService {
   }
 
   double _toDouble(Object? value) => double.tryParse('$value') ?? 0;
+
+  double _roundMoney(num value) => (value / 10).round() * 10.0;
 
   double? _stringToDouble(String? value) {
     final normalized = value?.trim().replaceAll(',', '.');

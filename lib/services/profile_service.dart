@@ -10,6 +10,9 @@ class ProfileService {
     required String displayName,
     String? fullName,
     String? phone,
+    String? city,
+    String? state,
+    String? country,
     bool completeOnboarding = false,
   }) async {
     final client = _authService.requireClient();
@@ -18,7 +21,7 @@ class ProfileService {
       throw StateError('Usuario nao autenticado.');
     }
 
-    final payload = {
+    final payload = <String, dynamic>{
       'id': user.id,
       'email': user.email,
       'display_name': displayName.trim(),
@@ -28,6 +31,12 @@ class ProfileService {
         'onboarding_completed_at': DateTime.now().toUtc().toIso8601String(),
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     };
+
+    if (city != null) payload['city'] = _normalizeString(city);
+    if (state != null) payload['state'] = _normalizeString(state);
+    if (country != null) {
+      payload['country'] = _normalizeString(country) ?? 'Brasil';
+    }
 
     final existing = await client
         .schema('driver')

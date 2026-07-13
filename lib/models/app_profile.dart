@@ -10,6 +10,9 @@ class AppProfile {
     required this.avatarUrl,
     required this.fullName,
     required this.phone,
+    required this.city,
+    required this.state,
+    required this.country,
     required this.role,
     required this.planType,
     required this.onboardingCompletedAt,
@@ -24,6 +27,9 @@ class AppProfile {
   final String? avatarUrl;
   final String? fullName;
   final String? phone;
+  final String? city;
+  final String? state;
+  final String? country;
   final UserRole role;
   final PlanType planType;
   final DateTime? onboardingCompletedAt;

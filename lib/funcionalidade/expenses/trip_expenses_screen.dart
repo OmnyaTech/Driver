@@ -4,6 +4,7 @@ import '../../models/app_trip_expense.dart';
 import '../finance/widgets/financial_filter_toolbar.dart';
 import '../../services/journey_service.dart';
 import '../../services/trip_expense_service.dart';
+import '../../utilities/localization/app_format.dart';
 import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
@@ -137,7 +138,7 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
       builder: (_) => AlertDialog(
         title: const Text('Excluir despesa'),
         content: Text(
-          'Deseja excluir a despesa de ${_expenseLabel(expense.type)} no valor de R\$ ${expense.amount.toStringAsFixed(2)}?',
+          'Deseja excluir a despesa de ${_expenseLabel(expense.type)} no valor de ${AppFormat.of(context).currency(expense.amount)}?',
         ),
         actions: [
           TextButton(
@@ -211,7 +212,7 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                 subtitle: Text(
                   '${_filteredExpenses.length} despesas no filtro atual',
                 ),
-                trailing: Text('R\$ ${_totalAmount.toStringAsFixed(2)}'),
+                trailing: Text(AppFormat.of(context).currency(_totalAmount)),
               ),
             ),
           if (_errorMessage != null)
@@ -258,7 +259,7 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('R\$ ${expense.amount.toStringAsFixed(2)}'),
+                    Text(AppFormat.of(context).currency(expense.amount)),
                     PopupMenuButton<String>(
                       onSelected: (value) async {
                         if (value == 'edit') {

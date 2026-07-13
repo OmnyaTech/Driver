@@ -66,3 +66,21 @@ class GoalBalanceSummary {
   final double allocatedToGoals;
   final double availableBalance;
 }
+
+class AppGoalSuggestion {
+  const AppGoalSuggestion({
+    required this.key,
+    required this.title,
+    required this.description,
+    required this.targetAmount,
+    required this.icon,
+    required this.deadline,
+  });
+
+  final String key;
+  final String title;
+  final String description;
+  final double targetAmount;
+  final String icon;
+  final DateTime? deadline;
+}

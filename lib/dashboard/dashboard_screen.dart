@@ -16,6 +16,7 @@ import '../services/engagement_notification_service.dart';
 import '../services/gamification_service.dart';
 import '../services/operational_intelligence_service.dart';
 import '../settings/settings_screen.dart';
+import '../utilities/localization/app_format.dart';
 import '../utilities/state/app_session.dart';
 import '../utilities/ui/omnya_shell.dart';
 import '../utilities/ui/screen_action_controller.dart';
@@ -845,7 +846,7 @@ class _OverviewTabState extends State<_OverviewTab> {
     );
   }
 
-  String _currency(double value) => 'R\$ ${value.toStringAsFixed(2)}';
+  String _currency(double value) => AppFormat.of(context).currency(value);
 
   Future<void> _pickRange() async {
     final now = DateTime.now();
@@ -1067,18 +1068,19 @@ class _ComparisonBoard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final format = AppFormat.of(context);
     final items = [
       _ComparisonItem(
         label: 'Receita',
         current: current.totalIncome,
         previous: previous.totalIncome,
-        valueLabel: _currency(current.totalIncome),
+        valueLabel: format.currency(current.totalIncome),
       ),
       _ComparisonItem(
         label: 'Sobrou',
         current: current.netResult,
         previous: previous.netResult,
-        valueLabel: _currency(current.netResult),
+        valueLabel: format.currency(current.netResult),
       ),
       _ComparisonItem(
         label: 'Entregas',
@@ -1105,8 +1107,6 @@ class _ComparisonBoard extends StatelessWidget {
       ),
     );
   }
-
-  String _currency(double value) => 'R\$ ${value.toStringAsFixed(2)}';
 }
 
 class _ComparisonItem {
