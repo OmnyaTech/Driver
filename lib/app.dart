@@ -7,6 +7,7 @@ import 'dashboard/dashboard_screen.dart';
 import 'funcionalidade/onboarding/onboarding_screen.dart';
 import 'login/login_screen.dart';
 import 'settings/settings_screen.dart';
+import 'utilities/security/app_security_gate.dart';
 import 'utilities/state/app_session.dart';
 
 class OmnyaDriverApp extends StatelessWidget {
@@ -56,6 +57,6 @@ class OmnyaDriverApp extends StatelessWidget {
       return const OnboardingScreen();
     }
 
-    return const DashboardScreen();
+    return const AppSecurityGate(child: DashboardScreen());
   }
 }

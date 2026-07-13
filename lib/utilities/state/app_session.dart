@@ -230,6 +230,12 @@ class AppSession extends ChangeNotifier {
       onboardingCompletedAt: _parseDate(data['onboarding_completed_at']),
       languageCode: (data['language_code'] ?? 'pt-BR').toString(),
       currencyCode: (data['currency_code'] ?? 'BRL').toString(),
+      biometricLockEnabled: data['biometric_lock_enabled'] as bool? ?? false,
+      inactivityLockMinutes: _parseInt(
+        data['inactivity_lock_minutes'],
+        fallback: 15,
+      ),
+      reauthOnResume: data['reauth_on_resume'] as bool? ?? true,
       reservePreference: DriverReservePreference(
         mode: _parseReserveMode(
           (data['reserve_mode'] ?? 'daily_percent').toString(),
@@ -293,6 +299,9 @@ class AppSession extends ChangeNotifier {
       onboardingCompletedAt: null,
       languageCode: 'pt-BR',
       currencyCode: 'BRL',
+      biometricLockEnabled: false,
+      inactivityLockMinutes: 15,
+      reauthOnResume: true,
       reservePreference: const DriverReservePreference(
         mode: DriverReserveMode.dailyPercent,
         dailyPercentage: 30,
@@ -313,5 +322,11 @@ class AppSession extends ChangeNotifier {
     if (value == null) return fallback;
     if (value is num) return value.toDouble();
     return double.tryParse(value.toString()) ?? fallback;
+  }
+
+  int _parseInt(Object? value, {required int fallback}) {
+    if (value == null) return fallback;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? fallback;
   }
 }

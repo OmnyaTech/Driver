@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
+import '../../services/biometric_lock_service.dart';
 import '../../services/data_privacy_service.dart';
 import '../../services/mfa_service.dart';
+import '../../services/security_preference_service.dart';
 import '../../utilities/localization/app_strings.dart';
+import '../../utilities/state/app_session.dart';
 
 class SecurityScreen extends StatefulWidget {
   const SecurityScreen({super.key});
@@ -15,11 +19,14 @@ class SecurityScreen extends StatefulWidget {
 class _SecurityScreenState extends State<SecurityScreen> {
   final _service = DataPrivacyService();
   final _mfaService = const MfaService();
+  final _biometricLockService = BiometricLockService();
+  final _securityPreferenceService = SecurityPreferenceService();
   final _reasonController = TextEditingController();
   bool _exporting = false;
   bool _requestingDeletion = false;
   bool _loadingMfa = true;
   bool _disablingMfa = false;
+  bool _savingLock = false;
   String? _totpFactorId;
 
   @override
@@ -38,6 +45,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final strings = AppStrings.of(context);
+    final profile = context.watch<AppSession>().profile;
 
     return Scaffold(
       appBar: AppBar(title: Text(strings.securityData)),
@@ -131,22 +139,101 @@ class _SecurityScreenState extends State<SecurityScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text('Bloqueio do app', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Proteja o Omnya Driver quando sair e voltar para o app.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 14),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Usar biometria ou senha do aparelho'),
+                    subtitle: const Text(
+                      'Pede confirmacao para abrir o app de novo.',
+                    ),
+                    value: profile?.biometricLockEnabled ?? false,
+                    onChanged: _savingLock
+                        ? null
+                        : (value) =>
+                              _saveLockPreferences(biometricLockEnabled: value),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Bloquear ao voltar para o app'),
+                    subtitle: const Text(
+                      'Bom para quando o celular fica desbloqueado.',
+                    ),
+                    value: profile?.reauthOnResume ?? true,
+                    onChanged: _savingLock
+                        ? null
+                        : (value) =>
+                              _saveLockPreferences(reauthOnResume: value),
+                  ),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<int>(
+                    initialValue: profile?.inactivityLockMinutes ?? 15,
+                    decoration: const InputDecoration(
+                      labelText: 'Bloquear depois de inatividade',
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 5, child: Text('5 minutos')),
+                      DropdownMenuItem(value: 15, child: Text('15 minutos')),
+                      DropdownMenuItem(value: 30, child: Text('30 minutos')),
+                      DropdownMenuItem(value: 60, child: Text('1 hora')),
+                    ],
+                    onChanged: _savingLock
+                        ? null
+                        : (value) {
+                            if (value != null) {
+                              _saveLockPreferences(
+                                inactivityLockMinutes: value,
+                              );
+                            }
+                          },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(strings.takeMyData, style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
                   Text(strings.takeMyDataBody),
                   const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: _exporting ? null : _copyExport,
-                    icon: _exporting
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.copy_all_outlined),
-                    label: Text(
-                      _exporting ? strings.preparing : strings.copyBackup,
-                    ),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: _exporting ? null : () => _copyExportJson(),
+                        icon: _exporting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.data_object_outlined),
+                        label: Text(
+                          _exporting ? strings.preparing : 'Copiar JSON',
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _exporting
+                            ? null
+                            : () => _copyExportMarkdown(),
+                        icon: const Icon(Icons.description_outlined),
+                        label: const Text('Copiar Markdown'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -253,7 +340,58 @@ class _SecurityScreenState extends State<SecurityScreen> {
     }
   }
 
-  Future<void> _copyExport() async {
+  Future<void> _saveLockPreferences({
+    bool? biometricLockEnabled,
+    int? inactivityLockMinutes,
+    bool? reauthOnResume,
+  }) async {
+    final profile = context.read<AppSession>().profile;
+    final session = context.read<AppSession>();
+    if (profile == null) return;
+
+    final nextBiometric = biometricLockEnabled ?? profile.biometricLockEnabled;
+    if (nextBiometric && biometricLockEnabled == true) {
+      final canUse = await _biometricLockService.canUseDeviceLock();
+      if (!canUse) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Ative biometria ou senha no aparelho para usar este bloqueio.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final unlocked = await _biometricLockService.unlock();
+      if (!unlocked) return;
+    }
+
+    setState(() => _savingLock = true);
+    try {
+      await _securityPreferenceService.updateLockPreferences(
+        biometricLockEnabled: nextBiometric,
+        inactivityLockMinutes:
+            inactivityLockMinutes ?? profile.inactivityLockMinutes,
+        reauthOnResume: reauthOnResume ?? profile.reauthOnResume,
+      );
+      await session.refreshProfile();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preferencias de seguranca salvas.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Nao deu para salvar: $error')));
+    } finally {
+      if (mounted) setState(() => _savingLock = false);
+    }
+  }
+
+  Future<void> _copyExportJson() async {
     setState(() => _exporting = true);
     try {
       final exportJson = await _service.buildExportJson();
@@ -266,6 +404,25 @@ class _SecurityScreenState extends State<SecurityScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Nao deu para gerar o backup: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  Future<void> _copyExportMarkdown() async {
+    setState(() => _exporting = true);
+    try {
+      final exportMarkdown = await _service.buildExportMarkdown();
+      await Clipboard.setData(ClipboardData(text: exportMarkdown));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Backup em Markdown copiado.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Nao deu para gerar o Markdown: $error')),
       );
     } finally {
       if (mounted) setState(() => _exporting = false);

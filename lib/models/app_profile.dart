@@ -19,6 +19,9 @@ class AppProfile {
     required this.reservePreference,
     required this.languageCode,
     required this.currencyCode,
+    required this.biometricLockEnabled,
+    required this.inactivityLockMinutes,
+    required this.reauthOnResume,
   });
 
   final String id;
@@ -36,6 +39,9 @@ class AppProfile {
   final DriverReservePreference reservePreference;
   final String languageCode;
   final String currencyCode;
+  final bool biometricLockEnabled;
+  final int inactivityLockMinutes;
+  final bool reauthOnResume;
 
   bool get needsOnboarding => onboardingCompletedAt == null;
 

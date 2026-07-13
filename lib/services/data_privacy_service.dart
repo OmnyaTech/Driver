@@ -9,6 +9,52 @@ class DataPrivacyService {
   final AuthService _authService;
 
   Future<String> buildExportJson() async {
+    final export = await _buildExportMap();
+    return const JsonEncoder.withIndent('  ').convert(export);
+  }
+
+  Future<String> buildExportMarkdown() async {
+    final export = await _buildExportMap();
+    final buffer = StringBuffer()
+      ..writeln('# Backup LGPD - Omnya Driver')
+      ..writeln()
+      ..writeln('- Gerado em: ${export['exported_at']}')
+      ..writeln('- Usuario: ${export['user_id']}')
+      ..writeln();
+
+    for (final entry in export.entries) {
+      if (entry.key == 'app' ||
+          entry.key == 'exported_at' ||
+          entry.key == 'user_id') {
+        continue;
+      }
+      final items = entry.value is List ? entry.value as List : const [];
+      buffer
+        ..writeln('## ${_sectionTitle(entry.key)}')
+        ..writeln()
+        ..writeln('Total de registros: ${items.length}')
+        ..writeln();
+
+      for (final item in items.take(20)) {
+        buffer
+          ..writeln('```json')
+          ..writeln(const JsonEncoder.withIndent('  ').convert(item))
+          ..writeln('```')
+          ..writeln();
+      }
+
+      if (items.length > 20) {
+        buffer.writeln(
+          '_Mais ${items.length - 20} registros no JSON completo._',
+        );
+        buffer.writeln();
+      }
+    }
+
+    return buffer.toString();
+  }
+
+  Future<Map<String, dynamic>> _buildExportMap() async {
     final client = _authService.requireClient();
     final user = client.auth.currentUser;
     if (user == null) {
@@ -39,8 +85,7 @@ class DataPrivacyService {
       ),
       'push_devices': await _selectByUser('driver_push_devices', user.id),
     };
-
-    return const JsonEncoder.withIndent('  ').convert(export);
+    return export;
   }
 
   Future<void> requestAccountDeletion({required String reason}) async {
@@ -100,5 +145,16 @@ class DataPrivacyService {
         {'export_error': error.toString()},
       ];
     }
+  }
+
+  String _sectionTitle(String key) {
+    return key
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return '${word[0].toUpperCase()}${word.substring(1)}';
+        })
+        .join(' ');
   }
 }
