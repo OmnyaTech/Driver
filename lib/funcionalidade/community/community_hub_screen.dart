@@ -187,72 +187,12 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
               onChanged: _search,
             ),
             const SizedBox(height: 16),
-            OmnyaGlassCard(
-              highlight: _ranking.isNotEmpty,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          strings.pick(
-                            pt: 'Motoristas em destaque',
-                            en: 'Featured drivers',
-                            es: 'Conductores destacados',
-                          ),
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const RankingScreen(),
-                          ),
-                        ),
-                        child: Text(
-                          strings.pick(
-                            pt: 'Ver ranking',
-                            en: 'View ranking',
-                            es: 'Ver ranking',
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  ..._ranking
-                      .take(3)
-                      .map(
-                        (item) => ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: ProfileAvatar(
-                            displayName: item.displayName,
-                            avatarUrl: item.avatarUrl,
-                            radius: 20,
-                          ),
-                          title: Text(item.displayName),
-                          subtitle: Text(
-                            strings.pick(
-                              pt: '${item.levelTitle} | ${item.medalsCount} conquistas',
-                              en: '${item.levelTitle} | ${item.medalsCount} achievements',
-                              es: '${item.levelTitle} | ${item.medalsCount} logros',
-                            ),
-                          ),
-                          trailing: Text('#${item.rankPosition ?? 0}'),
-                          onTap: () => _openProfile(item.publicSlug),
-                        ),
-                      ),
-                  if (_ranking.isEmpty)
-                    Text(
-                      strings.pick(
-                        pt: 'O ranking esta comecando. Ative seu perfil e chame a galera.',
-                        en: 'The ranking is just getting started. Enable your profile and invite the crew.',
-                        es: 'El ranking esta empezando. Activa tu perfil e invita a la gente.',
-                      ),
-                    ),
-                ],
-              ),
+            _CommunityPodium(
+              ranking: _ranking,
+              onOpenRanking: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const RankingScreen())),
+              onOpenProfile: _openProfile,
             ),
             const SizedBox(height: 16),
             Text(
@@ -360,6 +300,242 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
         ),
       );
     }
+  }
+}
+
+class _CommunityPodium extends StatelessWidget {
+  const _CommunityPodium({
+    required this.ranking,
+    required this.onOpenRanking,
+    required this.onOpenProfile,
+  });
+
+  final List<AppPublicDriverPreview> ranking;
+  final VoidCallback onOpenRanking;
+  final ValueChanged<String> onOpenProfile;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final topDrivers = ranking.take(3).toList();
+
+    return OmnyaGlassCard(
+      highlight: ranking.isNotEmpty,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  strings.pick(
+                    pt: 'Pista dos destaques',
+                    en: 'Featured track',
+                    es: 'Pista destacada',
+                  ),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              TextButton(
+                onPressed: onOpenRanking,
+                child: Text(
+                  strings.pick(
+                    pt: 'Ver ranking',
+                    en: 'View ranking',
+                    es: 'Ver ranking',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (topDrivers.isEmpty)
+            Text(
+              strings.pick(
+                pt: 'O ranking esta comecando. Ative seu perfil e chame a galera.',
+                en: 'The ranking is just getting started. Enable your profile and invite the crew.',
+                es: 'El ranking esta empezando. Activa tu perfil e invita a la gente.',
+              ),
+            )
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 640;
+                final children = topDrivers
+                    .map(
+                      (driver) => _PodiumDriverCard(
+                        driver: driver,
+                        compact: compact,
+                        onTap: () => onOpenProfile(driver.publicSlug),
+                      ),
+                    )
+                    .toList();
+
+                if (compact) {
+                  return Column(
+                    children: children
+                        .map(
+                          (child) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: child,
+                          ),
+                        )
+                        .toList(),
+                  );
+                }
+
+                return Row(
+                  children: children
+                      .map(
+                        (child) => Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 10),
+                            child: child,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PodiumDriverCard extends StatelessWidget {
+  const _PodiumDriverCard({
+    required this.driver,
+    required this.compact,
+    required this.onTap,
+  });
+
+  final AppPublicDriverPreview driver;
+  final bool compact;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final rank = driver.rankPosition ?? 0;
+    final medalColor = switch (rank) {
+      1 => const Color(0xFFFFD166),
+      2 => const Color(0xFFC9D1E8),
+      3 => const Color(0xFFE6A06B),
+      _ => OmnyaVisualTokens.cyan,
+    };
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              OmnyaVisualTokens.electricBlue.withValues(alpha: 0.18),
+              Colors.white.withValues(alpha: 0.04),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: medalColor.withValues(alpha: 0.56)),
+        ),
+        child: compact
+            ? Row(
+                children: [
+                  _RankBadge(rank: rank, color: medalColor),
+                  const SizedBox(width: 12),
+                  ProfileAvatar(
+                    displayName: driver.displayName,
+                    avatarUrl: driver.avatarUrl,
+                    radius: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: _PodiumText(driver: driver)),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _RankBadge(rank: rank, color: medalColor),
+                      const Spacer(),
+                      Text(
+                        strings.pick(pt: 'score', en: 'score', es: 'score'),
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  ProfileAvatar(
+                    displayName: driver.displayName,
+                    avatarUrl: driver.avatarUrl,
+                    radius: 28,
+                    showBorder: true,
+                  ),
+                  const SizedBox(height: 12),
+                  _PodiumText(driver: driver),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _RankBadge extends StatelessWidget {
+  const _RankBadge({required this.rank, required this.color});
+
+  final int rank;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 34,
+      height: 34,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        shape: BoxShape.circle,
+        border: Border.all(color: color),
+      ),
+      child: Text(
+        '#$rank',
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(color: color),
+      ),
+    );
+  }
+}
+
+class _PodiumText extends StatelessWidget {
+  const _PodiumText({required this.driver});
+
+  final AppPublicDriverPreview driver;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(driver.displayName, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 3),
+        Text(
+          strings.pick(
+            pt: '${driver.levelTitle} | ${driver.medalsCount} conquistas',
+            en: '${driver.levelTitle} | ${driver.medalsCount} achievements',
+            es: '${driver.levelTitle} | ${driver.medalsCount} logros',
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
   }
 }
 

@@ -12,6 +12,7 @@ import '../../services/vehicle_service.dart';
 import '../../utilities/localization/app_format.dart';
 import '../../utilities/localization/app_strings.dart';
 import '../../utilities/ui/omnya_shell.dart';
+import '../../utilities/ui/omnya_visuals.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
 class JourneysScreen extends StatefulWidget {
@@ -333,55 +334,88 @@ class _JourneysScreenState extends State<JourneysScreen> {
             const SizedBox(height: 16),
           ],
           if (_filteredJourneys.isNotEmpty)
-            Card(
-              child: ListTile(
-                title: Text(
-                  strings.pick(pt: 'Resumo', en: 'Summary', es: 'Resumen'),
-                ),
-                subtitle: Text(
-                  strings.pick(
-                    pt: '${_filteredJourneys.length} jornadas no filtro atual',
-                    en: '${_filteredJourneys.length} shifts in the current filter',
-                    es: '${_filteredJourneys.length} jornadas en el filtro actual',
+            OmnyaGlassCard(
+              highlight: true,
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: OmnyaVisualTokens.electricBlue.withValues(
+                        alpha: 0.18,
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: const Icon(Icons.route_rounded),
                   ),
-                ),
-                trailing: Text(format.currency(_filteredIncome)),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strings.pick(
+                            pt: 'Resumo do periodo',
+                            en: 'Period summary',
+                            es: 'Resumen del periodo',
+                          ),
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          strings.pick(
+                            pt: '${_filteredJourneys.length} jornadas encontradas',
+                            en: '${_filteredJourneys.length} shifts found',
+                            es: '${_filteredJourneys.length} jornadas encontradas',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    format.currency(_filteredIncome),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
               ),
             ),
+          if (_filteredJourneys.isNotEmpty) const SizedBox(height: 12),
           if (_errorMessage != null)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
+            OmnyaGlassCard(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                _errorMessage!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
           if (_journeys.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  strings.pick(
-                    pt: 'Nenhuma jornada ainda. Crie a primeira para acompanhar seu dia.',
-                    en: 'No shifts yet. Create the first one to follow your day.',
-                    es: 'Aun no hay jornadas. Crea la primera para acompanhar tu dia.',
-                  ),
-                ),
+            OmnyaEmptyState(
+              icon: Icons.route_rounded,
+              title: strings.pick(
+                pt: 'Nenhuma jornada ainda',
+                en: 'No shifts yet',
+                es: 'Aun no hay jornadas',
+              ),
+              message: strings.pick(
+                pt: 'Crie a primeira jornada para acompanhar ganhos, entregas e tempo de trabalho.',
+                en: 'Create your first shift to track earnings, deliveries and working time.',
+                es: 'Crea la primera jornada para acompanhar ganancias, entregas y tiempo de trabajo.',
               ),
             ),
           if (_journeys.isNotEmpty && _filteredJourneys.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  strings.pick(
-                    pt: 'Nenhuma jornada encontrada para os filtros informados.',
-                    en: 'No shifts found for these filters.',
-                    es: 'No se encontraron jornadas para estos filtros.',
-                  ),
-                ),
+            OmnyaEmptyState(
+              icon: Icons.search_off_rounded,
+              title: strings.pick(
+                pt: 'Nada nesse filtro',
+                en: 'Nothing in this filter',
+                es: 'Nada en este filtro',
+              ),
+              message: strings.pick(
+                pt: 'Ajuste a busca ou o periodo para encontrar jornadas antigas.',
+                en: 'Adjust search or period to find older shifts.',
+                es: 'Ajusta la busqueda o el periodo para encontrar jornadas antiguas.',
               ),
             ),
           ..._filteredJourneys.map(

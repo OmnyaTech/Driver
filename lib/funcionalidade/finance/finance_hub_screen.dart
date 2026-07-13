@@ -28,15 +28,17 @@ class FinanceHubScreen extends StatelessWidget {
         children: [
           OmnyaAnimatedEntrance(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
               child: OmnyaGlassCard(
                 padding: const EdgeInsets.all(5),
-                borderRadius: 26,
+                borderRadius: 28,
+                highlight: true,
                 child: TabBar(
                   dividerColor: Colors.transparent,
                   indicatorSize: TabBarIndicatorSize.tab,
                   tabs: [
                     Tab(
+                      icon: const Icon(Icons.receipt_long_rounded),
                       text: strings.pick(
                         pt: 'Despesas',
                         en: 'Expenses',
@@ -44,17 +46,19 @@ class FinanceHubScreen extends StatelessWidget {
                       ),
                     ),
                     Tab(
+                      icon: const Icon(Icons.local_gas_station_rounded),
                       text: strings.pick(
-                        pt: 'Abastec.',
+                        pt: 'Abastecer',
                         en: 'Fuel',
-                        es: 'Comb.',
+                        es: 'Combustible',
                       ),
                     ),
                     Tab(
+                      icon: const Icon(Icons.build_circle_rounded),
                       text: strings.pick(
-                        pt: 'Manut.',
-                        en: 'Maint.',
-                        es: 'Mant.',
+                        pt: 'Manutencao',
+                        en: 'Maintenance',
+                        es: 'Mantenimiento',
                       ),
                     ),
                   ],

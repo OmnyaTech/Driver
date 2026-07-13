@@ -72,6 +72,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         page: _OverviewTab(
           session: session,
           onNotificationsChanged: _loadUnreadNotifications,
+          onCreateJourney: _journeyController.openCreate,
+          onCreateGoal: _goalController.openCreate,
         ),
         icon: Icons.dashboard_outlined,
         selectedIcon: Icons.dashboard,
@@ -361,95 +363,130 @@ class _OmnyaBottomTabBar extends StatelessWidget {
                   : Colors.black.withValues(alpha: 0.08),
             ),
           ),
-          child: Row(
-            children: List.generate(tabs.length, (index) {
-              final tab = tabs[index];
-              final selected = currentIndex == index;
-              final activeColor = isDark
-                  ? const Color(0xFF9DA6FF)
-                  : OmnyaVisualTokens.omnyaPrimary;
-              final inactiveColor = theme.colorScheme.onSurfaceVariant;
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 240),
+                width: compact ? 34 : 44,
+                height: 3,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  gradient: const LinearGradient(
+                    colors: [
+                      OmnyaVisualTokens.cyan,
+                      OmnyaVisualTokens.electricBlue,
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: OmnyaVisualTokens.electricBlue.withValues(
+                        alpha: 0.45,
+                      ),
+                      blurRadius: 12,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: List.generate(tabs.length, (index) {
+                  final tab = tabs[index];
+                  final selected = currentIndex == index;
+                  final activeColor = isDark
+                      ? const Color(0xFF9DA6FF)
+                      : OmnyaVisualTokens.omnyaPrimary;
+                  final inactiveColor = theme.colorScheme.onSurfaceVariant;
 
-              return Expanded(
-                child: AnimatedSlide(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  offset: selected ? const Offset(0, -0.06) : Offset.zero,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () => onSelected(index),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 240),
-                            curve: Curves.easeOutCubic,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: compact ? 11 : 13,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: selected
-                                  ? const LinearGradient(
-                                      colors: [
-                                        OmnyaVisualTokens.omnyaPrimaryDark,
-                                        OmnyaVisualTokens.electricBlue,
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    )
-                                  : null,
-                              color: selected ? null : Colors.transparent,
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: selected
-                                  ? [
-                                      BoxShadow(
-                                        color: OmnyaVisualTokens.electricBlue
-                                            .withValues(alpha: 0.28),
-                                        blurRadius: 18,
-                                        offset: const Offset(0, 8),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Icon(
-                              selected ? tab.selectedIcon : tab.icon,
-                              size: compact ? 18 : 20,
-                              color: selected ? Colors.white : inactiveColor,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 180),
-                            curve: Curves.easeOutCubic,
-                            style:
-                                theme.textTheme.labelSmall?.copyWith(
-                                  fontSize: compact ? 9.5 : 10.5,
-                                  color: selected ? activeColor : inactiveColor,
-                                  fontWeight: selected
-                                      ? FontWeight.w800
-                                      : FontWeight.w600,
-                                  letterSpacing: selected ? 0.05 : 0,
-                                ) ??
-                                TextStyle(
-                                  fontSize: compact ? 9.5 : 10.5,
-                                  color: selected ? activeColor : inactiveColor,
+                  return Expanded(
+                    child: AnimatedScale(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutBack,
+                      scale: selected ? 1.04 : 1,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () => onSelected(index),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 3),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 240),
+                                curve: Curves.easeOutCubic,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: compact ? 11 : 13,
+                                  vertical: 8,
                                 ),
-                            child: Text(
-                              tab.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                                decoration: BoxDecoration(
+                                  gradient: selected
+                                      ? const LinearGradient(
+                                          colors: [
+                                            OmnyaVisualTokens.omnyaPrimaryDark,
+                                            OmnyaVisualTokens.electricBlue,
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        )
+                                      : null,
+                                  color: selected ? null : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(18),
+                                  boxShadow: selected
+                                      ? [
+                                          BoxShadow(
+                                            color: OmnyaVisualTokens
+                                                .electricBlue
+                                                .withValues(alpha: 0.28),
+                                            blurRadius: 18,
+                                            offset: const Offset(0, 8),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Icon(
+                                  selected ? tab.selectedIcon : tab.icon,
+                                  size: compact ? 18 : 20,
+                                  color: selected
+                                      ? Colors.white
+                                      : inactiveColor,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 180),
+                                curve: Curves.easeOutCubic,
+                                style:
+                                    theme.textTheme.labelSmall?.copyWith(
+                                      fontSize: compact ? 9.5 : 10.5,
+                                      color: selected
+                                          ? activeColor
+                                          : inactiveColor,
+                                      fontWeight: selected
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
+                                      letterSpacing: selected ? 0.05 : 0,
+                                    ) ??
+                                    TextStyle(
+                                      fontSize: compact ? 9.5 : 10.5,
+                                      color: selected
+                                          ? activeColor
+                                          : inactiveColor,
+                                    ),
+                                child: Text(
+                                  tab.label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              );
-            }),
+                  );
+                }),
+              ),
+            ],
           ),
         ),
       ),
@@ -461,10 +498,14 @@ class _OverviewTab extends StatefulWidget {
   const _OverviewTab({
     required this.session,
     required this.onNotificationsChanged,
+    required this.onCreateJourney,
+    required this.onCreateGoal,
   });
 
   final AppSession session;
   final Future<void> Function() onNotificationsChanged;
+  final VoidCallback onCreateJourney;
+  final VoidCallback onCreateGoal;
 
   @override
   State<_OverviewTab> createState() => _OverviewTabState();
@@ -600,23 +641,22 @@ class _OverviewTabState extends State<_OverviewTab> {
     return RefreshIndicator(
       onRefresh: _loadMetrics,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
+        padding: EdgeInsets.fromLTRB(
+          MediaQuery.sizeOf(context).width < 520 ? 16 : 22,
+          20,
+          MediaQuery.sizeOf(context).width < 520 ? 16 : 22,
+          120,
+        ),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  strings.yourDayInApp,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              if (_preset == OperationalRangePreset.custom)
-                OutlinedButton.icon(
-                  onPressed: _pickRange,
-                  icon: const Icon(Icons.date_range_outlined),
-                  label: Text(_rangeLabel),
-                ),
-            ],
+          _DashboardSectionHeader(
+            title: strings.yourDayInApp,
+            action: _preset == OperationalRangePreset.custom
+                ? OutlinedButton.icon(
+                    onPressed: _pickRange,
+                    icon: const Icon(Icons.date_range_outlined),
+                    label: Text(_rangeLabel),
+                  )
+                : null,
           ),
           const SizedBox(height: 14),
           Wrap(
@@ -652,67 +692,79 @@ class _OverviewTabState extends State<_OverviewTab> {
           ),
           const SizedBox(height: 16),
           OmnyaAnimatedEntrance(
-            child: OmnyaHeroCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Image.asset(_driverLogoAsset, width: 40, height: 40),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          strings.periodSummary(_periodDisplayLabel),
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      _HeroInfoPill(
-                        label: profile?.displayName ?? strings.driverFallback,
-                      ),
-                      _HeroInfoPill(
-                        label: strings.planLabel(
-                          profile?.planType.name ?? 'free',
-                        ),
-                      ),
-                      _HeroInfoPill(
-                        label: strings.journeysCount(metrics.totalJourneys),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    '${strings.account}: ${profile?.email ?? strings.userFallback}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.82),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${strings.currentNet}: ${_currency(metrics.netResult)}',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleLarge?.copyWith(color: Colors.white),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    strings.incomeDelta(
-                      _formatDelta(intelligence.incomeDeltaPct()),
-                    ),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.82),
-                    ),
-                  ),
-                ],
+            child: _OperationalHero(
+              logoAsset: _driverLogoAsset,
+              title: strings.periodSummary(_periodDisplayLabel),
+              driverName: profile?.displayName ?? strings.driverFallback,
+              planLabel: strings.planLabel(profile?.planType.name ?? 'free'),
+              journeyLabel: strings.journeysCount(metrics.totalJourneys),
+              accountLabel:
+                  '${strings.account}: ${profile?.email ?? strings.userFallback}',
+              netLabel: strings.currentNet,
+              netValue: _currency(metrics.netResult),
+              deltaLabel: strings.incomeDelta(
+                _formatDelta(intelligence.incomeDeltaPct()),
               ),
+              stats: [
+                _HeroStat(
+                  label: strings.income,
+                  value: _currency(metrics.totalIncome),
+                  icon: Icons.trending_up,
+                ),
+                _HeroStat(
+                  label: strings.costs,
+                  value: _currency(metrics.totalOperationalCosts),
+                  icon: Icons.trending_down,
+                ),
+                _HeroStat(
+                  label: strings.deliveries,
+                  value: '${metrics.totalDeliveries}',
+                  icon: Icons.inventory_2_outlined,
+                ),
+                _HeroStat(
+                  label: strings.distance,
+                  value: '${metrics.totalDistanceKm.toStringAsFixed(1)} km',
+                  icon: Icons.speed_outlined,
+                ),
+              ],
             ),
+          ),
+          const SizedBox(height: 14),
+          _QuickActionDock(
+            actions: [
+              _QuickActionData(
+                title: strings.newJourney,
+                subtitle: strings.pick(
+                  pt: 'Comece ou registre seu turno',
+                  en: 'Start or log a shift',
+                  es: 'Inicia o registra tu jornada',
+                ),
+                icon: Icons.route,
+                onTap: widget.onCreateJourney,
+              ),
+              _QuickActionData(
+                title: strings.newGoal,
+                subtitle: strings.pick(
+                  pt: 'Guarde dinheiro com destino',
+                  en: 'Set money aside with purpose',
+                  es: 'Guarda dinero con objetivo',
+                ),
+                icon: Icons.savings,
+                onTap: widget.onCreateGoal,
+              ),
+              _QuickActionData(
+                title: strings.viewProgress,
+                subtitle: strings.pick(
+                  pt: 'XP, ranking e conquistas',
+                  en: 'XP, ranking and achievements',
+                  es: 'XP, ranking y logros',
+                ),
+                icon: Icons.emoji_events_outlined,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const GamificationScreen()),
+                ),
+              ),
+            ],
           ),
           if (_errorMessage != null) ...[
             const SizedBox(height: 16),
@@ -768,6 +820,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                   intelligence.incomeDeltaPct(),
                   strings.deliveriesCount(metrics.totalDeliveries),
                 ),
+                icon: Icons.payments_outlined,
               ),
               _MetricData(
                 title: strings.leftOver,
@@ -776,6 +829,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                   intelligence.netDeltaPct(),
                   strings.journeysCount(metrics.totalJourneys),
                 ),
+                icon: Icons.account_balance_wallet_outlined,
               ),
               _MetricData(
                 title: strings.deliveries,
@@ -786,12 +840,14 @@ class _OverviewTabState extends State<_OverviewTab> {
                     metrics.averageDeliveriesPerJourney.toStringAsFixed(1),
                   ),
                 ),
+                icon: Icons.local_shipping_outlined,
               ),
               _MetricData(
                 title: strings.freeBalance,
                 value: _currency(metrics.availableBalance),
                 detail:
                     '${strings.goalsDetail} ${_currency(metrics.allocatedToGoals)}',
+                icon: Icons.savings_outlined,
               ),
               _MetricData(
                 title: strings.costs,
@@ -801,11 +857,41 @@ class _OverviewTabState extends State<_OverviewTab> {
                       metrics.totalFuelings +
                       metrics.totalMaintenances,
                 ),
+                icon: Icons.receipt_long_outlined,
               ),
               _MetricData(
                 title: strings.distance,
                 value: '${metrics.totalDistanceKm.toStringAsFixed(1)} km',
                 detail: '${strings.costPerKm} ${_currency(metrics.costPerKm)}',
+                icon: Icons.route_outlined,
+              ),
+              _MetricData(
+                title: strings.pick(
+                  pt: 'Valor/entrega',
+                  en: 'Per delivery',
+                  es: 'Por entrega',
+                ),
+                value: _currency(metrics.incomePerDelivery),
+                detail: strings.pick(
+                  pt: 'media do periodo',
+                  en: 'period average',
+                  es: 'promedio del periodo',
+                ),
+                icon: Icons.stacked_line_chart,
+              ),
+              _MetricData(
+                title: strings.pick(
+                  pt: 'Fontes ativas',
+                  en: 'Active sources',
+                  es: 'Fuentes activas',
+                ),
+                value: '${metrics.activePlatforms}',
+                detail: strings.pick(
+                  pt: '${metrics.activeVehicles} veiculos ativos',
+                  en: '${metrics.activeVehicles} active vehicles',
+                  es: '${metrics.activeVehicles} vehiculos activos',
+                ),
+                icon: Icons.storefront_outlined,
               ),
             ],
           ),
@@ -979,16 +1065,293 @@ class _HeroInfoPill extends StatelessWidget {
   }
 }
 
+class _DashboardSectionHeader extends StatelessWidget {
+  const _DashboardSectionHeader({required this.title, this.action});
+
+  final String title;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+        ),
+        ?action,
+      ],
+    );
+  }
+}
+
+class _HeroStat {
+  const _HeroStat({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+}
+
+class _OperationalHero extends StatelessWidget {
+  const _OperationalHero({
+    required this.logoAsset,
+    required this.title,
+    required this.driverName,
+    required this.planLabel,
+    required this.journeyLabel,
+    required this.accountLabel,
+    required this.netLabel,
+    required this.netValue,
+    required this.deltaLabel,
+    required this.stats,
+  });
+
+  final String logoAsset;
+  final String title;
+  final String driverName;
+  final String planLabel;
+  final String journeyLabel;
+  final String accountLabel;
+  final String netLabel;
+  final String netValue;
+  final String deltaLabel;
+  final List<_HeroStat> stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return OmnyaHeroCard(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 760;
+          final summary = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Image.asset(logoAsset, width: 42, height: 42),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _HeroInfoPill(label: driverName),
+                  _HeroInfoPill(label: planLabel),
+                  _HeroInfoPill(label: journeyLabel),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Text(
+                accountLabel,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.82),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '$netLabel: $netValue',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: Colors.white,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                deltaLabel,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.82),
+                ),
+              ),
+            ],
+          );
+          final statGrid = Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: stats
+                .map(
+                  (stat) => SizedBox(
+                    width: compact ? (constraints.maxWidth - 10) / 2 : 148,
+                    child: _HeroStatTile(stat: stat),
+                  ),
+                )
+                .toList(),
+          );
+
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [summary, const SizedBox(height: 20), statGrid],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 5, child: summary),
+              const SizedBox(width: 24),
+              Expanded(flex: 4, child: statGrid),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _HeroStatTile extends StatelessWidget {
+  const _HeroStatTile({required this.stat});
+
+  final _HeroStat stat;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      constraints: const BoxConstraints(minHeight: 94),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(stat.icon, color: OmnyaVisualTokens.cyan, size: 18),
+          const SizedBox(height: 18),
+          Text(
+            stat.label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: Colors.white.withValues(alpha: 0.74),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            stat.value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionData {
+  const _QuickActionData({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+}
+
+class _QuickActionDock extends StatelessWidget {
+  const _QuickActionDock({required this.actions});
+
+  final List<_QuickActionData> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 680;
+        final spacing = 12.0;
+        final width = compact
+            ? constraints.maxWidth
+            : (constraints.maxWidth - spacing * (actions.length - 1)) /
+                  actions.length;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: actions
+              .map(
+                (action) => SizedBox(
+                  width: width,
+                  child: OmnyaGlassCard(
+                    padding: const EdgeInsets.all(14),
+                    onTap: action.onTap,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: OmnyaVisualTokens.electricBlue.withValues(
+                              alpha: 0.18,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            action.icon,
+                            color: OmnyaVisualTokens.cyan,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                action.title,
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                action.subtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
 class _MetricData {
   const _MetricData({
     required this.title,
     required this.value,
     required this.detail,
+    this.icon,
   });
 
   final String title;
   final String value;
   final String detail;
+  final IconData? icon;
 }
 
 class _MetricGrid extends StatelessWidget {
@@ -1037,6 +1400,7 @@ class _MetricCard extends StatelessWidget {
       title: metric.title,
       value: metric.value,
       detail: metric.detail,
+      icon: metric.icon,
     );
   }
 }
@@ -1130,6 +1494,7 @@ class _ComparisonBoard extends StatelessWidget {
         current: current.totalIncome,
         previous: previous.totalIncome,
         valueLabel: format.currency(current.totalIncome),
+        previousLabel: format.currency(previous.totalIncome),
         noMovementLabel: strings.noMovement,
         newMovementLabel: strings.newMovement,
       ),
@@ -1138,6 +1503,7 @@ class _ComparisonBoard extends StatelessWidget {
         current: current.netResult,
         previous: previous.netResult,
         valueLabel: format.currency(current.netResult),
+        previousLabel: format.currency(previous.netResult),
         noMovementLabel: strings.noMovement,
         newMovementLabel: strings.newMovement,
       ),
@@ -1146,6 +1512,7 @@ class _ComparisonBoard extends StatelessWidget {
         current: current.totalDeliveries.toDouble(),
         previous: previous.totalDeliveries.toDouble(),
         valueLabel: '${current.totalDeliveries}',
+        previousLabel: '${previous.totalDeliveries}',
         noMovementLabel: strings.noMovement,
         newMovementLabel: strings.newMovement,
       ),
@@ -1173,6 +1540,7 @@ class _ComparisonItem {
     required this.current,
     required this.previous,
     required this.valueLabel,
+    required this.previousLabel,
     required this.noMovementLabel,
     required this.newMovementLabel,
   });
@@ -1181,6 +1549,7 @@ class _ComparisonItem {
   final double current;
   final double previous;
   final String valueLabel;
+  final String previousLabel;
   final String noMovementLabel;
   final String newMovementLabel;
 
@@ -1234,7 +1603,7 @@ class _ComparisonRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '${strings.before}: ${item.previous.toStringAsFixed(item.label == strings.deliveries ? 0 : 2)}',
+                  '${strings.before}: ${item.previousLabel}',
                   style: theme.textTheme.bodySmall,
                 ),
               ],
@@ -1324,6 +1693,63 @@ class _InsightBoard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final insights = intelligence.insights.isNotEmpty
+        ? intelligence.insights
+        : [
+            OperationalInsight(
+              title: strings.pick(
+                pt: 'Sem base suficiente',
+                en: 'Not enough data yet',
+                es: 'Sin datos suficientes',
+              ),
+              value: strings.pick(
+                pt: 'Comece hoje',
+                en: 'Start today',
+                es: 'Empieza hoy',
+              ),
+              description: strings.pick(
+                pt: 'Registre jornadas e fontes de receita para liberar dicas reais da sua rotina.',
+                en: 'Log shifts and income sources to unlock real tips from your routine.',
+                es: 'Registra turnos e ingresos para desbloquear consejos reales de tu rutina.',
+              ),
+            ),
+            OperationalInsight(
+              title: strings.pick(
+                pt: 'Melhor horario',
+                en: 'Best hour',
+                es: 'Mejor horario',
+              ),
+              value: strings.pick(
+                pt: 'Em analise',
+                en: 'In review',
+                es: 'En analisis',
+              ),
+              description: strings.pick(
+                pt: 'Com alguns dias de uso, o app mostra onde seu tempo rende mais.',
+                en: 'After a few days, the app shows where your time pays better.',
+                es: 'Con unos dias de uso, la app muestra donde tu tiempo rinde mas.',
+              ),
+            ),
+            OperationalInsight(
+              title: strings.pick(
+                pt: 'Plataforma forte',
+                en: 'Strong platform',
+                es: 'Plataforma fuerte',
+              ),
+              value: strings.pick(
+                pt: 'Aguardando',
+                en: 'Waiting',
+                es: 'Esperando',
+              ),
+              description: strings.pick(
+                pt: 'Compare apps, lojas e fontes para decidir onde vale ficar online.',
+                en: 'Compare apps, stores and sources to decide where to stay online.',
+                es: 'Compara apps, tiendas y fuentes para decidir donde conectarte.',
+              ),
+            ),
+          ];
+
     return OmnyaGlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1335,14 +1761,18 @@ class _InsightBoard extends StatelessWidget {
           const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, constraints) {
-              final columns = constraints.maxWidth < 720 ? 2 : 4;
+              final columns = constraints.maxWidth < 520
+                  ? 1
+                  : constraints.maxWidth < 900
+                  ? 2
+                  : 4;
               final spacing = 12.0;
               final itemWidth =
                   (constraints.maxWidth - (spacing * (columns - 1))) / columns;
               return Wrap(
                 spacing: spacing,
                 runSpacing: spacing,
-                children: intelligence.insights
+                children: insights
                     .map(
                       (insight) => SizedBox(
                         width: itemWidth,

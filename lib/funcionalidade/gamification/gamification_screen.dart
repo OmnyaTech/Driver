@@ -181,88 +181,72 @@ class _GamificationScreenState extends State<GamificationScreen>
               ),
               const SizedBox(height: 16),
             ],
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Proximos passos',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
+            OmnyaGlassCard(
+              highlight: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Proximos passos',
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        TextButton(
-                          onPressed: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const RecordsScreen(),
-                            ),
-                          ),
-                          child: const Text('Recordes'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ..._nextGoals(summary).map(
-                      (item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _AdviceRow(title: item.$1, description: item.$2),
                       ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const RecordsScreen(),
+                          ),
+                        ),
+                        child: const Text('Recordes'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  ..._nextGoals(summary).map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _AdviceRow(title: item.$1, description: item.$2),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Medalhas visiveis',
-                      style: Theme.of(context).textTheme.titleMedium,
+            OmnyaGlassCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Vitrine de conquistas',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  if (summary.medals.isEmpty)
+                    const Text(
+                      'Suas conquistas vao aparecer aqui conforme voce usa o app.',
                     ),
-                    const SizedBox(height: 12),
-                    if (summary.medals.isEmpty)
-                      const Text(
-                        'Suas conquistas vao aparecer aqui conforme voce usa o app.',
-                      ),
-                    ...summary.medals
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: summary.medals
                         .take(6)
                         .map(
-                          (medal) => ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: Container(
-                              width: 42,
-                              height: 42,
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFF0000CD,
-                                ).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Icon(
-                                Icons.workspace_premium_outlined,
-                                color: Color(0xFF7582FF),
-                              ),
-                            ),
-                            title: Text(medal.name),
-                            subtitle: Text(
-                              medal.description ??
-                                  'Conquista registrada no perfil.',
-                            ),
-                            trailing: medal.awardedAt == null
+                          (medal) => _MedalShowcaseChip(
+                            name: medal.name,
+                            description:
+                                medal.description ??
+                                'Conquista registrada no perfil.',
+                            date: medal.awardedAt == null
                                 ? null
-                                : Text(_formatDate(medal.awardedAt!)),
+                                : _formatDate(medal.awardedAt!),
                           ),
-                        ),
-                  ],
-                ),
+                        )
+                        .toList(),
+                  ),
+                ],
               ),
             ),
           ],
@@ -329,6 +313,77 @@ class _GamificationScreenState extends State<GamificationScreen>
         ),
       );
     }
+  }
+}
+
+class _MedalShowcaseChip extends StatelessWidget {
+  const _MedalShowcaseChip({
+    required this.name,
+    required this.description,
+    this.date,
+  });
+
+  final String name;
+  final String description;
+  final String? date;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 260,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            OmnyaVisualTokens.electricBlue.withValues(alpha: 0.14),
+            Colors.white.withValues(alpha: 0.04),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: OmnyaVisualTokens.cyan.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0000CD).withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.workspace_premium_outlined,
+              color: Color(0xFF7582FF),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                if (date != null) ...[
+                  const SizedBox(height: 8),
+                  Text(date!, style: Theme.of(context).textTheme.labelSmall),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

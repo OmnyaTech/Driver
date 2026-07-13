@@ -6,6 +6,7 @@ import '../../services/journey_service.dart';
 import '../../utilities/localization/app_format.dart';
 import '../../utilities/localization/app_strings.dart';
 import '../../utilities/ui/omnya_shell.dart';
+import '../../utilities/ui/omnya_visuals.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
 class GoalsScreen extends StatefulWidget {
@@ -137,61 +138,81 @@ class _GoalsScreenState extends State<GoalsScreen> {
             ),
             const SizedBox(height: 16),
           ],
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    strings.pick(
-                      pt: 'Saldo do motorista',
-                      en: 'Driver balance',
-                      es: 'Saldo del conductor',
+          OmnyaHeroCard(
+            compact: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.22),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.savings_rounded,
+                        color: Colors.white,
+                      ),
                     ),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    children: [
-                      _GoalSummaryTile(
-                        title: strings.pick(
-                          pt: 'Resultado liquido',
-                          en: 'Net result',
-                          es: 'Resultado neto',
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        strings.pick(
+                          pt: 'Seu cofre da rotina',
+                          en: 'Your routine vault',
+                          es: 'Tu caja de rutina',
                         ),
-                        value: _currency(summary.netOperationalResult),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleLarge?.copyWith(color: Colors.white),
                       ),
-                      _GoalSummaryTile(
-                        title: strings.pick(
-                          pt: 'Ja destinado para objetivos',
-                          en: 'Already saved for goals',
-                          es: 'Ya reservado para metas',
-                        ),
-                        value: _currency(summary.allocatedToGoals),
-                      ),
-                      _GoalSummaryTile(
-                        title: strings.pick(
-                          pt: 'Saldo disponivel',
-                          en: 'Available balance',
-                          es: 'Saldo disponible',
-                        ),
-                        value: _currency(summary.availableBalance),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    strings.pick(
-                      pt: 'O saldo so deixa de ficar disponivel quando voce faz um aporte em um objetivo. Retiradas devolvem esse valor para o saldo disponivel.',
-                      en: 'Your balance only leaves the available amount when you save it into a goal. Withdrawals bring it back.',
-                      es: 'Tu saldo solo sale del disponible cuando lo guardas en una meta. Los retiros lo devuelven.',
                     ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _GoalSummaryTile(
+                      title: strings.pick(
+                        pt: 'Sobrou',
+                        en: 'Left over',
+                        es: 'Sobro',
+                      ),
+                      value: _currency(summary.netOperationalResult),
+                      emphasized: true,
+                    ),
+                    _GoalSummaryTile(
+                      title: strings.pick(
+                        pt: 'Guardado',
+                        en: 'Saved',
+                        es: 'Guardado',
+                      ),
+                      value: _currency(summary.allocatedToGoals),
+                    ),
+                    _GoalSummaryTile(
+                      title: strings.pick(pt: 'Livre', en: 'Free', es: 'Libre'),
+                      value: _currency(summary.availableBalance),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  strings.pick(
+                    pt: 'Separe dinheiro para oleo, pneu, revisao e emergencias sem perder o controle do que ainda esta livre.',
+                    en: 'Set money aside for oil, tires, repairs and emergencies without losing track of what is still free.',
+                    es: 'Separa dinero para aceite, llantas, revision y emergencias sin perder de vista lo que sigue libre.',
                   ),
-                ],
-              ),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.84)),
+                ),
+              ],
             ),
           ),
           if (_errorMessage != null) ...[
@@ -216,16 +237,17 @@ class _GoalsScreenState extends State<GoalsScreen> {
             const SizedBox(height: 16),
           ],
           if (_goals.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  strings.pick(
-                    pt: 'Nenhum objetivo cadastrado ainda. Crie objetivos para destinar parte do lucro e acompanhar seu progresso.',
-                    en: 'No goals yet. Create goals to set money aside and track your progress.',
-                    es: 'Aun no tienes metas. Crea metas para separar dinero y seguir tu avance.',
-                  ),
-                ),
+            OmnyaEmptyState(
+              icon: Icons.flag_circle_rounded,
+              title: strings.pick(
+                pt: 'Nenhum objetivo ainda',
+                en: 'No goals yet',
+                es: 'Aun no hay metas',
+              ),
+              message: strings.pick(
+                pt: 'Crie seu primeiro cofre para separar parte do que sobrou.',
+                en: 'Create your first vault to set aside part of what is left.',
+                es: 'Crea tu primera caja para separar parte de lo que sobro.',
               ),
             ),
           ..._goals.map(
@@ -600,22 +622,50 @@ class _GoalsScreenState extends State<GoalsScreen> {
 }
 
 class _GoalSummaryTile extends StatelessWidget {
-  const _GoalSummaryTile({required this.title, required this.value});
+  const _GoalSummaryTile({
+    required this.title,
+    required this.value,
+    this.emphasized = false,
+  });
 
   final String title;
   final String value;
+  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    final foreground = emphasized
+        ? Colors.white
+        : Theme.of(context).colorScheme.onSurface;
+    return Container(
       width: 220,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.labelLarge),
-          const SizedBox(height: 4),
-          Text(value, style: Theme.of(context).textTheme.titleMedium),
-        ],
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: emphasized ? 0.16 : 0.09),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+      ),
+      child: DefaultTextStyle.merge(
+        style: TextStyle(color: foreground),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: foreground.withValues(alpha: 0.78),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: foreground),
+            ),
+          ],
+        ),
       ),
     );
   }
