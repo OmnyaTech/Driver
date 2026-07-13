@@ -1,1 +1,1 @@
-enum TurnstileFlow { login, register, oauth }
+enum TurnstileFlow { login, register, oauth, sensitiveAction }

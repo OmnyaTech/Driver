@@ -101,6 +101,25 @@ class AuthService {
     return false;
   }
 
+  Future<bool> verifyTurnstileForSensitiveAction({
+    required String token,
+    required String action,
+  }) async {
+    final activeClient = _requireClient();
+
+    final response = await activeClient.functions.invoke(
+      'driver-verify-turnstile',
+      body: {'token': token, 'action': 'sensitive_action', 'flow': action},
+    );
+
+    final data = response.data;
+    if (data is Map<String, dynamic>) {
+      return data['success'] == true;
+    }
+
+    return false;
+  }
+
   Future<Map<String, dynamic>?> fetchProfile() async {
     final activeClient = _requireClient();
     final user = activeClient.auth.currentUser;

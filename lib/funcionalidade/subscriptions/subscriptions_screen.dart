@@ -292,17 +292,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
                         ),
                       ),
                     ..._billingEvents.map(
-                      (event) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(event.eventType),
-                        subtitle: Text(
-                          [
-                            if (event.status != null) event.status!,
-                            _formatDateTime(event.createdAt),
-                            if (event.externalReference != null)
-                              event.externalReference!,
-                          ].join(' - '),
-                        ),
+                      (event) => _BillingTimelineTile(
+                        event: event,
+                        formattedDate: _formatDateTime(event.createdAt),
                       ),
                     ),
                   ],
@@ -1148,6 +1140,147 @@ class _SubscriptionPlanCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _BillingTimelineTile extends StatelessWidget {
+  const _BillingTimelineTile({
+    required this.event,
+    required this.formattedDate,
+  });
+
+  final BillingEventItem event;
+  final String formattedDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final theme = Theme.of(context);
+    final status = event.status?.trim();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.dividerColor),
+        color: theme.colorScheme.surface.withValues(alpha: 0.35),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: const Color(0xFF0000CD).withValues(alpha: 0.15),
+            child: Icon(_icon(event.eventType), size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _title(strings, event.eventType),
+                        style: theme.textTheme.titleSmall,
+                      ),
+                    ),
+                    if (status != null && status.isNotEmpty)
+                      Text(
+                        status,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _description(strings, event),
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: 6),
+                Text(formattedDate, style: theme.textTheme.labelSmall),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _icon(String eventType) {
+    return switch (eventType) {
+      'checkout_created' || 'checkout_pending' => Icons.open_in_new_rounded,
+      'subscription_state_synced' => Icons.sync_rounded,
+      'cancel_requested' => Icons.cancel_schedule_send_outlined,
+      'plan_change_requested' => Icons.swap_horiz_rounded,
+      _ => Icons.receipt_long_outlined,
+    };
+  }
+
+  String _title(AppStrings strings, String eventType) {
+    return switch (eventType) {
+      'checkout_created' => strings.pick(
+        pt: 'Checkout criado',
+        en: 'Checkout created',
+        es: 'Checkout creado',
+      ),
+      'checkout_pending' => strings.pick(
+        pt: 'Pagamento pendente',
+        en: 'Payment pending',
+        es: 'Pago pendiente',
+      ),
+      'subscription_state_synced' => strings.pick(
+        pt: 'Plano atualizado',
+        en: 'Plan updated',
+        es: 'Plan actualizado',
+      ),
+      'cancel_requested' => strings.pick(
+        pt: 'Cancelamento solicitado',
+        en: 'Cancellation requested',
+        es: 'Cancelacion solicitada',
+      ),
+      'plan_change_requested' => strings.pick(
+        pt: 'Troca de plano agendada',
+        en: 'Plan change scheduled',
+        es: 'Cambio de plan programado',
+      ),
+      _ => eventType.replaceAll('_', ' '),
+    };
+  }
+
+  String _description(AppStrings strings, BillingEventItem event) {
+    return switch (event.eventType) {
+      'checkout_created' => strings.pick(
+        pt: 'Abrimos o pagamento no Asaas. Seu Premium entra quando o pagamento for confirmado.',
+        en: 'We opened the Asaas payment. Premium starts when payment is confirmed.',
+        es: 'Abrimos el pago en Asaas. Premium entra cuando se confirme el pago.',
+      ),
+      'checkout_pending' => strings.pick(
+        pt: 'O app ja marcou seu plano como pendente para evitar checkout duplicado.',
+        en: 'The app marked your plan as pending to avoid duplicate checkout.',
+        es: 'La app marco tu plan como pendiente para evitar checkout duplicado.',
+      ),
+      'subscription_state_synced' => strings.pick(
+        pt: 'Recebemos uma atualizacao do Asaas e sincronizamos seu acesso.',
+        en: 'We received an Asaas update and synced your access.',
+        es: 'Recibimos una actualizacion de Asaas y sincronizamos tu acceso.',
+      ),
+      'cancel_requested' => strings.pick(
+        pt: 'O pedido foi registrado. O ciclo segue a regra de vencimento do Asaas.',
+        en: 'The request was recorded. The cycle follows Asaas renewal rules.',
+        es: 'La solicitud fue registrada. El ciclo sigue las reglas de Asaas.',
+      ),
+      'plan_change_requested' => strings.pick(
+        pt: 'A troca fica preparada para o proximo ciclo disponivel.',
+        en: 'The change is prepared for the next available cycle.',
+        es: 'El cambio queda listo para el proximo ciclo disponible.',
+      ),
+      _ => event.externalReference ?? '',
+    };
   }
 }
 

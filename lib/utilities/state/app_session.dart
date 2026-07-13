@@ -8,6 +8,7 @@ import '../../models/oauth_provider_option.dart';
 import '../../models/plan_type.dart';
 import '../../models/user_role.dart';
 import '../../services/auth_service.dart';
+import '../../services/data_privacy_service.dart';
 import '../../services/deep_link_service.dart';
 import '../../services/push_notification_service.dart';
 import '../../services/referral_service.dart';
@@ -18,11 +19,13 @@ class AppSession extends ChangeNotifier {
     ReferralService? referralService,
     DeepLinkService? deepLinkService,
     PushNotificationService? pushNotificationService,
+    DataPrivacyService? dataPrivacyService,
   }) : _authService = authService ?? const AuthService(),
        _referralService = referralService ?? ReferralService(),
        _deepLinkService = deepLinkService ?? DeepLinkService(),
        _pushNotificationService =
-           pushNotificationService ?? PushNotificationService() {
+           pushNotificationService ?? PushNotificationService(),
+       _dataPrivacyService = dataPrivacyService ?? DataPrivacyService() {
     _initialize();
   }
 
@@ -30,6 +33,7 @@ class AppSession extends ChangeNotifier {
   final ReferralService _referralService;
   final DeepLinkService _deepLinkService;
   final PushNotificationService _pushNotificationService;
+  final DataPrivacyService _dataPrivacyService;
   ThemeMode _themeMode = ThemeMode.dark;
   bool _authenticated = false;
   bool _isReady = false;
@@ -199,6 +203,7 @@ class AppSession extends ChangeNotifier {
     try {
       await _authService.ensureDriverProfile();
       await _referralService.redeemPendingReferral();
+      await _dataPrivacyService.cancelPendingAccountDeletionIfAny();
       final data = await _authService.fetchProfile();
       _profile = data == null
           ? _fallbackProfile(session.user)

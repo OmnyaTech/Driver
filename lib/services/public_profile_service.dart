@@ -7,6 +7,9 @@ class PublicProfileSettings {
     required this.publicSlug,
     required this.publicBio,
     required this.publicCity,
+    required this.publicTitle,
+    required this.publicBannerUrl,
+    required this.selectedBadgeKeys,
     required this.rankingOptIn,
   });
 
@@ -14,6 +17,9 @@ class PublicProfileSettings {
   final String? publicSlug;
   final String? publicBio;
   final String? publicCity;
+  final String? publicTitle;
+  final String? publicBannerUrl;
+  final List<String> selectedBadgeKeys;
   final bool rankingOptIn;
 }
 
@@ -33,7 +39,9 @@ class PublicProfileService {
     final profiles = await client
         .schema('driver')
         .from('profiles')
-        .select('public_profile_enabled, public_slug, public_bio, public_city')
+        .select(
+          'public_profile_enabled, public_slug, public_bio, public_city, public_title, public_banner_url, selected_badge_keys',
+        )
         .eq('id', user.id)
         .limit(1);
 
@@ -56,6 +64,12 @@ class PublicProfileService {
       publicSlug: profile['public_slug'] as String?,
       publicBio: profile['public_bio'] as String?,
       publicCity: profile['public_city'] as String?,
+      publicTitle: profile['public_title'] as String?,
+      publicBannerUrl: profile['public_banner_url'] as String?,
+      selectedBadgeKeys: (profile['selected_badge_keys'] as List? ?? const [])
+          .map((item) => item.toString())
+          .where((item) => item.trim().isNotEmpty)
+          .toList(),
       rankingOptIn: ranking['ranking_opt_in'] as bool? ?? false,
     );
   }
@@ -65,6 +79,9 @@ class PublicProfileService {
     required String? publicSlug,
     required String? publicBio,
     required String? publicCity,
+    String? publicTitle,
+    String? publicBannerUrl,
+    List<String>? selectedBadgeKeys,
     required bool rankingOptIn,
   }) async {
     final client = _authService.requireClient();
@@ -74,17 +91,23 @@ class PublicProfileService {
     }
 
     final normalizedSlug = _normalizeSlug(publicSlug);
+    final profileUpdate = <String, Object?>{
+      'public_profile_enabled': publicProfileEnabled,
+      'public_slug': normalizedSlug,
+      'public_bio': _normalize(publicBio),
+      'public_city': _normalize(publicCity),
+      'public_title': _normalize(publicTitle),
+      'public_banner_url': _normalize(publicBannerUrl),
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    };
+    if (selectedBadgeKeys != null) {
+      profileUpdate['selected_badge_keys'] = selectedBadgeKeys;
+    }
 
     await client
         .schema('driver')
         .from('profiles')
-        .update({
-          'public_profile_enabled': publicProfileEnabled,
-          'public_slug': normalizedSlug,
-          'public_bio': _normalize(publicBio),
-          'public_city': _normalize(publicCity),
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        })
+        .update(profileUpdate)
         .eq('id', user.id);
 
     await client.schema('driver').from('driver_progress').upsert({
@@ -124,6 +147,9 @@ class PublicProfileService {
         publicSlug: suggested,
         publicBio: settings.publicBio,
         publicCity: settings.publicCity,
+        publicTitle: settings.publicTitle,
+        publicBannerUrl: settings.publicBannerUrl,
+        selectedBadgeKeys: settings.selectedBadgeKeys,
         rankingOptIn: true,
       );
       return suggested;
@@ -135,6 +161,9 @@ class PublicProfileService {
         publicSlug: fallback,
         publicBio: settings.publicBio,
         publicCity: settings.publicCity,
+        publicTitle: settings.publicTitle,
+        publicBannerUrl: settings.publicBannerUrl,
+        selectedBadgeKeys: settings.selectedBadgeKeys,
         rankingOptIn: true,
       );
       return fallback;
@@ -198,6 +227,9 @@ class PublicProfileService {
     final records = Map<String, dynamic>.from(
       (data['records'] as Map?) ?? const <String, dynamic>{},
     );
+    final stats = Map<String, dynamic>.from(
+      (data['stats'] as Map?) ?? const <String, dynamic>{},
+    );
 
     return AppPublicDriverProfile(
       displayName: data['display_name']?.toString() ?? 'Motorista',
@@ -209,10 +241,17 @@ class PublicProfileService {
       publicBannerUrl: data['public_banner_url']?.toString(),
       tier: data['tier']?.toString() ?? 'Bronze',
       publicScore: _toInt(data['public_score']),
-      totalDeliveries: _toInt(data['total_deliveries']),
-      accountDays: _toInt(data['account_days']),
+      totalDeliveries: _toInt(
+        data['total_deliveries'] ?? stats['total_deliveries'],
+      ),
+      accountDays: _toInt(data['account_days'] ?? stats['account_days']),
       badges: (data['badges'] as List? ?? const [])
-          .map((item) => item.toString())
+          .map((item) {
+            if (item is Map) {
+              return item['name']?.toString() ?? item['key']?.toString() ?? '';
+            }
+            return item.toString();
+          })
           .where((item) => item.trim().isNotEmpty)
           .toList(),
       level: _toInt(data['level']),

@@ -62,15 +62,27 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF111522),
-                  Color(0xFF1A1F31),
-                  Color(0xFF0000CD),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              image: (profile.publicBannerUrl ?? '').trim().isEmpty
+                  ? null
+                  : DecorationImage(
+                      image: NetworkImage(profile.publicBannerUrl!.trim()),
+                      fit: BoxFit.cover,
+                      colorFilter: ColorFilter.mode(
+                        Colors.black.withValues(alpha: 0.45),
+                        BlendMode.darken,
+                      ),
+                    ),
+              gradient: (profile.publicBannerUrl ?? '').trim().isEmpty
+                  ? const LinearGradient(
+                      colors: [
+                        Color(0xFF111522),
+                        Color(0xFF1A1F31),
+                        Color(0xFF0000CD),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
               border: Border.all(color: Theme.of(context).dividerColor),
             ),
             child: Column(
@@ -116,12 +128,12 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                   spacing: 10,
                   runSpacing: 10,
                   children: [
+                    _PublicPill(label: '#${profile.publicScore} pts'),
                     _PublicPill(label: profile.levelTitle),
                     _PublicPill(label: 'Liga ${profile.tier}'),
                     if ((profile.publicCity ?? '').isNotEmpty)
                       _PublicPill(label: profile.publicCity!),
                     _PublicPill(label: '${profile.medalsCount} conquistas'),
-                    _PublicPill(label: '${profile.publicScore} pts'),
                   ],
                 ),
                 if ((profile.publicBio ?? '').isNotEmpty) ...[
@@ -204,6 +216,11 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                     Text(
                       'Badges em destaque',
                       style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Conquistas escolhidas pelo motorista para aparecer no perfil.',
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 12),
                     Wrap(

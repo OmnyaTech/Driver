@@ -1,4 +1,4 @@
-export type TurnstileAction = "login" | "register" | "oauth";
+export type TurnstileAction = "login" | "register" | "oauth" | "sensitive_action";
 export type TurnstileProvider = "google" | "microsoft" | null;
 
 export type VerifyTurnstileBody = {
@@ -21,6 +21,7 @@ const ALLOWED_ACTIONS = new Set<TurnstileAction>([
   "login",
   "register",
   "oauth",
+  "sensitive_action",
 ]);
 const ALLOWED_PROVIDERS = new Set<Exclude<TurnstileProvider, null>>([
   "google",

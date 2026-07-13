@@ -103,6 +103,22 @@ class DataPrivacyService {
         );
   }
 
+  Future<void> cancelPendingAccountDeletionIfAny({
+    String reason = 'user_returned',
+  }) async {
+    final client = _authService.requireClient();
+    final user = client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await client
+          .schema('driver')
+          .rpc('cancel_account_deletion_request', params: {'p_reason': reason});
+    } catch (_) {
+      // A missing SQL migration or no pending request cannot block login.
+    }
+  }
+
   Future<List<dynamic>> _selectProfile(String userId) async {
     return _safeSelect(() {
       return _authService

@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../config/supabase_config.dart';
+import '../../models/turnstile_flow.dart';
+import '../../services/auth_service.dart';
 import '../../services/biometric_lock_service.dart';
 import '../../services/data_privacy_service.dart';
+import '../auth/captcha_service.dart';
 import '../../services/mfa_service.dart';
 import '../../services/security_preference_service.dart';
 import '../../utilities/localization/app_strings.dart';
@@ -18,6 +22,8 @@ class SecurityScreen extends StatefulWidget {
 
 class _SecurityScreenState extends State<SecurityScreen> {
   final _service = DataPrivacyService();
+  final _authService = const AuthService();
+  final _captchaService = const CaptchaService();
   final _mfaService = const MfaService();
   final _biometricLockService = BiometricLockService();
   final _securityPreferenceService = SecurityPreferenceService();
@@ -461,22 +467,41 @@ class _SecurityScreenState extends State<SecurityScreen> {
   }
 
   Future<void> _confirmDeletionRequest() async {
+    final strings = AppStrings.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Pedir encerramento?'),
-          content: const Text(
-            'Isso nao apaga sua conta na hora. Vamos registrar seu pedido para a equipe cuidar com seguranca.',
+          title: Text(
+            strings.pick(
+              pt: 'Pedir encerramento?',
+              en: 'Request account closure?',
+              es: 'Pedir cierre de cuenta?',
+            ),
+          ),
+          content: Text(
+            strings.pick(
+              pt: 'Isso nao apaga sua conta na hora. Vamos registrar seu pedido, proteger seus dados por um periodo de seguranca e cancelar automaticamente se voce voltar antes do processamento.',
+              en: 'This does not delete your account immediately. We will register the request, keep your data safe during a security window and cancel it automatically if you come back before processing.',
+              es: 'Esto no borra tu cuenta de inmediato. Registraremos el pedido, protegeremos tus datos durante un periodo de seguridad y lo cancelaremos automaticamente si vuelves antes del procesamiento.',
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Agora nao'),
+              child: Text(
+                strings.pick(pt: 'Agora nao', en: 'Not now', es: 'Ahora no'),
+              ),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Enviar pedido'),
+              child: Text(
+                strings.pick(
+                  pt: 'Enviar pedido',
+                  en: 'Send request',
+                  es: 'Enviar pedido',
+                ),
+              ),
             ),
           ],
         );
@@ -484,14 +509,50 @@ class _SecurityScreenState extends State<SecurityScreen> {
     );
 
     if (confirmed != true) return;
+    if (!mounted) return;
 
     setState(() => _requestingDeletion = true);
     try {
+      if (SupabaseRuntimeConfig.turnstileSiteKey.isNotEmpty) {
+        final token = await _captchaService.obtainToken(
+          context,
+          siteKey: SupabaseRuntimeConfig.turnstileSiteKey,
+          flow: TurnstileFlow.sensitiveAction,
+        );
+        if (token == null || token.isEmpty) {
+          throw StateError(
+            strings.pick(
+              pt: 'Nao foi possivel validar a seguranca. Tente novamente.',
+              en: 'Could not validate security. Try again.',
+              es: 'No fue posible validar la seguridad. Intenta de nuevo.',
+            ),
+          );
+        }
+        final valid = await _authService.verifyTurnstileForSensitiveAction(
+          token: token,
+          action: 'account_deletion',
+        );
+        if (!valid) {
+          throw StateError(
+            strings.pick(
+              pt: 'Validacao de seguranca recusada. Tente novamente.',
+              en: 'Security validation was rejected. Try again.',
+              es: 'Validacion de seguridad rechazada. Intenta de nuevo.',
+            ),
+          );
+        }
+      }
       await _service.requestAccountDeletion(reason: _reasonController.text);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pedido registrado. Vamos acompanhar por aqui.'),
+        SnackBar(
+          content: Text(
+            strings.pick(
+              pt: 'Pedido registrado. Vamos acompanhar por aqui.',
+              en: 'Request registered. We will track it here.',
+              es: 'Pedido registrado. Lo seguiremos por aqui.',
+            ),
+          ),
         ),
       );
       _reasonController.clear();

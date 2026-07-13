@@ -429,54 +429,54 @@ class AppStrings {
       pick(pt: 'Central de ajuda', en: 'Help center', es: 'Centro de ayuda');
 
   String get helpCenterSubtitle => pick(
-    pt: 'Dicas rapidas para usar melhor',
-    en: 'Quick tips to use the app better',
-    es: 'Consejos rapidos para usar mejor',
+    pt: 'Respostas rapidas e contato com suporte',
+    en: 'Quick answers and support contact',
+    es: 'Respuestas rapidas y contacto con soporte',
   );
 
   String get helpCenterIntro => pick(
-    pt: 'O Omnya Driver foi pensado para registrar sua rotina sem complicar seu dia. Comece por jornada, ganhos e custos; o painel faz o resto.',
-    en: 'Omnya Driver is built to track your routine without making your day harder. Start with shifts, earnings and costs; the dashboard does the rest.',
-    es: 'Omnya Driver fue pensado para registrar tu rutina sin complicar tu dia. Empieza por jornadas, ingresos y costos; el panel hace el resto.',
+    pt: 'Encontre respostas rapidas ou fale com a gente.\n\nA Central de ajuda existe para resolver duvidas do dia a dia sem complicar: primeiros passos, veiculos, jornadas, abastecimentos, manutencoes, objetivos, assinatura, conta e seguranca.',
+    en: 'Find quick answers or talk to us.\n\nThe Help Center is here to solve daily questions without making things harder: first steps, vehicles, shifts, fuel, maintenance, goals, subscription, account and security.',
+    es: 'Encuentra respuestas rapidas o habla con nosotros.\n\nEl Centro de ayuda existe para resolver dudas del dia a dia sin complicar: primeros pasos, vehiculos, jornadas, combustible, mantenimientos, objetivos, suscripcion, cuenta y seguridad.',
   );
 
   String get helpCenterTipJourney => pick(
-    pt: 'Use a jornada em tempo real sempre que sair para trabalhar. Se esquecer aberta, o app avisa para fechar e manter os numeros certos.',
-    en: 'Use the live shift whenever you start working. If you leave it open, the app reminds you to close it and keep numbers right.',
-    es: 'Usa la jornada en vivo cuando salgas a trabajar. Si queda abierta, la app te recuerda cerrarla para mantener los numeros correctos.',
+    pt: 'Jornadas: inicie quando sair para trabalhar e encerre informando km final, entregas, ganhos e custos. Se uma jornada ficar aberta por muito tempo, o app lembra voce de fechar.',
+    en: 'Shifts: start when you go to work and finish by entering final mileage, deliveries, earnings and costs. If a shift stays open too long, the app reminds you to close it.',
+    es: 'Jornadas: inicia cuando salgas a trabajar y finaliza informando kilometraje final, entregas, ingresos y costos. Si una jornada queda abierta mucho tiempo, la app te recuerda cerrarla.',
   );
 
   String get helpCenterTipBilling => pick(
-    pt: 'Planos Premium liberam historico ampliado, multiplas plataformas, exportacoes e controles avancados.',
-    en: 'Premium plans unlock deeper history, multiple platforms, exports and advanced controls.',
-    es: 'Los planes Premium liberan historial ampliado, multiples plataformas, exportaciones y controles avanzados.',
+    pt: 'Planos e assinatura: o Premium libera historico ampliado, multiplas plataformas, exportacoes e controles avancados. O acesso so muda quando o pagamento for confirmado pelo Asaas.',
+    en: 'Plans and subscription: Premium unlocks deeper history, multiple platforms, exports and advanced controls. Access only changes when Asaas confirms payment.',
+    es: 'Planes y suscripcion: Premium libera historial ampliado, multiples plataformas, exportaciones y controles avanzados. El acceso solo cambia cuando Asaas confirma el pago.',
   );
 
   String get helpCenterTipSupport => pick(
-    pt: 'Se algo parecer errado, leve um backup em Seguranca e dados e fale com o suporte da OmnyaTech.',
-    en: 'If something looks off, copy a backup in Security and data and contact OmnyaTech support.',
-    es: 'Si algo parece incorrecto, copia un backup en Seguridad y datos y habla con soporte OmnyaTech.',
+    pt: 'Precisa de ajuda? Tenha em maos seu e-mail da conta e, se possivel, gere um backup em Seguranca e dados. Isso ajuda o suporte OmnyaTech a entender seu caso com mais rapidez.',
+    en: 'Need help? Keep your account email ready and, if possible, generate a backup in Security and data. This helps OmnyaTech support understand your case faster.',
+    es: 'Necesitas ayuda? Ten a mano el e-mail de tu cuenta y, si puedes, genera un backup en Seguridad y datos. Eso ayuda al soporte OmnyaTech a entender tu caso mas rapido.',
   );
 
   String get aboutOmnyaDriver =>
       pick(pt: 'Sobre o app', en: 'About the app', es: 'Sobre la app');
 
   String get aboutOmnyaDriverSubtitle => pick(
-    pt: 'Omnya Driver e identidade OmnyaTech',
-    en: 'Omnya Driver and OmnyaTech identity',
-    es: 'Omnya Driver e identidad OmnyaTech',
+    pt: 'Gerencie sua renda, nao apenas suas entregas',
+    en: 'Manage your income, not only your deliveries',
+    es: 'Gestiona tus ingresos, no solo tus entregas',
   );
 
   String get aboutOmnyaDriverBody => pick(
-    pt: 'O Omnya Driver ajuda entregadores e motoristas a entender ganhos, custos, metas, progresso e rotina em um lugar so.',
-    en: 'Omnya Driver helps couriers and drivers understand earnings, costs, goals, progress and routine in one place.',
-    es: 'Omnya Driver ayuda a repartidores y conductores a entender ingresos, costos, metas, progreso y rutina en un solo lugar.',
+    pt: 'O Omnya Driver foi criado para entregadores e motoristas que querem entender melhor a propria rotina. Aqui voce registra jornadas, ganhos, custos, veiculos, plataformas, metas, progresso e perfil publico em um lugar so.',
+    en: 'Omnya Driver was created for couriers and drivers who want to understand their routine better. Here you track shifts, earnings, costs, vehicles, platforms, goals, progress and public profile in one place.',
+    es: 'Omnya Driver fue creado para repartidores y conductores que quieren entender mejor su rutina. Aqui registras jornadas, ingresos, costos, vehiculos, plataformas, metas, progreso y perfil publico en un solo lugar.',
   );
 
   String get aboutOmnyaDriverBrand => pick(
-    pt: 'O app segue a marca OmnyaTech: tecnologia simples, confiavel e focada em resultado real.',
-    en: 'The app follows the OmnyaTech brand: simple, reliable technology focused on real outcomes.',
-    es: 'La app sigue la marca OmnyaTech: tecnologia simple, confiable y enfocada en resultados reales.',
+    pt: 'Principios do app: clareza para decidir, organizacao sem burocracia, privacidade nos ganhos e tecnologia com identidade OmnyaTech: simples, confiavel e focada em resultado real.',
+    en: 'App principles: clarity for decisions, organization without bureaucracy, private earnings and OmnyaTech identity: simple, reliable technology focused on real outcomes.',
+    es: 'Principios de la app: claridad para decidir, organizacion sin burocracia, privacidad en ingresos e identidad OmnyaTech: tecnologia simple, confiable y enfocada en resultados reales.',
   );
 
   String get termsOfUse =>
@@ -489,21 +489,21 @@ class AppStrings {
   );
 
   String get termsOfUseBody => pick(
-    pt: 'Voce e responsavel pelos dados que cadastra. O app organiza informacoes e estimativas, mas nao substitui orientacao contabil, fiscal ou juridica.',
-    en: 'You are responsible for the data you enter. The app organizes information and estimates, but does not replace accounting, tax or legal advice.',
-    es: 'Eres responsable de los datos que registras. La app organiza informacion y estimaciones, pero no reemplaza asesoramiento contable, fiscal o legal.',
+    pt: 'Ao usar o Omnya Driver, voce concorda em informar dados verdadeiros e manter sua conta em seguranca. Voce e responsavel pelos registros que cria. O app organiza informacoes e estimativas, mas nao substitui orientacao contabil, fiscal, financeira ou juridica.',
+    en: 'By using Omnya Driver, you agree to provide true data and keep your account secure. You are responsible for the records you create. The app organizes information and estimates, but does not replace accounting, tax, financial or legal advice.',
+    es: 'Al usar Omnya Driver, aceptas informar datos reales y mantener tu cuenta segura. Eres responsable por los registros que creas. La app organiza informacion y estimaciones, pero no reemplaza asesoria contable, fiscal, financiera o juridica.',
   );
 
   String get termsOfUseBilling => pick(
-    pt: 'Assinaturas sao processadas pelo provedor de pagamento. Recursos Premium entram quando o pagamento for confirmado.',
-    en: 'Subscriptions are processed by the payment provider. Premium features start when payment is confirmed.',
-    es: 'Las suscripciones son procesadas por el proveedor de pago. Premium entra cuando el pago sea confirmado.',
+    pt: 'Assinaturas e pagamentos sao processados pelo provedor de pagamento. Recursos Premium entram quando o pagamento for confirmado. Cancelamentos, trocas de plano e vencimentos seguem o ciclo registrado no provedor.',
+    en: 'Subscriptions and payments are processed by the payment provider. Premium features start when payment is confirmed. Cancellations, plan changes and due dates follow the cycle registered by the provider.',
+    es: 'Suscripciones y pagos son procesados por el proveedor de pago. Premium entra cuando el pago sea confirmado. Cancelaciones, cambios de plan y vencimientos siguen el ciclo registrado por el proveedor.',
   );
 
   String get termsOfUseData => pick(
-    pt: 'Voce pode pedir backup e encerramento da conta em Seguranca e dados.',
-    en: 'You can request backup and account closure in Security and data.',
-    es: 'Puedes pedir backup y cierre de cuenta en Seguridad y datos.',
+    pt: 'Voce pode solicitar backup, exportacao e encerramento de conta em Seguranca e dados. Perfil publico, ranking e gamificacao sao opcionais e nao exibem seus ganhos financeiros.',
+    en: 'You can request backup, export and account closure in Security and data. Public profile, ranking and gamification are optional and do not show your financial earnings.',
+    es: 'Puedes solicitar backup, exportacion y cierre de cuenta en Seguridad y datos. Perfil publico, ranking y gamificacion son opcionales y no muestran tus ingresos financieros.',
   );
 
   String get privacyPolicy => pick(
@@ -519,21 +519,21 @@ class AppStrings {
   );
 
   String get privacyPolicyBody => pick(
-    pt: 'Usamos seus dados para manter conta, relatorios, notificacoes, assinatura, gamificacao e perfil publico quando voce ativar.',
-    en: 'We use your data to maintain your account, reports, notifications, subscription, gamification and public profile when you enable it.',
-    es: 'Usamos tus datos para mantener cuenta, reportes, notificaciones, suscripcion, gamificacion y perfil publico cuando lo actives.',
+    pt: 'Coletamos dados de conta, perfil, jornadas, veiculos, plataformas, custos, metas, assinatura, dispositivo e preferencias para operar o app, gerar relatorios, enviar avisos, proteger a conta e melhorar a experiencia.',
+    en: 'We collect account, profile, shift, vehicle, platform, cost, goal, subscription, device and preference data to operate the app, generate reports, send alerts, protect the account and improve the experience.',
+    es: 'Recolectamos datos de cuenta, perfil, jornadas, vehiculos, plataformas, costos, metas, suscripcion, dispositivo y preferencias para operar la app, generar reportes, enviar avisos, proteger la cuenta y mejorar la experiencia.',
   );
 
   String get privacyPolicyStorage => pick(
-    pt: 'Fotos, logos e backups ficam protegidos por permissoes de conta e politicas de seguranca.',
-    en: 'Photos, logos and backups are protected by account permissions and security policies.',
-    es: 'Fotos, logos y backups quedan protegidos por permisos de cuenta y politicas de seguridad.',
+    pt: 'Fotos, logos, backups e arquivos ficam protegidos por permissoes de conta e politicas de seguranca. Podemos compartilhar dados com provedores essenciais, como autenticacao, hospedagem, notificacoes e pagamento, apenas para operar o servico.',
+    en: 'Photos, logos, backups and files are protected by account permissions and security policies. We may share data with essential providers such as authentication, hosting, notifications and payment only to operate the service.',
+    es: 'Fotos, logos, backups y archivos quedan protegidos por permisos de cuenta y politicas de seguridad. Podemos compartir datos con proveedores esenciales como autenticacion, hospedaje, notificaciones y pago solo para operar el servicio.',
   );
 
   String get privacyPolicyContact => pick(
-    pt: 'Para duvidas de privacidade, fale com o suporte OmnyaTech.',
-    en: 'For privacy questions, contact OmnyaTech support.',
-    es: 'Para dudas de privacidad, habla con soporte OmnyaTech.',
+    pt: 'Voce pode pedir acesso, correcao, portabilidade, exclusao ou revisao de consentimentos. Para duvidas de privacidade, fale com o suporte OmnyaTech pelos canais oficiais do app.',
+    en: 'You can request access, correction, portability, deletion or consent review. For privacy questions, contact OmnyaTech support through the official app channels.',
+    es: 'Puedes pedir acceso, correccion, portabilidad, eliminacion o revision de consentimientos. Para dudas de privacidad, habla con soporte OmnyaTech por los canales oficiales de la app.',
   );
 
   String get developerTools => pick(

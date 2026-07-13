@@ -353,7 +353,10 @@ class _InfoScreen extends StatelessWidget {
             (paragraph) => Card(
               child: Padding(
                 padding: const EdgeInsets.all(18),
-                child: Text(paragraph, style: theme.textTheme.bodyLarge),
+                child: SelectableText(
+                  paragraph,
+                  style: theme.textTheme.bodyLarge?.copyWith(height: 1.45),
+                ),
               ),
             ),
           ),
@@ -588,6 +591,7 @@ class _ProfileSheetState extends State<_ProfileSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final theme = Theme.of(context);
     final profile = context.watch<AppSession>().profile;
@@ -623,12 +627,16 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Perfil do motorista',
+                    strings.driverProfile,
                     style: theme.textTheme.titleLarge,
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Deixe seu nome e foto do jeito que voce quer aparecer no app.',
+                    strings.pick(
+                      pt: 'Deixe seu nome e foto do jeito que voce quer aparecer no app.',
+                      en: 'Set your name and photo the way you want to appear in the app.',
+                      es: 'Deja tu nombre y foto como quieres aparecer en la app.',
+                    ),
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 20),
@@ -663,14 +671,26 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                                       ),
                                     )
                                   : const Icon(Icons.photo_camera_outlined),
-                              label: const Text('Alterar foto'),
+                              label: Text(
+                                strings.pick(
+                                  pt: 'Alterar foto',
+                                  en: 'Change photo',
+                                  es: 'Cambiar foto',
+                                ),
+                              ),
                             ),
                             if ((profile?.avatarUrl ?? '').trim().isNotEmpty)
                               TextButton(
                                 onPressed: (_saving || _uploadingAvatar)
                                     ? null
                                     : _removeAvatar,
-                                child: const Text('Remover foto'),
+                                child: Text(
+                                  strings.pick(
+                                    pt: 'Remover foto',
+                                    en: 'Remove photo',
+                                    es: 'Quitar foto',
+                                  ),
+                                ),
                               ),
                           ],
                         ),
@@ -680,22 +700,36 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _displayNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nome exibido',
+                    decoration: InputDecoration(
+                      labelText: strings.pick(
+                        pt: 'Nome exibido',
+                        en: 'Display name',
+                        es: 'Nombre visible',
+                      ),
                     ),
                     validator: _required,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _fullNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nome completo',
+                    decoration: InputDecoration(
+                      labelText: strings.pick(
+                        pt: 'Nome completo',
+                        en: 'Full name',
+                        es: 'Nombre completo',
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _phoneController,
-                    decoration: const InputDecoration(labelText: 'Telefone'),
+                    decoration: InputDecoration(
+                      labelText: strings.pick(
+                        pt: 'Telefone',
+                        en: 'Phone',
+                        es: 'Telefono',
+                      ),
+                    ),
                   ),
                   if (_errorMessage != null) ...[
                     const SizedBox(height: 12),
@@ -712,7 +746,7 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                           onPressed: _saving
                               ? null
                               : () => Navigator.of(context).pop(),
-                          child: const Text('Cancelar'),
+                          child: Text(strings.cancel),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -727,7 +761,13 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text('Salvar perfil'),
+                              : Text(
+                                  strings.pick(
+                                    pt: 'Salvar perfil',
+                                    en: 'Save profile',
+                                    es: 'Guardar perfil',
+                                  ),
+                                ),
                         ),
                       ),
                     ],
@@ -745,6 +785,7 @@ class _ProfileSheetState extends State<_ProfileSheet> {
     if (!_formKey.currentState!.validate()) return;
     final session = context.read<AppSession>();
     final navigator = Navigator.of(context);
+    final strings = AppStrings.of(context);
 
     setState(() {
       _saving = true;
@@ -761,7 +802,15 @@ class _ProfileSheetState extends State<_ProfileSheet> {
       if (!mounted) return;
       navigator.pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Perfil atualizado com sucesso.')),
+        SnackBar(
+          content: Text(
+            strings.pick(
+              pt: 'Perfil atualizado com sucesso.',
+              en: 'Profile updated successfully.',
+              es: 'Perfil actualizado correctamente.',
+            ),
+          ),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -845,6 +894,8 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
   final _slugController = TextEditingController();
   final _bioController = TextEditingController();
   final _cityController = TextEditingController();
+  final _titleController = TextEditingController();
+  final _bannerController = TextEditingController();
   bool _enabled = false;
   bool _rankingOptIn = false;
   bool _loading = true;
@@ -862,6 +913,8 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
     _slugController.dispose();
     _bioController.dispose();
     _cityController.dispose();
+    _titleController.dispose();
+    _bannerController.dispose();
     super.dispose();
   }
 
@@ -875,6 +928,8 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
         _slugController.text = settings.publicSlug ?? '';
         _bioController.text = settings.publicBio ?? '';
         _cityController.text = settings.publicCity ?? '';
+        _titleController.text = settings.publicTitle ?? '';
+        _bannerController.text = settings.publicBannerUrl ?? '';
         _loading = false;
       });
     } catch (_) {
@@ -888,6 +943,7 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final theme = Theme.of(context);
 
@@ -927,20 +983,34 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          'Perfil publico',
+                          strings.publicProfile,
                           style: theme.textTheme.titleLarge,
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Escolha como outros motoristas vao te encontrar. Seus ganhos continuam privados.',
+                          strings.pick(
+                            pt: 'Escolha como outros motoristas vao te encontrar. Seus ganhos continuam privados.',
+                            en: 'Choose how other drivers find you. Your earnings stay private.',
+                            es: 'Elige como otros conductores te encuentran. Tus ingresos siguen privados.',
+                          ),
                           style: theme.textTheme.bodyMedium,
                         ),
                         const SizedBox(height: 18),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text('Perfil publico ativo'),
-                          subtitle: const Text(
-                            'Mostra seu nome, foto, cidade e conquistas.',
+                          title: Text(
+                            strings.pick(
+                              pt: 'Perfil publico ativo',
+                              en: 'Public profile on',
+                              es: 'Perfil publico activo',
+                            ),
+                          ),
+                          subtitle: Text(
+                            strings.pick(
+                              pt: 'Mostra seu nome, foto, cidade e conquistas.',
+                              en: 'Shows your name, photo, city and achievements.',
+                              es: 'Muestra tu nombre, foto, ciudad y conquistas.',
+                            ),
                           ),
                           value: _enabled,
                           onChanged: (value) =>
@@ -948,33 +1018,91 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                         ),
                         TextFormField(
                           controller: _slugController,
-                          decoration: const InputDecoration(
-                            labelText: 'Seu @ no Omnya Driver',
+                          decoration: InputDecoration(
+                            labelText: strings.pick(
+                              pt: 'Seu @ no Omnya Driver',
+                              en: 'Your @ on Omnya Driver',
+                              es: 'Tu @ en Omnya Driver',
+                            ),
                             hintText: 'ex: yan-driver',
                           ),
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _cityController,
-                          decoration: const InputDecoration(
-                            labelText: 'Cidade',
+                          decoration: InputDecoration(
+                            labelText: strings.pick(
+                              pt: 'Cidade',
+                              en: 'City',
+                              es: 'Ciudad',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _titleController,
+                          decoration: InputDecoration(
+                            labelText: strings.pick(
+                              pt: 'Titulo publico',
+                              en: 'Public title',
+                              es: 'Titulo publico',
+                            ),
+                            hintText: strings.pick(
+                              pt: 'ex: Rei da sexta, Rota constante',
+                              en: 'e.g. Friday king, Steady route',
+                              es: 'ej: Rey del viernes, Ruta constante',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _bannerController,
+                          decoration: InputDecoration(
+                            labelText: strings.pick(
+                              pt: 'Banner do perfil',
+                              en: 'Profile banner',
+                              es: 'Banner del perfil',
+                            ),
+                            hintText: strings.pick(
+                              pt: 'Cole uma URL de imagem desbloqueada',
+                              en: 'Paste an unlocked image URL',
+                              es: 'Pega una URL de imagen desbloqueada',
+                            ),
                           ),
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _bioController,
                           maxLines: 3,
-                          decoration: const InputDecoration(
-                            labelText: 'Sobre voce',
-                            hintText: 'Conte rapidinho como e seu corre.',
+                          decoration: InputDecoration(
+                            labelText: strings.pick(
+                              pt: 'Sobre voce',
+                              en: 'About you',
+                              es: 'Sobre ti',
+                            ),
+                            hintText: strings.pick(
+                              pt: 'Conte rapidinho como e seu corre.',
+                              en: 'Tell people briefly how you work.',
+                              es: 'Cuenta rapido como es tu rutina.',
+                            ),
                           ),
                         ),
                         const SizedBox(height: 14),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text('Participar do ranking'),
-                          subtitle: const Text(
-                            'Seu nome pode aparecer no placar da comunidade.',
+                          title: Text(
+                            strings.pick(
+                              pt: 'Participar do ranking',
+                              en: 'Join the ranking',
+                              es: 'Participar del ranking',
+                            ),
+                          ),
+                          subtitle: Text(
+                            strings.pick(
+                              pt: 'Seu nome pode aparecer no placar da comunidade.',
+                              en: 'Your name can appear on the community board.',
+                              es: 'Tu nombre puede aparecer en el ranking de la comunidad.',
+                            ),
                           ),
                           value: _rankingOptIn,
                           onChanged: (value) =>
@@ -997,7 +1125,7 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                                 onPressed: _saving
                                     ? null
                                     : () => Navigator.of(context).pop(),
-                                child: const Text('Cancelar'),
+                                child: Text(strings.cancel),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -1012,7 +1140,13 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                                           strokeWidth: 2,
                                         ),
                                       )
-                                    : const Text('Salvar perfil'),
+                                    : Text(
+                                        strings.pick(
+                                          pt: 'Salvar perfil',
+                                          en: 'Save profile',
+                                          es: 'Guardar perfil',
+                                        ),
+                                      ),
                               ),
                             ),
                           ],
@@ -1038,18 +1172,31 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
         publicSlug: _slugController.text,
         publicBio: _bioController.text,
         publicCity: _cityController.text,
+        publicTitle: _titleController.text,
+        publicBannerUrl: _bannerController.text,
         rankingOptIn: _rankingOptIn,
       );
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Perfil publico atualizado com sucesso.')),
+        SnackBar(
+          content: Text(
+            AppStrings.of(context).pick(
+              pt: 'Perfil publico atualizado com sucesso.',
+              en: 'Public profile updated.',
+              es: 'Perfil publico actualizado.',
+            ),
+          ),
+        ),
       );
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _errorMessage =
-            'Nao consegui salvar agora. Tente de novo em instantes.';
+        _errorMessage = AppStrings.of(context).pick(
+          pt: 'Nao consegui salvar agora. Tente de novo em instantes.',
+          en: 'Could not save right now. Try again in a moment.',
+          es: 'No pude guardar ahora. Intenta de nuevo en un momento.',
+        );
       });
     } finally {
       if (mounted) {

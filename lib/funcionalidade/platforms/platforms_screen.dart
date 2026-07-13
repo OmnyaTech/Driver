@@ -662,6 +662,18 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
                           style: Theme.of(context).textTheme.labelLarge,
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          strings.pick(
+                            pt: 'Toque para reaproveitar nome, tipo e logo/foto ja cadastrados perto de voce.',
+                            en: 'Tap to reuse name, type and logo/photo already saved near you.',
+                            es: 'Toca para reutilizar nombre, tipo y logo/foto ya guardados cerca de ti.',
+                          ),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       ..._suggestions.map(
                         (suggestion) => ListTile(
@@ -670,7 +682,19 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
                           leading: _SuggestionLogo(url: suggestion.logoUrl),
                           title: Text(suggestion.name),
                           subtitle: Text(suggestion.locationLabel),
-                          trailing: const Icon(Icons.north_west_rounded),
+                          trailing: TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _nameController.text = suggestion.name;
+                                _type = suggestion.type;
+                                _suggestions = const [];
+                              });
+                            },
+                            icon: const Icon(Icons.auto_awesome_rounded),
+                            label: Text(
+                              strings.pick(pt: 'Usar', en: 'Use', es: 'Usar'),
+                            ),
+                          ),
                           onTap: () {
                             setState(() {
                               _nameController.text = suggestion.name;

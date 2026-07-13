@@ -47,8 +47,8 @@ class ActiveJourneyNotificationService {
 
     final vehicle = draft.vehicleLabel?.trim();
     final body = vehicle == null || vehicle.isEmpty
-        ? 'Jornada em andamento. Toque para voltar ao app e encerrar.'
-        : '$vehicle em jornada. Toque para voltar ao app e encerrar.';
+        ? 'Toque para informar km final, entregas e ganhos antes de encerrar.'
+        : '$vehicle em jornada. Toque para informar km final, entregas e ganhos.';
 
     final details = NotificationDetails(
       android: AndroidNotificationDetails(
@@ -67,7 +67,7 @@ class ActiveJourneyNotificationService {
         actions: const [
           AndroidNotificationAction(
             'open_active_journey',
-            'Encerrar no app',
+            'Finalizar com dados',
             showsUserInterface: true,
           ),
         ],
@@ -81,7 +81,7 @@ class ActiveJourneyNotificationService {
 
     await _notifications.show(
       _notificationId,
-      'Jornada rodando',
+      'Jornada em andamento',
       body,
       details,
       payload: 'active_journey',

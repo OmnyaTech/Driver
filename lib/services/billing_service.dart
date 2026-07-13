@@ -42,7 +42,9 @@ class BillingService {
     final rows = await client
         .schema('driver')
         .from('billing_events')
-        .select('id, event_type, status, created_at, external_reference')
+        .select(
+          'id, event_type, status, created_at, external_reference, provider_object_id, payload',
+        )
         .eq('user_id', user.id)
         .order('created_at', ascending: false)
         .limit(50);
@@ -54,6 +56,10 @@ class BillingService {
             eventType: row['event_type'].toString(),
             status: row['status']?.toString(),
             externalReference: row['external_reference']?.toString(),
+            providerObjectId: row['provider_object_id']?.toString(),
+            payload: Map<String, dynamic>.from(
+              (row['payload'] as Map?) ?? const <String, dynamic>{},
+            ),
             createdAt: DateTime.parse(row['created_at'].toString()),
           ),
         )
@@ -85,6 +91,8 @@ class BillingEventItem {
     required this.eventType,
     required this.status,
     required this.externalReference,
+    required this.providerObjectId,
+    required this.payload,
     required this.createdAt,
   });
 
@@ -92,5 +100,7 @@ class BillingEventItem {
   final String eventType;
   final String? status;
   final String? externalReference;
+  final String? providerObjectId;
+  final Map<String, dynamic> payload;
   final DateTime createdAt;
 }
