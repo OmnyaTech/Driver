@@ -64,5 +64,6 @@ android/key.properties
 
 # Public repository exclusions
 Planejamento/Historico_Chat_Levantamento_ChatGPT.md
+Planejamento/Modelos/
 Planejamento/Supabase/*.png
 supabase/.temp/

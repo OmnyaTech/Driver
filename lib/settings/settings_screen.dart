@@ -7,6 +7,7 @@ import '../funcionalidade/gamification/gamification_screen.dart';
 import '../funcionalidade/notifications/notifications_screen.dart';
 import '../funcionalidade/platforms/platforms_screen.dart';
 import '../funcionalidade/community/ranking_screen.dart';
+import '../funcionalidade/security/security_screen.dart';
 import '../funcionalidade/subscriptions/subscriptions_screen.dart';
 import '../funcionalidade/vehicles/vehicles_screen.dart';
 import '../models/driver_reserve_preference.dart';
@@ -136,6 +137,12 @@ class SettingsScreen extends StatelessWidget {
               title: 'Assinatura',
               subtitle: 'Planos, pagamento e historico',
               onTap: () => _pushPage(context, const SubscriptionsScreen()),
+            ),
+            _SettingsTile(
+              icon: Icons.privacy_tip_outlined,
+              title: 'Seguranca e dados',
+              subtitle: 'Backup, privacidade e encerramento',
+              onTap: () => _pushPage(context, const SecurityScreen()),
             ),
             if (canOpenDeveloper)
               _SettingsTile(
