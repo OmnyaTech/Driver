@@ -4,6 +4,7 @@ import '../../models/app_goal.dart';
 import '../../services/goal_service.dart';
 import '../../services/journey_service.dart';
 import '../../utilities/localization/app_format.dart';
+import '../../utilities/localization/app_strings.dart';
 import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
@@ -75,8 +76,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _errorMessage =
-            'Nao foi possivel carregar os objetivos agora. Tente novamente.';
+        _errorMessage = AppStrings.of(context).pick(
+          pt: 'Nao foi possivel carregar os objetivos agora. Tente novamente.',
+          en: 'We could not load your goals right now. Please try again.',
+          es: 'No pudimos cargar tus metas ahora. Intentalo de nuevo.',
+        );
       });
     } finally {
       if (mounted) {
@@ -87,12 +91,14 @@ class _GoalsScreenState extends State<GoalsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+
     if (_loading) {
       const loading = Center(child: CircularProgressIndicator());
       if (widget.embedded) {
         return loading;
       }
-      return const OmnyaSubPageScaffold(title: 'Objetivos', body: loading);
+      return OmnyaSubPageScaffold(title: strings.goals, body: loading);
     }
 
     final summary =
@@ -113,7 +119,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Objetivos financeiros',
+                    strings.pick(
+                      pt: 'Objetivos financeiros',
+                      en: 'Money goals',
+                      es: 'Metas financieras',
+                    ),
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -121,7 +131,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                   FilledButton.icon(
                     onPressed: _openCreateGoalDialog,
                     icon: const Icon(Icons.add),
-                    label: const Text('Novo'),
+                    label: Text(strings.newItem),
                   ),
               ],
             ),
@@ -134,7 +144,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Saldo do motorista',
+                    strings.pick(
+                      pt: 'Saldo do motorista',
+                      en: 'Driver balance',
+                      es: 'Saldo del conductor',
+                    ),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 12),
@@ -143,22 +157,38 @@ class _GoalsScreenState extends State<GoalsScreen> {
                     runSpacing: 16,
                     children: [
                       _GoalSummaryTile(
-                        title: 'Resultado liquido',
+                        title: strings.pick(
+                          pt: 'Resultado liquido',
+                          en: 'Net result',
+                          es: 'Resultado neto',
+                        ),
                         value: _currency(summary.netOperationalResult),
                       ),
                       _GoalSummaryTile(
-                        title: 'Ja destinado para objetivos',
+                        title: strings.pick(
+                          pt: 'Ja destinado para objetivos',
+                          en: 'Already saved for goals',
+                          es: 'Ya reservado para metas',
+                        ),
                         value: _currency(summary.allocatedToGoals),
                       ),
                       _GoalSummaryTile(
-                        title: 'Saldo disponivel',
+                        title: strings.pick(
+                          pt: 'Saldo disponivel',
+                          en: 'Available balance',
+                          es: 'Saldo disponible',
+                        ),
                         value: _currency(summary.availableBalance),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'O saldo so deixa de ficar disponivel quando voce faz um aporte em um objetivo. Retiradas devolvem esse valor para o saldo disponivel.',
+                  Text(
+                    strings.pick(
+                      pt: 'O saldo so deixa de ficar disponivel quando voce faz um aporte em um objetivo. Retiradas devolvem esse valor para o saldo disponivel.',
+                      en: 'Your balance only leaves the available amount when you save it into a goal. Withdrawals bring it back.',
+                      es: 'Tu saldo solo sale del disponible cuando lo guardas en una meta. Los retiros lo devuelven.',
+                    ),
                   ),
                 ],
               ),
@@ -186,11 +216,15 @@ class _GoalsScreenState extends State<GoalsScreen> {
             const SizedBox(height: 16),
           ],
           if (_goals.isEmpty)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Text(
-                  'Nenhum objetivo cadastrado ainda. Crie objetivos para destinar parte do lucro e acompanhar seu progresso.',
+                  strings.pick(
+                    pt: 'Nenhum objetivo cadastrado ainda. Crie objetivos para destinar parte do lucro e acompanhar seu progresso.',
+                    en: 'No goals yet. Create goals to set money aside and track your progress.',
+                    es: 'Aun no tienes metas. Crea metas para separar dinero y seguir tu avance.',
+                  ),
                 ),
               ),
             ),
@@ -214,13 +248,21 @@ class _GoalsScreenState extends State<GoalsScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                '${_currency(goal.currentAmount)} de ${_currency(goal.targetAmount)}',
+                                strings.pick(
+                                  pt: '${_currency(goal.currentAmount)} de ${_currency(goal.targetAmount)}',
+                                  en: '${_currency(goal.currentAmount)} of ${_currency(goal.targetAmount)}',
+                                  es: '${_currency(goal.currentAmount)} de ${_currency(goal.targetAmount)}',
+                                ),
                               ),
                               const SizedBox(height: 8),
                               LinearProgressIndicator(value: goal.progress),
                               const SizedBox(height: 8),
                               Text(
-                                'Faltam ${_currency(goal.remainingAmount)}${goal.deadline == null ? '' : ' ate ${_formatDate(goal.deadline!)}'}',
+                                strings.pick(
+                                  pt: 'Faltam ${_currency(goal.remainingAmount)}${goal.deadline == null ? '' : ' ate ${_formatDate(goal.deadline!)}'}',
+                                  en: '${_currency(goal.remainingAmount)} left${goal.deadline == null ? '' : ' until ${_formatDate(goal.deadline!)}'}',
+                                  es: 'Faltan ${_currency(goal.remainingAmount)}${goal.deadline == null ? '' : ' hasta ${_formatDate(goal.deadline!)}'}',
+                                ),
                               ),
                             ],
                           ),
@@ -234,11 +276,26 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                 await _deleteGoal(goal);
                             }
                           },
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(value: 'edit', child: Text('Editar')),
+                          itemBuilder: (_) => [
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Text(
+                                strings.pick(
+                                  pt: 'Editar',
+                                  en: 'Edit',
+                                  es: 'Editar',
+                                ),
+                              ),
+                            ),
                             PopupMenuItem(
                               value: 'delete',
-                              child: Text('Excluir'),
+                              child: Text(
+                                strings.pick(
+                                  pt: 'Excluir',
+                                  en: 'Delete',
+                                  es: 'Eliminar',
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -255,7 +312,13 @@ class _GoalsScreenState extends State<GoalsScreen> {
                             mode: GoalTransactionMode.contribution,
                           ),
                           icon: const Icon(Icons.savings_outlined),
-                          label: const Text('Aportar'),
+                          label: Text(
+                            strings.pick(
+                              pt: 'Aportar',
+                              en: 'Save',
+                              es: 'Guardar',
+                            ),
+                          ),
                         ),
                         OutlinedButton.icon(
                           onPressed: goal.currentAmount <= 0
@@ -265,7 +328,13 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                   mode: GoalTransactionMode.withdrawal,
                                 ),
                           icon: const Icon(Icons.outbox_outlined),
-                          label: const Text('Retirar'),
+                          label: Text(
+                            strings.pick(
+                              pt: 'Retirar',
+                              en: 'Withdraw',
+                              es: 'Retirar',
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -282,12 +351,22 @@ class _GoalsScreenState extends State<GoalsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Historico de movimentacoes',
+                    strings.pick(
+                      pt: 'Historico de movimentacoes',
+                      en: 'Movement history',
+                      es: 'Historial de movimientos',
+                    ),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 12),
                   if (_transactions.isEmpty)
-                    const Text('Nenhuma movimentacao registrada ainda.'),
+                    Text(
+                      strings.pick(
+                        pt: 'Nenhuma movimentacao registrada ainda.',
+                        en: 'No movements recorded yet.',
+                        es: 'Aun no hay movimientos.',
+                      ),
+                    ),
                   ..._transactions.map(
                     (transaction) => ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -318,11 +397,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
     }
 
     return OmnyaSubPageScaffold(
-      title: 'Objetivos',
+      title: strings.goals,
       heroTagPrefix: 'goals',
       floatingActions: [
         OmnyaFabAction(
-          label: 'Novo objetivo',
+          label: strings.newGoal,
           icon: Icons.add,
           onTap: _openCreateGoalDialog,
         ),
@@ -367,13 +446,29 @@ class _GoalsScreenState extends State<GoalsScreen> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${suggestion.title} entrou nos objetivos.')),
+        SnackBar(
+          content: Text(
+            AppStrings.of(context).pick(
+              pt: '${suggestion.title} entrou nos objetivos.',
+              en: '${suggestion.title} was added to your goals.',
+              es: '${suggestion.title} fue agregada a tus metas.',
+            ),
+          ),
+        ),
       );
       await _loadData();
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Nao consegui criar essa sugestao: $error')),
+        SnackBar(
+          content: Text(
+            AppStrings.of(context).pick(
+              pt: 'Nao consegui criar essa sugestao: $error',
+              en: 'Could not create this suggestion: $error',
+              es: 'No pude crear esta sugerencia: $error',
+            ),
+          ),
+        ),
       );
     }
   }
@@ -410,18 +505,36 @@ class _GoalsScreenState extends State<GoalsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Excluir objetivo'),
+        title: Text(
+          AppStrings.of(context).pick(
+            pt: 'Excluir objetivo',
+            en: 'Delete goal',
+            es: 'Eliminar meta',
+          ),
+        ),
         content: Text(
-          'Deseja excluir "${goal.title}"?${goal.currentAmount > 0 ? ' O valor atual voltara a ficar disponivel no saldo.' : ''}',
+          AppStrings.of(context).pick(
+            pt: 'Deseja excluir "${goal.title}"?${goal.currentAmount > 0 ? ' O valor atual voltara a ficar disponivel no saldo.' : ''}',
+            en: 'Delete "${goal.title}"?${goal.currentAmount > 0 ? ' The saved amount will return to your available balance.' : ''}',
+            es: 'Eliminar "${goal.title}"?${goal.currentAmount > 0 ? ' El valor guardado volvera al saldo disponible.' : ''}',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+            child: Text(
+              AppStrings.of(
+                context,
+              ).pick(pt: 'Cancelar', en: 'Cancel', es: 'Cancelar'),
+            ),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Excluir'),
+            child: Text(
+              AppStrings.of(
+                context,
+              ).pick(pt: 'Excluir', en: 'Delete', es: 'Eliminar'),
+            ),
           ),
         ],
       ),
@@ -432,7 +545,15 @@ class _GoalsScreenState extends State<GoalsScreen> {
     await _goalService.deleteGoal(goal.id);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Objetivo removido com sucesso.')),
+      SnackBar(
+        content: Text(
+          AppStrings.of(context).pick(
+            pt: 'Objetivo removido com sucesso.',
+            en: 'Goal removed.',
+            es: 'Meta eliminada.',
+          ),
+        ),
+      ),
     );
     await _loadData();
   }
@@ -514,6 +635,7 @@ class _GoalSuggestionsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final strings = AppStrings.of(context);
 
     return Card(
       child: Padding(
@@ -530,7 +652,11 @@ class _GoalSuggestionsCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Sugestoes para se organizar',
+                    strings.pick(
+                      pt: 'Sugestoes para se organizar',
+                      en: 'Ideas to stay organized',
+                      es: 'Ideas para organizarte',
+                    ),
                     style: theme.textTheme.titleMedium,
                   ),
                 ),
@@ -538,7 +664,11 @@ class _GoalSuggestionsCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Ideias rapidas baseadas no que costuma pesar na rotina de quem entrega.',
+              strings.pick(
+                pt: 'Ideias rapidas baseadas no que costuma pesar na rotina de quem entrega.',
+                en: 'Quick ideas based on the costs that usually show up in a delivery routine.',
+                es: 'Ideas rapidas basadas en los costos comunes de quien reparte.',
+              ),
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
@@ -588,6 +718,7 @@ class _GoalSuggestionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final strings = AppStrings.of(context);
 
     return Container(
       width: 320,
@@ -637,7 +768,9 @@ class _GoalSuggestionTile extends StatelessWidget {
             child: FilledButton.tonalIcon(
               onPressed: onAccept,
               icon: const Icon(Icons.add),
-              label: const Text('Adicionar'),
+              label: Text(
+                strings.pick(pt: 'Adicionar', en: 'Add', es: 'Agregar'),
+              ),
             ),
           ),
         ],
@@ -709,9 +842,17 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+
     return AlertDialog(
       title: Text(
-        widget.initialGoal == null ? 'Novo objetivo' : 'Editar objetivo',
+        widget.initialGoal == null
+            ? strings.newGoal
+            : strings.pick(
+                pt: 'Editar objetivo',
+                en: 'Edit goal',
+                es: 'Editar meta',
+              ),
       ),
       content: SizedBox(
         width: 460,
@@ -723,12 +864,24 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
               children: [
                 TextFormField(
                   controller: _titleController,
-                  decoration: const InputDecoration(labelText: 'Titulo'),
+                  decoration: InputDecoration(
+                    labelText: strings.pick(
+                      pt: 'Titulo',
+                      en: 'Title',
+                      es: 'Titulo',
+                    ),
+                  ),
                   validator: _required,
                 ),
                 TextFormField(
                   controller: _targetAmountController,
-                  decoration: const InputDecoration(labelText: 'Valor alvo'),
+                  decoration: InputDecoration(
+                    labelText: strings.pick(
+                      pt: 'Valor alvo',
+                      en: 'Target amount',
+                      es: 'Valor objetivo',
+                    ),
+                  ),
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
@@ -736,17 +889,27 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
                 ),
                 TextFormField(
                   controller: _iconController,
-                  decoration: const InputDecoration(
-                    labelText: 'Icone ou emoji (opcional)',
+                  decoration: InputDecoration(
+                    labelText: strings.pick(
+                      pt: 'Icone ou emoji (opcional)',
+                      en: 'Icon or emoji (optional)',
+                      es: 'Icono o emoji (opcional)',
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Prazo'),
+                  title: Text(
+                    strings.pick(pt: 'Prazo', en: 'Deadline', es: 'Plazo'),
+                  ),
                   subtitle: Text(
                     _deadline == null
-                        ? 'Sem prazo definido'
+                        ? strings.pick(
+                            pt: 'Sem prazo definido',
+                            en: 'No deadline set',
+                            es: 'Sin plazo definido',
+                          )
                         : '${_deadline!.day.toString().padLeft(2, '0')}/${_deadline!.month.toString().padLeft(2, '0')}/${_deadline!.year}',
                   ),
                   trailing: Row(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../models/driver_reserve_preference.dart';
+
 class AppStrings {
   const AppStrings._(this._locale);
 
@@ -20,6 +22,201 @@ class AppStrings {
 
   String get settingsTitle =>
       pick(pt: 'Configuracoes', en: 'Settings', es: 'Configuracion');
+
+  String get overview =>
+      pick(pt: 'Visao geral', en: 'Overview', es: 'Vision general');
+
+  String get home => pick(pt: 'Home', en: 'Home', es: 'Inicio');
+
+  String get journeys => pick(pt: 'Jornadas', en: 'Shifts', es: 'Jornadas');
+
+  String get journeysShort => pick(pt: 'Jorn.', en: 'Shifts', es: 'Jorn.');
+
+  String get goals => pick(pt: 'Objetivos', en: 'Goals', es: 'Objetivos');
+
+  String get goalsShort => pick(pt: 'Metas', en: 'Goals', es: 'Metas');
+
+  String get finance => pick(pt: 'Financeiro', en: 'Finance', es: 'Finanzas');
+
+  String get financeShort => pick(pt: 'Fin.', en: 'Fin.', es: 'Fin.');
+
+  String get settingsShort =>
+      pick(pt: 'Config.', en: 'Settings', es: 'Ajustes');
+
+  String get alertsTooltip => pick(pt: 'Avisos', en: 'Alerts', es: 'Avisos');
+
+  String get signOutTooltip => pick(pt: 'Sair', en: 'Sign out', es: 'Salir');
+
+  String get newItem => pick(pt: 'Novo', en: 'New', es: 'Nuevo');
+
+  String get close => pick(pt: 'Fechar', en: 'Close', es: 'Cerrar');
+
+  String get newJourney =>
+      pick(pt: 'Nova jornada', en: 'New shift', es: 'Nueva jornada');
+
+  String get newGoal =>
+      pick(pt: 'Novo objetivo', en: 'New goal', es: 'Nuevo objetivo');
+
+  String get newExpense =>
+      pick(pt: 'Nova despesa', en: 'New expense', es: 'Nuevo gasto');
+
+  String get newFueling => pick(
+    pt: 'Novo abastecimento',
+    en: 'New fueling',
+    es: 'Nuevo abastecimiento',
+  );
+
+  String get newMaintenance => pick(
+    pt: 'Nova manutencao',
+    en: 'New maintenance',
+    es: 'Nuevo mantenimiento',
+  );
+
+  String get newVehicle =>
+      pick(pt: 'Novo veiculo', en: 'New vehicle', es: 'Nuevo vehiculo');
+
+  String get newPlatform =>
+      pick(pt: 'Nova plataforma', en: 'New platform', es: 'Nueva plataforma');
+
+  String get yourDayInApp => pick(
+    pt: 'Seu dia no app',
+    en: 'Your day in the app',
+    es: 'Tu dia en la app',
+  );
+
+  String get today => pick(pt: 'Hoje', en: 'Today', es: 'Hoy');
+
+  String get week => pick(pt: 'Semana', en: 'Week', es: 'Semana');
+
+  String get month => pick(pt: 'Mes', en: 'Month', es: 'Mes');
+
+  String get custom =>
+      pick(pt: 'Personalizado', en: 'Custom', es: 'Personalizado');
+
+  String periodSummary(String periodLabel) => pick(
+    pt: 'Seu resumo de ${periodLabel.toLowerCase()}',
+    en: 'Your ${periodLabel.toLowerCase()} summary',
+    es: 'Tu resumen de ${periodLabel.toLowerCase()}',
+  );
+
+  String get driverFallback =>
+      pick(pt: 'Motorista', en: 'Driver', es: 'Conductor');
+
+  String planLabel(String planName) =>
+      pick(pt: 'Plano $planName', en: '$planName plan', es: 'Plan $planName');
+
+  String journeysCount(int count) =>
+      pick(pt: '$count jornadas', en: '$count shifts', es: '$count jornadas');
+
+  String deliveriesCount(int count) => pick(
+    pt: '$count entregas',
+    en: '$count deliveries',
+    es: '$count entregas',
+  );
+
+  String get account => pick(pt: 'Conta', en: 'Account', es: 'Cuenta');
+
+  String get userFallback => pick(pt: 'usuario', en: 'user', es: 'usuario');
+
+  String get currentNet =>
+      pick(pt: 'Liquido atual', en: 'Current net', es: 'Neto actual');
+
+  String get income => pick(pt: 'Receita', en: 'Income', es: 'Ingresos');
+
+  String incomeDelta(String delta) => pick(
+    pt: 'Receita $delta que antes',
+    en: 'Income $delta vs before',
+    es: 'Ingresos $delta que antes',
+  );
+
+  String get moneyFlow => pick(
+    pt: 'Como o dinheiro entrou',
+    en: 'How money came in',
+    es: 'Como entro el dinero',
+  );
+
+  String get periodComparison => pick(
+    pt: 'Comparativo do periodo',
+    en: 'Period comparison',
+    es: 'Comparativo del periodo',
+  );
+
+  String get leftOver => pick(pt: 'Sobrou', en: 'Left over', es: 'Sobro');
+
+  String get deliveries =>
+      pick(pt: 'Entregas', en: 'Deliveries', es: 'Entregas');
+
+  String get freeBalance => pick(pt: 'Livre', en: 'Free', es: 'Libre');
+
+  String get costs => pick(pt: 'Custos', en: 'Costs', es: 'Costos');
+
+  String get distance => pick(pt: 'Distancia', en: 'Distance', es: 'Distancia');
+
+  String get goalsDetail => pick(pt: 'Objetivos', en: 'Goals', es: 'Objetivos');
+
+  String launchesCount(int count) => pick(
+    pt: '$count lancamentos',
+    en: '$count entries',
+    es: '$count movimientos',
+  );
+
+  String get costPerKm => pick(pt: 'custo/km', en: 'cost/km', es: 'costo/km');
+
+  String perJourney(String value) => pick(
+    pt: '$value por jornada',
+    en: '$value per shift',
+    es: '$value por jornada',
+  );
+
+  String deltaLabel(double delta, String fallback) {
+    final prefix = delta >= 0 ? '+' : '';
+    final value = '$prefix${delta.toStringAsFixed(0)}%';
+    return pick(
+      pt: '$value que antes | $fallback',
+      en: '$value vs before | $fallback',
+      es: '$value que antes | $fallback',
+    );
+  }
+
+  String get saveForLater =>
+      pick(pt: 'Para guardar', en: 'Set aside', es: 'Para guardar');
+
+  String get yourProgress =>
+      pick(pt: 'Seu progresso', en: 'Your progress', es: 'Tu progreso');
+
+  String level(int level) =>
+      pick(pt: 'Nivel $level', en: 'Level $level', es: 'Nivel $level');
+
+  String xpAndAchievements(int xp, int medals) => pick(
+    pt: '$xp XP | $medals conquistas',
+    en: '$xp XP | $medals achievements',
+    es: '$xp XP | $medals logros',
+  );
+
+  String get viewProgress =>
+      pick(pt: 'Ver progresso', en: 'View progress', es: 'Ver progreso');
+
+  String get notEnoughHistory => pick(
+    pt: 'Ainda falta historico para desenhar.',
+    en: 'Not enough history to draw this yet.',
+    es: 'Todavia falta historial para dibujar esto.',
+  );
+
+  String get performanceTips => pick(
+    pt: 'Dicas para render mais',
+    en: 'Tips to earn better',
+    es: 'Consejos para rendir mas',
+  );
+
+  String get noMovement =>
+      pick(pt: 'sem movimento', en: 'no activity', es: 'sin movimiento');
+
+  String get newMovement =>
+      pick(pt: 'novo movimento', en: 'new activity', es: 'nuevo movimiento');
+
+  String get before => pick(pt: 'Antes', en: 'Before', es: 'Antes');
+
+  String get period => pick(pt: 'Periodo', en: 'Period', es: 'Periodo');
 
   String get accountIdentity => pick(
     pt: 'Conta e identidade',
@@ -66,6 +263,30 @@ class AppStrings {
     es: 'Elige como Omnya Driver habla contigo y muestra tus valores.',
   );
 
+  String languageLabel(String code) => switch (code) {
+    'en-US' => pick(pt: 'Ingles', en: 'English', es: 'Ingles'),
+    'es-ES' => pick(pt: 'Espanhol', en: 'Spanish', es: 'Espanol'),
+    _ => pick(
+      pt: 'Portugues do Brasil',
+      en: 'Brazilian Portuguese',
+      es: 'Portugues de Brasil',
+    ),
+  };
+
+  String currencyLabel(String code) => switch (code) {
+    'USD' => pick(
+      pt: 'Dolar americano',
+      en: 'US dollar',
+      es: 'Dolar estadounidense',
+    ),
+    'EUR' => pick(pt: 'Euro', en: 'Euro', es: 'Euro'),
+    _ => pick(
+      pt: 'Real brasileiro',
+      en: 'Brazilian real',
+      es: 'Real brasileno',
+    ),
+  };
+
   String get language => pick(pt: 'Idioma', en: 'Language', es: 'Idioma');
 
   String get currency => pick(pt: 'Moeda', en: 'Currency', es: 'Moneda');
@@ -90,6 +311,33 @@ class AppStrings {
     en: 'Automatic reserve',
     es: 'Reserva automatica',
   );
+
+  String reserveSummary(
+    DriverReservePreference preference,
+    String Function(double value) currency,
+  ) {
+    return switch (preference.mode) {
+      DriverReserveMode.none => pick(
+        pt: 'Reserva desligada',
+        en: 'Reserve off',
+        es: 'Reserva apagada',
+      ),
+      DriverReserveMode.dailyPercent => pick(
+        pt: '${_percentText(preference.dailyPercentage)}% do que sobrar',
+        en: '${_percentText(preference.dailyPercentage)}% of what is left',
+        es: '${_percentText(preference.dailyPercentage)}% de lo que sobre',
+      ),
+      DriverReserveMode.perDeliveryFixed => pick(
+        pt: '${currency(preference.amountPerDelivery)} por entrega',
+        en: '${currency(preference.amountPerDelivery)} per delivery',
+        es: '${currency(preference.amountPerDelivery)} por entrega',
+      ),
+    };
+  }
+
+  String _percentText(double value) {
+    return value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
+  }
 
   String get records => pick(pt: 'Cadastros', en: 'Records', es: 'Registros');
 

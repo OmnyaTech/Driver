@@ -60,7 +60,7 @@ class SettingsScreen extends StatelessWidget {
               icon: Icons.palette_outlined,
               title: strings.appPreferences,
               subtitle:
-                  '${profile?.languageLabel ?? 'Portugues'} - ${profile?.currencyLabel ?? 'Real brasileiro'}',
+                  '${strings.languageLabel(profile?.languageCode ?? 'pt-BR')} - ${strings.currencyLabel(profile?.currencyCode ?? 'BRL')}',
               onTap: () => _openAppPreferenceSheet(context),
             ),
             _SettingsTile(
@@ -77,11 +77,19 @@ class SettingsScreen extends StatelessWidget {
             _SettingsTile(
               icon: Icons.savings_outlined,
               title: strings.automaticReserve,
-              subtitle:
-                  profile?.reservePreference.summaryLabelWith(
-                    format.currency,
-                  ) ??
-                  '30% do que sobrar',
+              subtitle: profile == null
+                  ? strings.reserveSummary(
+                      const DriverReservePreference(
+                        mode: DriverReserveMode.dailyPercent,
+                        dailyPercentage: 30,
+                        amountPerDelivery: 0,
+                      ),
+                      format.currency,
+                    )
+                  : strings.reserveSummary(
+                      profile.reservePreference,
+                      format.currency,
+                    ),
               onTap: () => _openReservePreferenceSheet(context),
             ),
           ],

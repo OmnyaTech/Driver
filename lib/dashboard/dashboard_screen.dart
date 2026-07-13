@@ -17,6 +17,7 @@ import '../services/gamification_service.dart';
 import '../services/operational_intelligence_service.dart';
 import '../settings/settings_screen.dart';
 import '../utilities/localization/app_format.dart';
+import '../utilities/localization/app_strings.dart';
 import '../utilities/state/app_session.dart';
 import '../utilities/ui/omnya_shell.dart';
 import '../utilities/ui/screen_action_controller.dart';
@@ -61,21 +62,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final session = context.watch<AppSession>();
+    final strings = AppStrings.of(context);
     final compactNavigation = MediaQuery.sizeOf(context).width < 720;
 
     final tabs = [
       _DashboardTab(
-        title: 'Visao geral',
+        title: strings.overview,
         page: _OverviewTab(
           session: session,
           onNotificationsChanged: _loadUnreadNotifications,
         ),
         icon: Icons.dashboard_outlined,
         selectedIcon: Icons.dashboard,
-        label: 'Home',
+        label: strings.home,
       ),
       _DashboardTab(
-        title: 'Jornadas',
+        title: strings.journeys,
         page: JourneysScreen(
           showCreateButton: false,
           actionController: _journeyController,
@@ -83,10 +85,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         icon: Icons.route_outlined,
         selectedIcon: Icons.route,
-        label: compactNavigation ? 'Jorn.' : 'Jornadas',
+        label: compactNavigation ? strings.journeysShort : strings.journeys,
       ),
       _DashboardTab(
-        title: 'Objetivos',
+        title: strings.goals,
         page: GoalsScreen(
           showCreateButton: false,
           actionController: _goalController,
@@ -94,10 +96,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         icon: Icons.savings_outlined,
         selectedIcon: Icons.savings,
-        label: compactNavigation ? 'Metas' : 'Objetivos',
+        label: compactNavigation ? strings.goalsShort : strings.goals,
       ),
       _DashboardTab(
-        title: 'Financeiro',
+        title: strings.finance,
         page: FinanceHubScreen(
           expenseController: _expenseController,
           fuelingController: _fuelingController,
@@ -105,21 +107,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         icon: Icons.account_balance_wallet_outlined,
         selectedIcon: Icons.account_balance_wallet,
-        label: compactNavigation ? 'Fin.' : 'Financeiro',
+        label: compactNavigation ? strings.financeShort : strings.finance,
       ),
       _DashboardTab(
-        title: 'Comunidade',
+        title: strings.community,
         page: const CommunityHubScreen(),
         icon: Icons.groups_outlined,
         selectedIcon: Icons.groups,
-        label: compactNavigation ? 'Social' : 'Comunidade',
+        label: compactNavigation ? 'Social' : strings.community,
       ),
       _DashboardTab(
-        title: 'Configuracoes',
+        title: strings.settingsTitle,
         page: const SettingsScreen(),
         icon: Icons.settings_outlined,
         selectedIcon: Icons.settings,
-        label: compactNavigation ? 'Config.' : 'Config.',
+        label: strings.settingsShort,
       ),
     ];
 
@@ -136,7 +138,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: 'Avisos',
+            tooltip: strings.alertsTooltip,
             onPressed: _openNotifications,
             icon: Badge(
               isLabelVisible: _unreadNotifications > 0,
@@ -147,7 +149,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Container(
             margin: const EdgeInsets.only(right: 12),
             child: IconButton(
-              tooltip: 'Sair',
+              tooltip: strings.signOutTooltip,
               onPressed: session.isBusy ? null : session.signOut,
               icon: const Icon(Icons.logout),
             ),
@@ -176,21 +178,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   List<OmnyaFabAction> _buildFabActions() {
+    final strings = AppStrings.of(context);
     switch (_currentIndex) {
       case 0:
         return [
           OmnyaFabAction(
-            label: 'Nova jornada',
+            label: strings.newJourney,
             icon: Icons.route,
             onTap: _journeyController.openCreate,
           ),
           OmnyaFabAction(
-            label: 'Novo objetivo',
+            label: strings.newGoal,
             icon: Icons.savings,
             onTap: _goalController.openCreate,
           ),
           OmnyaFabAction(
-            label: 'Nova despesa',
+            label: strings.newExpense,
             icon: Icons.receipt_long,
             onTap: _expenseController.openCreate,
           ),
@@ -198,7 +201,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 1:
         return [
           OmnyaFabAction(
-            label: 'Nova jornada',
+            label: strings.newJourney,
             icon: Icons.route,
             onTap: _journeyController.openCreate,
           ),
@@ -206,7 +209,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 2:
         return [
           OmnyaFabAction(
-            label: 'Novo objetivo',
+            label: strings.newGoal,
             icon: Icons.savings,
             onTap: _goalController.openCreate,
           ),
@@ -214,17 +217,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 3:
         return [
           OmnyaFabAction(
-            label: 'Nova despesa',
+            label: strings.newExpense,
             icon: Icons.receipt_long,
             onTap: _expenseController.openCreate,
           ),
           OmnyaFabAction(
-            label: 'Novo abastecimento',
+            label: strings.newFueling,
             icon: Icons.local_gas_station,
             onTap: _fuelingController.openCreate,
           ),
           OmnyaFabAction(
-            label: 'Nova manutencao',
+            label: strings.newMaintenance,
             icon: Icons.build,
             onTap: _maintenanceController.openCreate,
           ),
@@ -232,7 +235,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 5:
         return [
           OmnyaFabAction(
-            label: 'Novo veiculo',
+            label: strings.newVehicle,
             icon: Icons.two_wheeler,
             onTap: () => _pushManagedCreate(
               (controller) => VehiclesScreen(
@@ -242,7 +245,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           OmnyaFabAction(
-            label: 'Nova plataforma',
+            label: strings.newPlatform,
             icon: Icons.storefront,
             onTap: () => _pushManagedCreate(
               (controller) => PlatformsScreen(
@@ -459,6 +462,7 @@ class _OverviewTabState extends State<_OverviewTab> {
   @override
   Widget build(BuildContext context) {
     final profile = widget.session.profile;
+    final strings = AppStrings.of(context);
 
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
@@ -467,7 +471,7 @@ class _OverviewTabState extends State<_OverviewTab> {
     final intelligence =
         _intelligence ??
         AppOperationalIntelligence(
-          periodLabel: 'Hoje',
+          periodLabel: strings.today,
           periodStart: DateTime.now(),
           periodEnd: DateTime.now(),
           currentMetrics: const AppDashboardMetrics(
@@ -505,7 +509,11 @@ class _OverviewTabState extends State<_OverviewTab> {
           trend: const [],
           insights: const [],
           suggestedReserve: 0,
-          suggestedReserveLabel: 'Sem reserva sugerida agora',
+          suggestedReserveLabel: strings.pick(
+            pt: 'Sem reserva sugerida agora',
+            en: 'No reserve suggestion right now',
+            es: 'Sin sugerencia de reserva ahora',
+          ),
         );
     final metrics = intelligence.currentMetrics;
     final gamification =
@@ -539,7 +547,7 @@ class _OverviewTabState extends State<_OverviewTab> {
             children: [
               Expanded(
                 child: Text(
-                  'Seu dia no app',
+                  strings.yourDayInApp,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
@@ -557,24 +565,24 @@ class _OverviewTabState extends State<_OverviewTab> {
             runSpacing: 10,
             children: [
               _RangeChip(
-                label: 'Hoje',
+                label: strings.today,
                 selected: _preset == OperationalRangePreset.today,
                 onTap: () => _changePreset(OperationalRangePreset.today),
               ),
               _RangeChip(
-                label: 'Semana',
+                label: strings.week,
                 selected: _preset == OperationalRangePreset.week,
                 onTap: () => _changePreset(OperationalRangePreset.week),
               ),
               _RangeChip(
-                label: 'Mes',
+                label: strings.month,
                 selected: _preset == OperationalRangePreset.month,
                 onTap: () => _changePreset(OperationalRangePreset.month),
               ),
               _RangeChip(
                 label: _preset == OperationalRangePreset.custom
                     ? _rangeLabel
-                    : 'Personalizado',
+                    : strings.custom,
                 selected: _preset == OperationalRangePreset.custom,
                 onTap: () async {
                   setState(() => _preset = OperationalRangePreset.custom);
@@ -614,7 +622,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Seu resumo de ${intelligence.periodLabel.toLowerCase()}',
+                        strings.periodSummary(intelligence.periodLabel),
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(color: Colors.white),
                       ),
@@ -626,30 +634,38 @@ class _OverviewTabState extends State<_OverviewTab> {
                   spacing: 10,
                   runSpacing: 10,
                   children: [
-                    _HeroInfoPill(label: profile?.displayName ?? 'Motorista'),
                     _HeroInfoPill(
-                      label: 'Plano ${profile?.planType.name ?? 'free'}',
+                      label: profile?.displayName ?? strings.driverFallback,
                     ),
-                    _HeroInfoPill(label: '${metrics.totalJourneys} jornadas'),
+                    _HeroInfoPill(
+                      label: strings.planLabel(
+                        profile?.planType.name ?? 'free',
+                      ),
+                    ),
+                    _HeroInfoPill(
+                      label: strings.journeysCount(metrics.totalJourneys),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  'Conta: ${profile?.email ?? 'usuario'}',
+                  '${strings.account}: ${profile?.email ?? strings.userFallback}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.white.withValues(alpha: 0.82),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Liquido atual: ${_currency(metrics.netResult)}',
+                  '${strings.currentNet}: ${_currency(metrics.netResult)}',
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(color: Colors.white),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Receita ${_formatDelta(intelligence.incomeDeltaPct())} que antes',
+                  strings.incomeDelta(
+                    _formatDelta(intelligence.incomeDeltaPct()),
+                  ),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.white.withValues(alpha: 0.82),
                   ),
@@ -680,7 +696,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Como o dinheiro entrou',
+                          strings.moneyFlow,
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),
@@ -708,44 +724,50 @@ class _OverviewTabState extends State<_OverviewTab> {
           _MetricGrid(
             metrics: [
               _MetricData(
-                title: 'Receita',
+                title: strings.income,
                 value: _currency(metrics.totalIncome),
                 detail: _deltaLabel(
                   intelligence.incomeDeltaPct(),
-                  '${metrics.totalDeliveries} entregas',
+                  strings.deliveriesCount(metrics.totalDeliveries),
                 ),
               ),
               _MetricData(
-                title: 'Sobrou',
+                title: strings.leftOver,
                 value: _currency(metrics.netResult),
                 detail: _deltaLabel(
                   intelligence.netDeltaPct(),
-                  '${metrics.totalJourneys} jornadas',
+                  strings.journeysCount(metrics.totalJourneys),
                 ),
               ),
               _MetricData(
-                title: 'Entregas',
+                title: strings.deliveries,
                 value: '${metrics.totalDeliveries}',
                 detail: _deltaLabel(
                   intelligence.deliveryDeltaPct(),
-                  '${metrics.averageDeliveriesPerJourney.toStringAsFixed(1)} por jornada',
+                  strings.perJourney(
+                    metrics.averageDeliveriesPerJourney.toStringAsFixed(1),
+                  ),
                 ),
               ),
               _MetricData(
-                title: 'Livre',
+                title: strings.freeBalance,
                 value: _currency(metrics.availableBalance),
-                detail: 'Objetivos ${_currency(metrics.allocatedToGoals)}',
-              ),
-              _MetricData(
-                title: 'Custos',
-                value: _currency(metrics.totalOperationalCosts),
                 detail:
-                    '${metrics.totalTripExpenses + metrics.totalFuelings + metrics.totalMaintenances} lancamentos',
+                    '${strings.goalsDetail} ${_currency(metrics.allocatedToGoals)}',
               ),
               _MetricData(
-                title: 'Distancia',
+                title: strings.costs,
+                value: _currency(metrics.totalOperationalCosts),
+                detail: strings.launchesCount(
+                  metrics.totalTripExpenses +
+                      metrics.totalFuelings +
+                      metrics.totalMaintenances,
+                ),
+              ),
+              _MetricData(
+                title: strings.distance,
                 value: '${metrics.totalDistanceKm.toStringAsFixed(1)} km',
-                detail: 'custo/km ${_currency(metrics.costPerKm)}',
+                detail: '${strings.costPerKm} ${_currency(metrics.costPerKm)}',
               ),
             ],
           ),
@@ -764,7 +786,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Para guardar',
+                            strings.saveForLater,
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           const SizedBox(height: 10),
@@ -791,17 +813,20 @@ class _OverviewTabState extends State<_OverviewTab> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Seu progresso',
+                            strings.yourProgress,
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            'Nivel ${gamification.level}',
+                            strings.level(gamification.level),
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            '${gamification.xp} XP | ${gamification.medalsCount} conquistas',
+                            strings.xpAndAchievements(
+                              gamification.xp,
+                              gamification.medalsCount,
+                            ),
                           ),
                           const SizedBox(height: 10),
                           Wrap(
@@ -814,7 +839,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                                     builder: (_) => const GamificationScreen(),
                                   ),
                                 ),
-                                child: const Text('Ver progresso'),
+                                child: Text(strings.viewProgress),
                               ),
                               OutlinedButton(
                                 onPressed: () => Navigator.of(context).push(
@@ -822,7 +847,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                                     builder: (_) => const CommunityHubScreen(),
                                   ),
                                 ),
-                                child: const Text('Comunidade'),
+                                child: Text(strings.community),
                               ),
                             ],
                           ),
@@ -869,7 +894,7 @@ class _OverviewTabState extends State<_OverviewTab> {
   }
 
   String get _rangeLabel {
-    if (_range == null) return 'Periodo';
+    if (_range == null) return AppStrings.of(context).period;
     return '${_formatDate(_range!.start)} - ${_formatDate(_range!.end)}';
   }
 
@@ -884,8 +909,7 @@ class _OverviewTabState extends State<_OverviewTab> {
   }
 
   String _deltaLabel(double delta, String fallback) {
-    final prefix = delta >= 0 ? '+' : '';
-    return '$prefix${delta.toStringAsFixed(0)}% que antes | $fallback';
+    return AppStrings.of(context).deltaLabel(delta, fallback);
   }
 }
 
@@ -1030,7 +1054,7 @@ class _SparklineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (points.isEmpty) {
-      return const Center(child: Text('Ainda falta historico para desenhar.'));
+      return Center(child: Text(AppStrings.of(context).notEnoughHistory));
     }
 
     return CustomPaint(
@@ -1069,24 +1093,31 @@ class _ComparisonBoard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final format = AppFormat.of(context);
+    final strings = AppStrings.of(context);
     final items = [
       _ComparisonItem(
-        label: 'Receita',
+        label: strings.income,
         current: current.totalIncome,
         previous: previous.totalIncome,
         valueLabel: format.currency(current.totalIncome),
+        noMovementLabel: strings.noMovement,
+        newMovementLabel: strings.newMovement,
       ),
       _ComparisonItem(
-        label: 'Sobrou',
+        label: strings.leftOver,
         current: current.netResult,
         previous: previous.netResult,
         valueLabel: format.currency(current.netResult),
+        noMovementLabel: strings.noMovement,
+        newMovementLabel: strings.newMovement,
       ),
       _ComparisonItem(
-        label: 'Entregas',
+        label: strings.deliveries,
         current: current.totalDeliveries.toDouble(),
         previous: previous.totalDeliveries.toDouble(),
         valueLabel: '${current.totalDeliveries}',
+        noMovementLabel: strings.noMovement,
+        newMovementLabel: strings.newMovement,
       ),
     ];
 
@@ -1097,7 +1128,7 @@ class _ComparisonBoard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Comparativo do periodo',
+              strings.periodComparison,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 14),
@@ -1115,12 +1146,16 @@ class _ComparisonItem {
     required this.current,
     required this.previous,
     required this.valueLabel,
+    required this.noMovementLabel,
+    required this.newMovementLabel,
   });
 
   final String label;
   final double current;
   final double previous;
   final String valueLabel;
+  final String noMovementLabel;
+  final String newMovementLabel;
 
   double get ratio {
     final maxValue = [
@@ -1133,7 +1168,7 @@ class _ComparisonItem {
 
   String get deltaLabel {
     if (previous.abs() < 0.001) {
-      return current.abs() < 0.001 ? 'sem movimento' : 'novo movimento';
+      return current.abs() < 0.001 ? noMovementLabel : newMovementLabel;
     }
     final delta = ((current - previous) / previous.abs()) * 100;
     final prefix = delta >= 0 ? '+' : '';
@@ -1149,6 +1184,7 @@ class _ComparisonRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final strings = AppStrings.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -1171,7 +1207,7 @@ class _ComparisonRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  'Antes: ${item.previous.toStringAsFixed(item.label == 'Entregas' ? 0 : 2)}',
+                  '${strings.before}: ${item.previous.toStringAsFixed(item.label == strings.deliveries ? 0 : 2)}',
                   style: theme.textTheme.bodySmall,
                 ),
               ],
@@ -1268,7 +1304,7 @@ class _InsightBoard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Dicas para render mais',
+              AppStrings.of(context).performanceTips,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),

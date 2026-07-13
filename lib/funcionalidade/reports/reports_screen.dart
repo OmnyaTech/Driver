@@ -6,6 +6,7 @@ import '../../models/app_operational_report.dart';
 import '../../services/report_export_service.dart';
 import '../../services/reporting_service.dart';
 import '../../utilities/localization/app_format.dart';
+import '../../utilities/localization/app_strings.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -45,8 +46,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _errorMessage =
-            'Nao foi possivel carregar os relatorios nesse momento.';
+        _errorMessage = AppStrings.of(context).pick(
+          pt: 'Nao foi possivel carregar os relatorios nesse momento.',
+          en: 'We could not load reports right now.',
+          es: 'No pudimos cargar los reportes ahora.',
+        );
       });
     } finally {
       if (mounted) {
@@ -57,6 +61,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -111,7 +117,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             setState(() => _range = null);
                             _loadReport();
                           },
-                    child: const Text('Limpar'),
+                    child: Text(
+                      strings.pick(pt: 'Limpar', en: 'Clear', es: 'Limpiar'),
+                    ),
                   ),
                 ],
               );
@@ -121,7 +129,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Relatorios operacionais',
+                      strings.pick(
+                        pt: 'Relatorios operacionais',
+                        en: 'Operations reports',
+                        es: 'Reportes operativos',
+                      ),
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 12),
@@ -134,7 +146,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Relatorios operacionais',
+                      strings.pick(
+                        pt: 'Relatorios operacionais',
+                        en: 'Operations reports',
+                        es: 'Reportes operativos',
+                      ),
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
@@ -162,27 +178,27 @@ class _ReportsScreenState extends State<ReportsScreen> {
           _ReportMetricGrid(
             metrics: [
               _ReportMetricData(
-                title: 'Receita',
+                title: strings.income,
                 value: _currency(report.totalIncome),
               ),
               _ReportMetricData(
-                title: 'Custos',
+                title: strings.costs,
                 value: _currency(report.totalOperationalCosts),
               ),
               _ReportMetricData(
-                title: 'Liquido',
+                title: strings.leftOver,
                 value: _currency(report.netResult),
               ),
               _ReportMetricData(
-                title: 'Jornadas',
+                title: strings.journeys,
                 value: '${report.totalJourneys}',
               ),
               _ReportMetricData(
-                title: 'Entregas',
+                title: strings.deliveries,
                 value: '${report.totalDeliveries}',
               ),
               _ReportMetricData(
-                title: 'Distancia',
+                title: strings.distance,
                 value: '${report.totalDistanceKm.toStringAsFixed(1)} km',
               ),
             ],
@@ -245,8 +261,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _errorMessage =
-            'Nao foi possivel gerar o arquivo agora. Tente novamente em instantes.';
+        _errorMessage = AppStrings.of(context).pick(
+          pt: 'Nao foi possivel gerar o arquivo agora. Tente novamente em instantes.',
+          en: 'We could not create the file right now. Please try again soon.',
+          es: 'No pudimos crear el archivo ahora. Intentalo de nuevo pronto.',
+        );
       });
     } finally {
       if (mounted) {
@@ -256,7 +275,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   String get _rangeLabel {
-    if (_range == null) return 'Periodo';
+    if (_range == null) return AppStrings.of(context).period;
     return '${_formatDate(_range!.start)} - ${_formatDate(_range!.end)}';
   }
 
@@ -351,6 +370,7 @@ class _CashflowChartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final maxValue = [
       income.abs(),
       costs.abs(),
@@ -358,9 +378,9 @@ class _CashflowChartCard extends StatelessWidget {
       1.0,
     ].reduce(math.max);
     final items = [
-      _BarData('Receita', income, const Color(0xFF39E58C)),
-      _BarData('Custos', costs, const Color(0xFFFF6F6F)),
-      _BarData('Liquido', net, const Color(0xFF4E63FF)),
+      _BarData(strings.income, income, const Color(0xFF39E58C)),
+      _BarData(strings.costs, costs, const Color(0xFFFF6F6F)),
+      _BarData(strings.leftOver, net, const Color(0xFF4E63FF)),
     ];
 
     return Card(
@@ -370,7 +390,11 @@ class _CashflowChartCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Pulso financeiro',
+              strings.pick(
+                pt: 'Pulso financeiro',
+                en: 'Money pulse',
+                es: 'Pulso financiero',
+              ),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
@@ -452,6 +476,7 @@ class _TopPlatformsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final maxIncome = items.isEmpty
         ? 1.0
         : items
@@ -466,18 +491,26 @@ class _TopPlatformsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Top plataformas',
+              strings.pick(
+                pt: 'Top plataformas',
+                en: 'Top platforms',
+                es: 'Mejores plataformas',
+              ),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
             if (items.isEmpty)
-              const Text(
-                'Nenhuma plataforma acumulada no periodo selecionado.',
+              Text(
+                strings.pick(
+                  pt: 'Nenhuma plataforma acumulada no periodo selecionado.',
+                  en: 'No platform activity in the selected period.',
+                  es: 'No hay actividad de plataformas en el periodo seleccionado.',
+                ),
               ),
             ...items.map(
               (platform) => _ProgressRow(
                 label: platform.platformName,
-                detail: '${platform.deliveries} entregas',
+                detail: strings.deliveriesCount(platform.deliveries),
                 value: currency(platform.income),
                 factor: (platform.income / maxIncome).clamp(0.04, 1.0),
               ),
@@ -497,6 +530,7 @@ class _CostBreakdownCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final total = items
         .fold<double>(0, (sum, item) => sum + item.amount)
         .clamp(1.0, double.infinity);
@@ -508,17 +542,30 @@ class _CostBreakdownCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Mapa de custos',
+              strings.pick(
+                pt: 'Mapa de custos',
+                en: 'Cost map',
+                es: 'Mapa de costos',
+              ),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
             if (items.isEmpty)
-              const Text('Nenhum custo agregado no periodo selecionado.'),
+              Text(
+                strings.pick(
+                  pt: 'Nenhum custo agregado no periodo selecionado.',
+                  en: 'No costs in the selected period.',
+                  es: 'No hay costos en el periodo seleccionado.',
+                ),
+              ),
             ...items.map(
               (item) => _ProgressRow(
                 label: item.label,
-                detail:
-                    '${((item.amount / total) * 100).toStringAsFixed(0)}% dos custos',
+                detail: strings.pick(
+                  pt: '${((item.amount / total) * 100).toStringAsFixed(0)}% dos custos',
+                  en: '${((item.amount / total) * 100).toStringAsFixed(0)}% of costs',
+                  es: '${((item.amount / total) * 100).toStringAsFixed(0)}% de los costos',
+                ),
                 value: currency(item.amount),
                 factor: (item.amount / total).clamp(0.04, 1.0),
               ),

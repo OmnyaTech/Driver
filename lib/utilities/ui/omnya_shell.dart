@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../localization/app_strings.dart';
+
 class OmnyaFabAction {
   const OmnyaFabAction({
     required this.label,
@@ -179,7 +181,11 @@ class _OmnyaFloatingActionMenuState extends State<OmnyaFloatingActionMenu>
             duration: const Duration(milliseconds: 240),
             child: const Icon(Icons.add),
           ),
-          label: Text(_open ? 'Fechar' : 'Novo'),
+          label: Text(
+            _open
+                ? AppStrings.of(context).close
+                : AppStrings.of(context).newItem,
+          ),
         ),
       ],
     );

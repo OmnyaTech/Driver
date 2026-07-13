@@ -9,6 +9,7 @@ import '../../services/journey_service.dart';
 import '../../services/platform_service.dart';
 import '../../services/vehicle_service.dart';
 import '../../utilities/localization/app_format.dart';
+import '../../utilities/localization/app_strings.dart';
 import '../../utilities/ui/omnya_shell.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
@@ -258,9 +259,13 @@ class _JourneysScreenState extends State<JourneysScreen> {
       if (widget.embedded) {
         return loading;
       }
-      return const OmnyaSubPageScaffold(title: 'Jornadas', body: loading);
+      return OmnyaSubPageScaffold(
+        title: AppStrings.of(context).journeys,
+        body: loading,
+      );
     }
     final format = AppFormat.of(context);
+    final strings = AppStrings.of(context);
 
     final content = RefreshIndicator(
       onRefresh: _loadJourneys,
@@ -272,7 +277,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Jornadas',
+                    strings.journeys,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -280,7 +285,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
                   FilledButton.icon(
                     onPressed: _openCreateDialog,
                     icon: const Icon(Icons.add),
-                    label: const Text('Nova'),
+                    label: Text(strings.newItem),
                   ),
               ],
             ),
@@ -289,7 +294,11 @@ class _JourneysScreenState extends State<JourneysScreen> {
           FinancialFilterToolbar(
             searchController: _searchController,
             range: _range,
-            hintText: 'Buscar veiculo, plataforma, status ou anotacao',
+            hintText: strings.pick(
+              pt: 'Buscar veiculo, plataforma, status ou anotacao',
+              en: 'Search vehicle, platform, status or note',
+              es: 'Buscar vehiculo, plataforma, estado o nota',
+            ),
             onPickRange: _pickRange,
             onClear: _clearFilters,
           ),
@@ -305,9 +314,15 @@ class _JourneysScreenState extends State<JourneysScreen> {
           if (_filteredJourneys.isNotEmpty)
             Card(
               child: ListTile(
-                title: const Text('Resumo'),
+                title: Text(
+                  strings.pick(pt: 'Resumo', en: 'Summary', es: 'Resumen'),
+                ),
                 subtitle: Text(
-                  '${_filteredJourneys.length} jornadas no filtro atual',
+                  strings.pick(
+                    pt: '${_filteredJourneys.length} jornadas no filtro atual',
+                    en: '${_filteredJourneys.length} shifts in the current filter',
+                    es: '${_filteredJourneys.length} jornadas en el filtro actual',
+                  ),
                 ),
                 trailing: Text(format.currency(_filteredIncome)),
               ),
@@ -323,20 +338,28 @@ class _JourneysScreenState extends State<JourneysScreen> {
               ),
             ),
           if (_journeys.isEmpty)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Text(
-                  'Nenhuma jornada ainda. Crie a primeira para acompanhar seu dia.',
+                  strings.pick(
+                    pt: 'Nenhuma jornada ainda. Crie a primeira para acompanhar seu dia.',
+                    en: 'No shifts yet. Create the first one to follow your day.',
+                    es: 'Aun no hay jornadas. Crea la primera para acompanhar tu dia.',
+                  ),
                 ),
               ),
             ),
           if (_journeys.isNotEmpty && _filteredJourneys.isEmpty)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Text(
-                  'Nenhuma jornada encontrada para os filtros informados.',
+                  strings.pick(
+                    pt: 'Nenhuma jornada encontrada para os filtros informados.',
+                    en: 'No shifts found for these filters.',
+                    es: 'No se encontraron jornadas para estos filtros.',
+                  ),
                 ),
               ),
             ),
@@ -356,9 +379,27 @@ class _JourneysScreenState extends State<JourneysScreen> {
                           await _deleteJourney(journey);
                         }
                       },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'edit', child: Text('Editar')),
-                        PopupMenuItem(value: 'delete', child: Text('Excluir')),
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Text(
+                            strings.pick(
+                              pt: 'Editar',
+                              en: 'Edit',
+                              es: 'Editar',
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text(
+                            strings.pick(
+                              pt: 'Excluir',
+                              en: 'Delete',
+                              es: 'Eliminar',
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -367,9 +408,19 @@ class _JourneysScreenState extends State<JourneysScreen> {
                   [
                     _formatDate(journey.startedAt),
                     if (journey.vehicleLabel != null) journey.vehicleLabel!,
-                    '${journey.totalDeliveries} entregas',
+                    strings.deliveriesCount(journey.totalDeliveries),
                     format.currency(journey.totalIncome),
-                    journey.isFinished ? 'Finalizada' : 'Em aberto',
+                    journey.isFinished
+                        ? strings.pick(
+                            pt: 'Finalizada',
+                            en: 'Finished',
+                            es: 'Finalizada',
+                          )
+                        : strings.pick(
+                            pt: 'Em aberto',
+                            en: 'Open',
+                            es: 'Abierta',
+                          ),
                   ].join(' - '),
                 ),
                 children: [
@@ -382,7 +433,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
                         children: [
                           if (journey.distanceKm != null)
                             Text(
-                              'Distancia: ${journey.distanceKm!.toStringAsFixed(1)} km',
+                              '${strings.distance}: ${journey.distanceKm!.toStringAsFixed(1)} km',
                             ),
                           if (journey.notes?.trim().isNotEmpty ?? false)
                             Padding(
@@ -397,7 +448,9 @@ class _JourneysScreenState extends State<JourneysScreen> {
                       (platform) => ListTile(
                         leading: const Icon(Icons.storefront_outlined),
                         title: Text(platform.platformName),
-                        subtitle: Text('${platform.deliveries} entregas'),
+                        subtitle: Text(
+                          strings.deliveriesCount(platform.deliveries),
+                        ),
                         trailing: Text(format.currency(platform.income)),
                       ),
                     ),
@@ -414,23 +467,31 @@ class _JourneysScreenState extends State<JourneysScreen> {
     }
 
     return OmnyaSubPageScaffold(
-      title: 'Jornadas',
+      title: strings.journeys,
       heroTagPrefix: 'journeys',
       floatingActions: [
         if (_activeJourney == null)
           OmnyaFabAction(
-            label: 'Iniciar automatica',
+            label: strings.pick(
+              pt: 'Iniciar automatica',
+              en: 'Start auto shift',
+              es: 'Iniciar automatica',
+            ),
             icon: Icons.play_arrow_rounded,
             onTap: _startAutomaticJourney,
           )
         else
           OmnyaFabAction(
-            label: 'Encerrar jornada',
+            label: strings.pick(
+              pt: 'Encerrar jornada',
+              en: 'End shift',
+              es: 'Cerrar jornada',
+            ),
             icon: Icons.stop_rounded,
             onTap: _finishAutomaticJourney,
           ),
         OmnyaFabAction(
-          label: 'Nova jornada',
+          label: strings.newJourney,
           icon: Icons.add,
           onTap: _openCreateDialog,
         ),

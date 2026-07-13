@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../utilities/localization/app_strings.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 import '../expenses/trip_expenses_screen.dart';
 import '../fuelings/fuelings_screen.dart';
@@ -19,6 +20,7 @@ class FinanceHubScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return DefaultTabController(
       length: 3,
       child: Column(
@@ -35,10 +37,20 @@ class FinanceHubScreen extends StatelessWidget {
               child: TabBar(
                 dividerColor: Colors.transparent,
                 indicatorSize: TabBarIndicatorSize.tab,
-                tabs: const [
-                  Tab(text: 'Despesas'),
-                  Tab(text: 'Abastec.'),
-                  Tab(text: 'Manut.'),
+                tabs: [
+                  Tab(
+                    text: strings.pick(
+                      pt: 'Despesas',
+                      en: 'Expenses',
+                      es: 'Gastos',
+                    ),
+                  ),
+                  Tab(
+                    text: strings.pick(pt: 'Abastec.', en: 'Fuel', es: 'Comb.'),
+                  ),
+                  Tab(
+                    text: strings.pick(pt: 'Manut.', en: 'Maint.', es: 'Mant.'),
+                  ),
                 ],
               ),
             ),
