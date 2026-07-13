@@ -123,6 +123,30 @@ class AppSession extends ChangeNotifier {
     }
   }
 
+  Future<bool> resetPasswordForEmail({
+    required String email,
+    required String captchaToken,
+  }) async {
+    _setBusy(true);
+    _errorMessage = null;
+
+    try {
+      await _authService.resetPasswordForEmail(
+        email: email,
+        captchaToken: captchaToken,
+      );
+      return true;
+    } on AuthException catch (error) {
+      _errorMessage = error.message;
+      return false;
+    } catch (_) {
+      _errorMessage = 'Nao foi possivel enviar o link agora.';
+      return false;
+    } finally {
+      _setBusy(false);
+    }
+  }
+
   Future<bool> signInWithOAuth(
     OauthProviderOption provider, {
     required String verificationToken,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../localization/app_strings.dart';
+import 'omnya_visuals.dart';
 
 class OmnyaFabAction {
   const OmnyaFabAction({
@@ -34,10 +35,7 @@ class OmnyaPageBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: omnyaBackgroundDecoration(context),
-      child: child,
-    );
+    return OmnyaAtmosphere(child: child);
   }
 }
 
@@ -60,12 +58,13 @@ class OmnyaSubPageScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
         leading: Navigator.of(context).canPop() ? const BackButton() : null,
         title: Text(title),
         actions: actions,
       ),
-      body: OmnyaPageBackground(child: body),
+      body: OmnyaPageBackground(child: OmnyaAnimatedEntrance(child: body)),
       floatingActionButton: floatingActions.isEmpty
           ? null
           : OmnyaFloatingActionMenu(
@@ -140,17 +139,10 @@ class _OmnyaFloatingActionMenuState extends State<OmnyaFloatingActionMenu>
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
+                          OmnyaGlassCard(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 14,
                               vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Theme.of(context).dividerColor,
-                              ),
                             ),
                             child: Text(action.label),
                           ),

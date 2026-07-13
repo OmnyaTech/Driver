@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../utilities/localization/app_strings.dart';
+import '../../utilities/ui/omnya_visuals.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 import '../expenses/trip_expenses_screen.dart';
 import '../fuelings/fuelings_screen.dart';
@@ -25,33 +26,39 @@ class FinanceHubScreen extends StatelessWidget {
       length: 3,
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.surface.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: TabBar(
-                dividerColor: Colors.transparent,
-                indicatorSize: TabBarIndicatorSize.tab,
-                tabs: [
-                  Tab(
-                    text: strings.pick(
-                      pt: 'Despesas',
-                      en: 'Expenses',
-                      es: 'Gastos',
+          OmnyaAnimatedEntrance(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: OmnyaGlassCard(
+                padding: const EdgeInsets.all(5),
+                borderRadius: 26,
+                child: TabBar(
+                  dividerColor: Colors.transparent,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  tabs: [
+                    Tab(
+                      text: strings.pick(
+                        pt: 'Despesas',
+                        en: 'Expenses',
+                        es: 'Gastos',
+                      ),
                     ),
-                  ),
-                  Tab(
-                    text: strings.pick(pt: 'Abastec.', en: 'Fuel', es: 'Comb.'),
-                  ),
-                  Tab(
-                    text: strings.pick(pt: 'Manut.', en: 'Maint.', es: 'Mant.'),
-                  ),
-                ],
+                    Tab(
+                      text: strings.pick(
+                        pt: 'Abastec.',
+                        en: 'Fuel',
+                        es: 'Comb.',
+                      ),
+                    ),
+                    Tab(
+                      text: strings.pick(
+                        pt: 'Manut.',
+                        en: 'Maint.',
+                        es: 'Mant.',
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

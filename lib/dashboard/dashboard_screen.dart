@@ -20,6 +20,7 @@ import '../utilities/localization/app_format.dart';
 import '../utilities/localization/app_strings.dart';
 import '../utilities/state/app_session.dart';
 import '../utilities/ui/omnya_shell.dart';
+import '../utilities/ui/omnya_visuals.dart';
 import '../utilities/ui/screen_action_controller.dart';
 
 const _driverLogoAsset = 'src/driver_icon/driver_icon_png.png';
@@ -592,103 +593,82 @@ class _OverviewTabState extends State<_OverviewTab> {
             ],
           ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF0B0D16),
-                  Color(0xFF111B35),
-                  Color(0xFF0000CD),
+          OmnyaAnimatedEntrance(
+            child: OmnyaHeroCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Image.asset(_driverLogoAsset, width: 40, height: 40),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          strings.periodSummary(_periodDisplayLabel),
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _HeroInfoPill(
+                        label: profile?.displayName ?? strings.driverFallback,
+                      ),
+                      _HeroInfoPill(
+                        label: strings.planLabel(
+                          profile?.planType.name ?? 'free',
+                        ),
+                      ),
+                      _HeroInfoPill(
+                        label: strings.journeysCount(metrics.totalJourneys),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    '${strings.account}: ${profile?.email ?? strings.userFallback}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.82),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${strings.currentNet}: ${_currency(metrics.netResult)}',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleLarge?.copyWith(color: Colors.white),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    strings.incomeDelta(
+                      _formatDelta(intelligence.incomeDeltaPct()),
+                    ),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.82),
+                    ),
+                  ),
                 ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF0000CD).withValues(alpha: 0.2),
-                  blurRadius: 24,
-                  offset: const Offset(0, 18),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Image.asset(_driverLogoAsset, width: 40, height: 40),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        strings.periodSummary(_periodDisplayLabel),
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    _HeroInfoPill(
-                      label: profile?.displayName ?? strings.driverFallback,
-                    ),
-                    _HeroInfoPill(
-                      label: strings.planLabel(
-                        profile?.planType.name ?? 'free',
-                      ),
-                    ),
-                    _HeroInfoPill(
-                      label: strings.journeysCount(metrics.totalJourneys),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  '${strings.account}: ${profile?.email ?? strings.userFallback}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.82),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${strings.currentNet}: ${_currency(metrics.netResult)}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(color: Colors.white),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  strings.incomeDelta(
-                    _formatDelta(intelligence.incomeDeltaPct()),
-                  ),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.82),
-                  ),
-                ),
-              ],
             ),
           ),
           if (_errorMessage != null) ...[
             const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
+            OmnyaGlassCard(
+              child: Text(
+                _errorMessage!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
           ],
           const SizedBox(height: 18),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
+          OmnyaAnimatedEntrance(
+            delay: const Duration(milliseconds: 80),
+            child: OmnyaGlassCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -779,25 +759,22 @@ class _OverviewTabState extends State<_OverviewTab> {
               final vertical = constraints.maxWidth < 840;
               final children = [
                 Expanded(
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            strings.saveForLater,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            _currency(intelligence.suggestedReserve),
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(intelligence.suggestedReserveLabel),
-                        ],
-                      ),
+                  child: OmnyaGlassCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strings.saveForLater,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          _currency(intelligence.suggestedReserve),
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(intelligence.suggestedReserveLabel),
+                      ],
                     ),
                   ),
                 ),
@@ -806,53 +783,51 @@ class _OverviewTabState extends State<_OverviewTab> {
                 else
                   const SizedBox(height: 12),
                 Expanded(
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            strings.yourProgress,
-                            style: Theme.of(context).textTheme.titleMedium,
+                  child: OmnyaGlassCard(
+                    highlight: gamification.rankingOptIn,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strings.yourProgress,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          strings.level(gamification.level),
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          strings.xpAndAchievements(
+                            gamification.xp,
+                            gamification.medalsCount,
                           ),
-                          const SizedBox(height: 10),
-                          Text(
-                            strings.level(gamification.level),
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            strings.xpAndAchievements(
-                              gamification.xp,
-                              gamification.medalsCount,
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            FilledButton.tonal(
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const GamificationScreen(),
+                                ),
+                              ),
+                              child: Text(strings.viewProgress),
                             ),
-                          ),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              FilledButton.tonal(
-                                onPressed: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => const GamificationScreen(),
-                                  ),
+                            OutlinedButton(
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const CommunityHubScreen(),
                                 ),
-                                child: Text(strings.viewProgress),
                               ),
-                              OutlinedButton(
-                                onPressed: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => const CommunityHubScreen(),
-                                  ),
-                                ),
-                                child: Text(strings.community),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                              child: Text(strings.community),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -1000,23 +975,10 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 116),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(metric.title, style: Theme.of(context).textTheme.titleSmall),
-              const Spacer(),
-              Text(metric.value, style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 5),
-              Text(metric.detail, maxLines: 2, overflow: TextOverflow.ellipsis),
-            ],
-          ),
-        ),
-      ),
+    return OmnyaMetricTile(
+      title: metric.title,
+      value: metric.value,
+      detail: metric.detail,
     );
   }
 }
@@ -1131,20 +1093,17 @@ class _ComparisonBoard extends StatelessWidget {
       ),
     ];
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              strings.periodComparison,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 14),
-            ...items.map((item) => _ComparisonRow(item: item)),
-          ],
-        ),
+    return OmnyaGlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            strings.periodComparison,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 14),
+          ...items.map((item) => _ComparisonRow(item: item)),
+        ],
       ),
     );
   }
@@ -1307,40 +1266,36 @@ class _InsightBoard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppStrings.of(context).performanceTips,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth < 720 ? 2 : 4;
-                final spacing = 12.0;
-                final itemWidth =
-                    (constraints.maxWidth - (spacing * (columns - 1))) /
-                    columns;
-                return Wrap(
-                  spacing: spacing,
-                  runSpacing: spacing,
-                  children: intelligence.insights
-                      .map(
-                        (insight) => SizedBox(
-                          width: itemWidth,
-                          child: _InsightCard(insight: insight),
-                        ),
-                      )
-                      .toList(),
-                );
-              },
-            ),
-          ],
-        ),
+    return OmnyaGlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppStrings.of(context).performanceTips,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = constraints.maxWidth < 720 ? 2 : 4;
+              final spacing = 12.0;
+              final itemWidth =
+                  (constraints.maxWidth - (spacing * (columns - 1))) / columns;
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children: intelligence.insights
+                    .map(
+                      (insight) => SizedBox(
+                        width: itemWidth,
+                        child: _InsightCard(insight: insight),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -1353,13 +1308,8 @@ class _InsightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return OmnyaGlassCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

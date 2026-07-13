@@ -19,6 +19,7 @@ import '../utilities/guards/developer_guard.dart';
 import '../utilities/localization/app_format.dart';
 import '../utilities/localization/app_strings.dart';
 import '../utilities/state/app_session.dart';
+import '../utilities/ui/omnya_visuals.dart';
 import '../utilities/ui/profile_avatar.dart';
 
 const _driverLogoAsset = 'src/driver_icon/driver_icon_png.png';
@@ -39,207 +40,220 @@ class SettingsScreen extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
       children: [
-        _SettingsHeroCard(session: session),
+        OmnyaAnimatedEntrance(child: _SettingsHeroCard(session: session)),
         const SizedBox(height: 18),
-        _SettingsSection(
-          title: strings.accountIdentity,
-          children: [
-            _SettingsTile(
-              icon: Icons.person_outline,
-              title: strings.driverProfile,
-              subtitle: strings.driverProfileSubtitle,
-              onTap: () => _openProfileSheet(context),
-            ),
-            _SettingsTile(
-              icon: Icons.public_outlined,
-              title: strings.publicProfile,
-              subtitle: strings.publicProfileSubtitle,
-              onTap: () => _openPublicProfileSheet(context),
-            ),
-            _SettingsTile(
-              icon: Icons.palette_outlined,
-              title: strings.appPreferences,
-              subtitle:
-                  '${strings.languageLabel(profile?.languageCode ?? 'pt-BR')} - ${strings.currencyLabel(profile?.currencyCode ?? 'BRL')}',
-              onTap: () => _openAppPreferenceSheet(context),
-            ),
-            _SettingsTile(
-              icon: Icons.dark_mode_outlined,
-              title: strings.themeApp,
-              subtitle: session.themeMode == ThemeMode.dark
-                  ? strings.darkThemeActive
-                  : strings.lightThemeActive,
-              trailing: Switch(
-                value: session.themeMode == ThemeMode.dark,
-                onChanged: (_) => session.toggleThemeMode(),
-              ),
-            ),
-            _SettingsTile(
-              icon: Icons.savings_outlined,
-              title: strings.automaticReserve,
-              subtitle: profile == null
-                  ? strings.reserveSummary(
-                      const DriverReservePreference(
-                        mode: DriverReserveMode.dailyPercent,
-                        dailyPercentage: 30,
-                        amountPerDelivery: 0,
-                      ),
-                      format.currency,
-                    )
-                  : strings.reserveSummary(
-                      profile.reservePreference,
-                      format.currency,
-                    ),
-              onTap: () => _openReservePreferenceSheet(context),
-            ),
-          ],
-        ),
-        const SizedBox(height: 18),
-        _SettingsSection(
-          title: strings.records,
-          children: [
-            _SettingsTile(
-              icon: Icons.two_wheeler_outlined,
-              title: strings.vehicles,
-              subtitle: strings.vehiclesSubtitle,
-              onTap: () => _pushPage(context, const VehiclesScreen()),
-            ),
-            _SettingsTile(
-              icon: Icons.storefront_outlined,
-              title: strings.platforms,
-              subtitle: strings.platformsSubtitle,
-              onTap: () => _pushPage(context, const PlatformsScreen()),
-            ),
-          ],
-        ),
-        const SizedBox(height: 18),
-        _SettingsSection(
-          title: strings.communityProgress,
-          children: [
-            _SettingsTile(
-              icon: Icons.workspace_premium_outlined,
-              title: strings.driverProgress,
-              subtitle: strings.driverProgressSubtitle,
-              onTap: () => _pushPage(context, const GamificationScreen()),
-            ),
-            _SettingsTile(
-              icon: Icons.groups_outlined,
-              title: strings.community,
-              subtitle: strings.communitySubtitle,
-              onTap: () => _pushPage(context, const CommunityHubScreen()),
-            ),
-            _SettingsTile(
-              icon: Icons.emoji_events_outlined,
-              title: strings.ranking,
-              subtitle: strings.rankingSubtitle,
-              onTap: () => _pushPage(context, const RankingScreen()),
-            ),
-            _SettingsTile(
-              icon: Icons.notifications_outlined,
-              title: strings.notices,
-              subtitle: strings.noticesSubtitle,
-              onTap: () => _pushPage(context, const NotificationsScreen()),
-            ),
-          ],
-        ),
-        const SizedBox(height: 18),
-        _SettingsSection(
-          title: strings.planSupport,
-          children: [
-            _SettingsTile(
-              icon: Icons.workspace_premium_outlined,
-              title: strings.subscription,
-              subtitle: strings.subscriptionSubtitle,
-              onTap: () => _pushPage(context, const SubscriptionsScreen()),
-            ),
-            _SettingsTile(
-              icon: Icons.privacy_tip_outlined,
-              title: strings.securityData,
-              subtitle: strings.securityDataSubtitle,
-              onTap: () => _pushPage(context, const SecurityScreen()),
-            ),
-            _SettingsTile(
-              icon: Icons.help_outline,
-              title: strings.helpCenter,
-              subtitle: strings.helpCenterSubtitle,
-              onTap: () => _pushPage(
-                context,
-                _InfoScreen(
-                  title: strings.helpCenter,
-                  icon: Icons.help_outline,
-                  body: [
-                    strings.helpCenterIntro,
-                    strings.helpCenterTipJourney,
-                    strings.helpCenterTipBilling,
-                    strings.helpCenterTipSupport,
-                  ],
-                ),
-              ),
-            ),
-            _SettingsTile(
-              icon: Icons.info_outline,
-              title: strings.aboutOmnyaDriver,
-              subtitle: strings.aboutOmnyaDriverSubtitle,
-              onTap: () => _pushPage(
-                context,
-                _InfoScreen(
-                  title: strings.aboutOmnyaDriver,
-                  icon: Icons.info_outline,
-                  body: [
-                    strings.aboutOmnyaDriverBody,
-                    strings.aboutOmnyaDriverBrand,
-                  ],
-                ),
-              ),
-            ),
-            _SettingsTile(
-              icon: Icons.article_outlined,
-              title: strings.termsOfUse,
-              subtitle: strings.termsOfUseSubtitle,
-              onTap: () => _pushPage(
-                context,
-                _InfoScreen(
-                  title: strings.termsOfUse,
-                  icon: Icons.article_outlined,
-                  body: [
-                    strings.termsOfUseBody,
-                    strings.termsOfUseBilling,
-                    strings.termsOfUseData,
-                  ],
-                ),
-              ),
-            ),
-            _SettingsTile(
-              icon: Icons.shield_outlined,
-              title: strings.privacyPolicy,
-              subtitle: strings.privacyPolicySubtitle,
-              onTap: () => _pushPage(
-                context,
-                _InfoScreen(
-                  title: strings.privacyPolicy,
-                  icon: Icons.shield_outlined,
-                  body: [
-                    strings.privacyPolicyBody,
-                    strings.privacyPolicyStorage,
-                    strings.privacyPolicyContact,
-                  ],
-                ),
-              ),
-            ),
-            if (canOpenDeveloper)
+        OmnyaAnimatedEntrance(
+          delay: const Duration(milliseconds: 80),
+          child: _SettingsSection(
+            title: strings.accountIdentity,
+            children: [
               _SettingsTile(
-                icon: Icons.admin_panel_settings_outlined,
-                title: 'Developer',
-                subtitle: strings.developerTools,
-                onTap: () => _pushPage(context, const DeveloperAccessScreen()),
+                icon: Icons.person_outline,
+                title: strings.driverProfile,
+                subtitle: strings.driverProfileSubtitle,
+                onTap: () => _openProfileSheet(context),
               ),
-            _SettingsTile(
-              icon: Icons.logout,
-              title: strings.signOut,
-              subtitle: strings.signOutSubtitle,
-              onTap: session.isBusy ? null : session.signOut,
-            ),
-          ],
+              _SettingsTile(
+                icon: Icons.public_outlined,
+                title: strings.publicProfile,
+                subtitle: strings.publicProfileSubtitle,
+                onTap: () => _openPublicProfileSheet(context),
+              ),
+              _SettingsTile(
+                icon: Icons.palette_outlined,
+                title: strings.appPreferences,
+                subtitle:
+                    '${strings.languageLabel(profile?.languageCode ?? 'pt-BR')} - ${strings.currencyLabel(profile?.currencyCode ?? 'BRL')}',
+                onTap: () => _openAppPreferenceSheet(context),
+              ),
+              _SettingsTile(
+                icon: Icons.dark_mode_outlined,
+                title: strings.themeApp,
+                subtitle: session.themeMode == ThemeMode.dark
+                    ? strings.darkThemeActive
+                    : strings.lightThemeActive,
+                trailing: Switch(
+                  value: session.themeMode == ThemeMode.dark,
+                  onChanged: (_) => session.toggleThemeMode(),
+                ),
+              ),
+              _SettingsTile(
+                icon: Icons.savings_outlined,
+                title: strings.automaticReserve,
+                subtitle: profile == null
+                    ? strings.reserveSummary(
+                        const DriverReservePreference(
+                          mode: DriverReserveMode.dailyPercent,
+                          dailyPercentage: 30,
+                          amountPerDelivery: 0,
+                        ),
+                        format.currency,
+                      )
+                    : strings.reserveSummary(
+                        profile.reservePreference,
+                        format.currency,
+                      ),
+                onTap: () => _openReservePreferenceSheet(context),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        OmnyaAnimatedEntrance(
+          delay: const Duration(milliseconds: 140),
+          child: _SettingsSection(
+            title: strings.records,
+            children: [
+              _SettingsTile(
+                icon: Icons.two_wheeler_outlined,
+                title: strings.vehicles,
+                subtitle: strings.vehiclesSubtitle,
+                onTap: () => _pushPage(context, const VehiclesScreen()),
+              ),
+              _SettingsTile(
+                icon: Icons.storefront_outlined,
+                title: strings.platforms,
+                subtitle: strings.platformsSubtitle,
+                onTap: () => _pushPage(context, const PlatformsScreen()),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        OmnyaAnimatedEntrance(
+          delay: const Duration(milliseconds: 200),
+          child: _SettingsSection(
+            title: strings.communityProgress,
+            children: [
+              _SettingsTile(
+                icon: Icons.workspace_premium_outlined,
+                title: strings.driverProgress,
+                subtitle: strings.driverProgressSubtitle,
+                onTap: () => _pushPage(context, const GamificationScreen()),
+              ),
+              _SettingsTile(
+                icon: Icons.groups_outlined,
+                title: strings.community,
+                subtitle: strings.communitySubtitle,
+                onTap: () => _pushPage(context, const CommunityHubScreen()),
+              ),
+              _SettingsTile(
+                icon: Icons.emoji_events_outlined,
+                title: strings.ranking,
+                subtitle: strings.rankingSubtitle,
+                onTap: () => _pushPage(context, const RankingScreen()),
+              ),
+              _SettingsTile(
+                icon: Icons.notifications_outlined,
+                title: strings.notices,
+                subtitle: strings.noticesSubtitle,
+                onTap: () => _pushPage(context, const NotificationsScreen()),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        OmnyaAnimatedEntrance(
+          delay: const Duration(milliseconds: 260),
+          child: _SettingsSection(
+            title: strings.planSupport,
+            children: [
+              _SettingsTile(
+                icon: Icons.workspace_premium_outlined,
+                title: strings.subscription,
+                subtitle: strings.subscriptionSubtitle,
+                onTap: () => _pushPage(context, const SubscriptionsScreen()),
+              ),
+              _SettingsTile(
+                icon: Icons.privacy_tip_outlined,
+                title: strings.securityData,
+                subtitle: strings.securityDataSubtitle,
+                onTap: () => _pushPage(context, const SecurityScreen()),
+              ),
+              _SettingsTile(
+                icon: Icons.help_outline,
+                title: strings.helpCenter,
+                subtitle: strings.helpCenterSubtitle,
+                onTap: () => _pushPage(
+                  context,
+                  _InfoScreen(
+                    title: strings.helpCenter,
+                    icon: Icons.help_outline,
+                    body: [
+                      strings.helpCenterIntro,
+                      strings.helpCenterTipJourney,
+                      strings.helpCenterTipBilling,
+                      strings.helpCenterTipSupport,
+                    ],
+                  ),
+                ),
+              ),
+              _SettingsTile(
+                icon: Icons.info_outline,
+                title: strings.aboutOmnyaDriver,
+                subtitle: strings.aboutOmnyaDriverSubtitle,
+                onTap: () => _pushPage(
+                  context,
+                  _InfoScreen(
+                    title: strings.aboutOmnyaDriver,
+                    icon: Icons.info_outline,
+                    body: [
+                      strings.aboutOmnyaDriverBody,
+                      strings.aboutOmnyaDriverBrand,
+                    ],
+                  ),
+                ),
+              ),
+              _SettingsTile(
+                icon: Icons.article_outlined,
+                title: strings.termsOfUse,
+                subtitle: strings.termsOfUseSubtitle,
+                onTap: () => _pushPage(
+                  context,
+                  _InfoScreen(
+                    title: strings.termsOfUse,
+                    icon: Icons.article_outlined,
+                    body: [
+                      strings.termsOfUseBody,
+                      strings.termsOfUseBilling,
+                      strings.termsOfUseData,
+                    ],
+                  ),
+                ),
+              ),
+              _SettingsTile(
+                icon: Icons.shield_outlined,
+                title: strings.privacyPolicy,
+                subtitle: strings.privacyPolicySubtitle,
+                onTap: () => _pushPage(
+                  context,
+                  _InfoScreen(
+                    title: strings.privacyPolicy,
+                    icon: Icons.shield_outlined,
+                    body: [
+                      strings.privacyPolicyBody,
+                      strings.privacyPolicyStorage,
+                      strings.privacyPolicyContact,
+                    ],
+                  ),
+                ),
+              ),
+              if (canOpenDeveloper)
+                _SettingsTile(
+                  icon: Icons.admin_panel_settings_outlined,
+                  title: 'Developer',
+                  subtitle: strings.developerTools,
+                  onTap: () =>
+                      _pushPage(context, const DeveloperAccessScreen()),
+                ),
+              _SettingsTile(
+                icon: Icons.logout,
+                title: strings.signOut,
+                subtitle: strings.signOutSubtitle,
+                onTap: session.isBusy ? null : session.signOut,
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -377,23 +391,8 @@ class _SettingsHeroCard extends StatelessWidget {
     final theme = Theme.of(context);
     final strings = AppStrings.of(context);
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0B0E16), Color(0xFF151A29), Color(0xFF0000CD)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0000CD).withValues(alpha: 0.22),
-            blurRadius: 28,
-            offset: const Offset(0, 16),
-          ),
-        ],
-      ),
+    return OmnyaHeroCard(
+      compact: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -500,17 +499,15 @@ class _SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            ...children,
-          ],
-        ),
+    return OmnyaGlassCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
+          ...children,
+        ],
       ),
     );
   }
@@ -533,21 +530,53 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      leading: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          color: const Color(0xFF0000CD).withValues(alpha: 0.12),
-        ),
-        child: Icon(icon, color: const Color(0xFF0000CD)),
+    final theme = Theme.of(context);
+    final tile = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [
+                  OmnyaVisualTokens.electricBlue.withValues(alpha: 0.24),
+                  OmnyaVisualTokens.neonBlue.withValues(alpha: 0.10),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Icon(icon, color: OmnyaVisualTokens.neonBlue),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: theme.textTheme.titleSmall),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodyMedium,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          trailing ?? const Icon(Icons.chevron_right),
+        ],
       ),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: trailing ?? const Icon(Icons.chevron_right),
+    );
+    if (onTap == null) return tile;
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
       onTap: onTap,
+      child: tile,
     );
   }
 }

@@ -5,6 +5,7 @@ import '../../models/app_gamification.dart';
 import '../../services/gamification_service.dart';
 import '../../utilities/state/app_session.dart';
 import '../../utilities/ui/omnya_shell.dart';
+import '../../utilities/ui/omnya_visuals.dart';
 import '../../utilities/ui/profile_avatar.dart';
 import 'records_screen.dart';
 
@@ -345,84 +346,82 @@ class _TierAndMissionsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                AnimatedBuilder(
-                  animation: animation,
-                  builder: (context, _) => Transform.rotate(
-                    angle: animation.value * 0.08,
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0000CD).withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Icon(
-                        Icons.emoji_events_outlined,
-                        color: Color(0xFF7582FF),
-                      ),
+    return OmnyaGlassCard(
+      highlight: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              AnimatedBuilder(
+                animation: animation,
+                builder: (context, _) => Transform.rotate(
+                  angle: animation.value * 0.08,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0000CD).withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.emoji_events_outlined,
+                      color: Color(0xFF7582FF),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Liga ${growth.tier}',
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      Text(
-                        growth.nextTierScore == 0
-                            ? 'Voce chegou no topo por enquanto.'
-                            : 'Faltam ${growth.nextTierScore - growth.publicScore} pts para a proxima liga.',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  '${growth.publicScore} pts',
-                  style: theme.textTheme.titleMedium,
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _MissionPill(label: '${growth.totalDeliveries} entregas'),
-                _MissionPill(label: '${growth.accountDays} dias no app'),
-                _MissionPill(label: '${growth.visibleBadges} badges'),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Text('Missoes da semana', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 10),
-            if (growth.missions.isEmpty)
-              const Text(
-                'As proximas missoes aparecem aqui quando houver dados suficientes.',
               ),
-            ...growth.missions.map(
-              (mission) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _MissionProgressRow(
-                  mission: mission,
-                  onClaim: () => onClaim(mission),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Liga ${growth.tier}',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    Text(
+                      growth.nextTierScore == 0
+                          ? 'Voce chegou no topo por enquanto.'
+                          : 'Faltam ${growth.nextTierScore - growth.publicScore} pts para a proxima liga.',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
                 ),
               ),
+              Text(
+                '${growth.publicScore} pts',
+                style: theme.textTheme.titleMedium,
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _MissionPill(label: '${growth.totalDeliveries} entregas'),
+              _MissionPill(label: '${growth.accountDays} dias no app'),
+              _MissionPill(label: '${growth.visibleBadges} badges'),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Text('Missoes da semana', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 10),
+          if (growth.missions.isEmpty)
+            const Text(
+              'As proximas missoes aparecem aqui quando houver dados suficientes.',
             ),
-          ],
-        ),
+          ...growth.missions.map(
+            (mission) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _MissionProgressRow(
+                mission: mission,
+                onClaim: () => onClaim(mission),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -534,17 +533,8 @@ class _GameHero extends StatelessWidget {
           child: child,
         );
       },
-      child: Container(
+      child: OmnyaHeroCard(
         padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0F1320), Color(0xFF1A2133), Color(0xFF0000CD)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          border: Border.all(color: Theme.of(context).dividerColor),
-        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -831,19 +821,16 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 10),
-            Text(value, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 6),
-            Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ),
+    return OmnyaGlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 10),
+          Text(value, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 6),
+          Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+        ],
       ),
     );
   }

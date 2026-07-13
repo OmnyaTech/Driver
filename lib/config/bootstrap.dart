@@ -1,9 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/active_journey_notification_service.dart';
+import '../services/firebase_diagnostics.dart';
 import 'supabase_config.dart';
 
 final class AppBootstrap {
@@ -30,16 +29,7 @@ final class AppBootstrap {
       if (Firebase.apps.isEmpty) {
         await Firebase.initializeApp();
       }
-
-      if (kIsWeb) return;
-
-      FlutterError.onError = (details) {
-        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-      };
-      PlatformDispatcher.instance.onError = (error, stack) {
-        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-        return true;
-      };
+      await FirebaseDiagnostics.initialize();
     } catch (_) {
       // Diagnostics cannot block the app startup.
     }

@@ -1,44 +1,36 @@
 import 'dart:math';
 
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'auth_service.dart';
+import 'push_messaging_adapter.dart';
 
 class PushNotificationService {
-  PushNotificationService({AuthService? authService})
-    : _authService = authService ?? const AuthService();
+  PushNotificationService({
+    AuthService? authService,
+    PushMessagingAdapter? messagingAdapter,
+  }) : _authService = authService ?? const AuthService(),
+       _messagingAdapter = messagingAdapter ?? const PushMessagingAdapter();
 
   static const _deviceIdKey = 'driver_push_device_id';
   final AuthService _authService;
-  bool _firebaseTried = false;
-  bool _firebaseReady = false;
+  final PushMessagingAdapter _messagingAdapter;
 
   Future<void> registerDeviceIfPossible() async {
     final client = _authService.client;
     final user = client?.auth.currentUser;
     if (client == null || user == null) return;
 
-    final ready = await _ensureFirebase();
+    final ready = await _messagingAdapter.initialize();
     if (!ready) return;
 
     try {
-      final messaging = FirebaseMessaging.instance;
-      final settings = await messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        provisional: true,
-      );
+      final tokenBundle = await _messagingAdapter.requestTokenBundle();
+      if (tokenBundle == null || tokenBundle.permissionDenied) return;
 
-      if (settings.authorizationStatus == AuthorizationStatus.denied) {
-        return;
-      }
-
-      final fcmToken = await messaging.getToken();
-      final apnsToken = await _apnsToken(messaging);
+      final fcmToken = tokenBundle.fcmToken;
+      final apnsToken = tokenBundle.apnsToken;
       if ((fcmToken == null || fcmToken.isEmpty) &&
           (apnsToken == null || apnsToken.isEmpty)) {
         return;
@@ -56,7 +48,7 @@ class PushNotificationService {
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }, onConflict: 'user_id,device_id');
     } catch (_) {
-      // Missing Firebase files or web VAPID keys should not prevent app usage.
+      // Missing Firebase files or web VAPID keys must not prevent app usage.
     }
   }
 
@@ -84,35 +76,6 @@ class PushNotificationService {
             'p_scheduled_at': scheduledAt?.toUtc().toIso8601String(),
           },
         );
-  }
-
-  Future<bool> _ensureFirebase() async {
-    if (_firebaseTried) return _firebaseReady;
-    _firebaseTried = true;
-
-    try {
-      if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp();
-      }
-      _firebaseReady = true;
-    } catch (_) {
-      _firebaseReady = false;
-    }
-
-    return _firebaseReady;
-  }
-
-  Future<String?> _apnsToken(FirebaseMessaging messaging) async {
-    if (kIsWeb) return null;
-    if (defaultTargetPlatform != TargetPlatform.iOS &&
-        defaultTargetPlatform != TargetPlatform.macOS) {
-      return null;
-    }
-    try {
-      return messaging.getAPNSToken();
-    } catch (_) {
-      return null;
-    }
   }
 
   Future<String> _deviceId() async {

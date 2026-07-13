@@ -62,17 +62,17 @@ final class AppTheme {
     final textTheme = _withFontFallback(
       GoogleFonts.poppinsTextTheme(base.textTheme).copyWith(
         headlineMedium: GoogleFonts.poppins(
-          fontSize: 30,
+          fontSize: 29,
           fontWeight: FontWeight.w700,
           color: base.colorScheme.onSurface,
         ),
         headlineSmall: GoogleFonts.poppins(
-          fontSize: 19,
+          fontSize: 20,
           fontWeight: FontWeight.w700,
           color: base.colorScheme.onSurface,
         ),
         titleLarge: GoogleFonts.poppins(
-          fontSize: 18,
+          fontSize: 19,
           fontWeight: FontWeight.w700,
           color: base.colorScheme.onSurface,
         ),
@@ -117,7 +117,7 @@ final class AppTheme {
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
-        backgroundColor: isDark ? const Color(0xFF11131D) : Colors.white,
+        backgroundColor: isDark ? const Color(0xFF10131D) : Colors.white,
         foregroundColor: base.colorScheme.onSurface,
         surfaceTintColor: Colors.transparent,
         titleTextStyle: textTheme.headlineSmall,
@@ -127,7 +127,7 @@ final class AppTheme {
         elevation: 0,
         shadowColor: brandBlue.withValues(alpha: isDark ? 0.28 : 0.08),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           side: BorderSide(color: cardBorder),
         ),
         surfaceTintColor: Colors.transparent,
@@ -137,12 +137,12 @@ final class AppTheme {
         backgroundColor: navBackground,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        height: 82,
+        height: 76,
         indicatorColor: brandBlue.withValues(alpha: isDark ? 0.28 : 0.12),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return GoogleFonts.poppins(
-            fontSize: 11,
+            fontSize: 10.5,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             color: selected
                 ? base.colorScheme.onSurface
@@ -152,7 +152,7 @@ final class AppTheme {
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return IconThemeData(
-            size: 22,
+            size: 21,
             color: selected
                 ? brandBlueGlow
                 : base.colorScheme.onSurface.withValues(alpha: 0.7),
@@ -196,19 +196,19 @@ final class AppTheme {
           color: base.colorScheme.onSurface.withValues(alpha: 0.45),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
+          horizontal: 16,
+          vertical: 13,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: cardBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: cardBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           borderSide: const BorderSide(color: brandBlueGlow, width: 1.6),
         ),
       ),
@@ -223,7 +223,7 @@ final class AppTheme {
             fontSize: 14,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(999),
           ),
         ),
       ),
@@ -237,7 +237,7 @@ final class AppTheme {
             fontSize: 14,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(999),
           ),
         ),
       ),

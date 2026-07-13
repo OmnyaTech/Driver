@@ -55,6 +55,18 @@ class AuthService {
     );
   }
 
+  Future<void> resetPasswordForEmail({
+    required String email,
+    required String captchaToken,
+  }) async {
+    final activeClient = _requireClient();
+    await activeClient.auth.resetPasswordForEmail(
+      email,
+      redirectTo: _webEmailRedirectTo,
+      captchaToken: captchaToken,
+    );
+  }
+
   Future<void> signInWithOAuth(OauthProviderOption provider) async {
     final activeClient = _requireClient();
 
