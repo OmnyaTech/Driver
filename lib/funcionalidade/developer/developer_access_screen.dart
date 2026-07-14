@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/app_admin_audit_log.dart';
+import '../../models/app_gift_access.dart';
 import '../../models/app_subscription.dart';
 import '../../services/developer_admin_service.dart';
 import '../../services/subscription_service.dart';
@@ -20,6 +21,7 @@ class _DeveloperAccessScreenState extends State<DeveloperAccessScreen> {
   final DeveloperAdminService _developerAdminService = DeveloperAdminService();
   bool _loading = true;
   List<AppSubscription> _subscriptions = const [];
+  List<AppGiftAccess> _giftAccesses = const [];
   List<AppAdminAuditLog> _auditLogs = const [];
   Map<String, dynamic> _metrics = const {};
   String? _errorMessage;
@@ -39,11 +41,18 @@ class _DeveloperAccessScreenState extends State<DeveloperAccessScreen> {
     try {
       final subscriptions = await _subscriptionService
           .listCurrentUserSubscriptions();
+      List<AppGiftAccess> giftAccesses = const [];
+      try {
+        giftAccesses = await _developerAdminService.listGiftAccesses();
+      } catch (_) {
+        giftAccesses = const [];
+      }
       final auditLogs = await _developerAdminService.listAuditLogs();
       final metrics = await _developerAdminService.loadMetrics();
       if (!mounted) return;
       setState(() {
         _subscriptions = subscriptions;
+        _giftAccesses = giftAccesses;
         _auditLogs = auditLogs;
         _metrics = metrics;
       });
@@ -119,6 +128,12 @@ class _DeveloperAccessScreenState extends State<DeveloperAccessScreen> {
           const SizedBox(height: 16),
           _GrantAccessCard(
             service: _developerAdminService,
+            onUpdated: _loadData,
+          ),
+          const SizedBox(height: 16),
+          _GiftAccessControlCard(
+            service: _developerAdminService,
+            gifts: _giftAccesses,
             onUpdated: _loadData,
           ),
           const SizedBox(height: 16),
@@ -641,5 +656,264 @@ class _GrantAccessCardState extends State<_GrantAccessCard> {
   String _formatDate(DateTime value) {
     final local = value.toLocal();
     return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
+  }
+}
+
+class _GiftAccessControlCard extends StatefulWidget {
+  const _GiftAccessControlCard({
+    required this.service,
+    required this.gifts,
+    required this.onUpdated,
+  });
+
+  final DeveloperAdminService service;
+  final List<AppGiftAccess> gifts;
+  final Future<void> Function() onUpdated;
+
+  @override
+  State<_GiftAccessControlCard> createState() => _GiftAccessControlCardState();
+}
+
+class _GiftAccessControlCardState extends State<_GiftAccessControlCard> {
+  bool _saving = false;
+  String? _feedbackMessage;
+  bool _feedbackIsError = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = widget.gifts.where((item) => item.isActiveGift).length;
+    final expired = widget.gifts.where((item) => item.isExpired).length;
+    final withoutExpiry = widget.gifts
+        .where((item) => item.expiresAt == null && item.isActiveGift)
+        .length;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.card_giftcard_rounded),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Controle de presentes',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _GiftSummaryChip(label: 'Total', value: widget.gifts.length),
+                _GiftSummaryChip(label: 'Ativos', value: active),
+                _GiftSummaryChip(label: 'Expirados', value: expired),
+                _GiftSummaryChip(label: 'Sem vencimento', value: withoutExpiry),
+              ],
+            ),
+            if (_feedbackMessage != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _feedbackMessage!,
+                style: TextStyle(
+                  color: _feedbackIsError
+                      ? Theme.of(context).colorScheme.error
+                      : Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            if (widget.gifts.isEmpty)
+              const Text('Nenhum presente foi concedido ainda.')
+            else
+              ...widget.gifts.map(_buildGiftTile),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGiftTile(AppGiftAccess gift) {
+    final status = gift.isActiveGift
+        ? 'Ativo'
+        : gift.isExpired
+        ? 'Expirado'
+        : 'Revogado/inativo';
+    final expiresLabel = gift.expiresAt == null
+        ? 'Sem vencimento'
+        : 'Expira ${_formatDate(gift.expiresAt!)}';
+
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      gift.nameLabel,
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(gift.email),
+                    const SizedBox(height: 6),
+                    Text(
+                      [
+                        status,
+                        expiresLabel,
+                        if (gift.giftedAt != null)
+                          'Concedido ${_formatDate(gift.giftedAt!)}',
+                        if (gift.giftedByEmail != null)
+                          'por ${gift.giftedByEmail}',
+                      ].join(' - '),
+                    ),
+                  ],
+                ),
+              ),
+              Chip(label: Text(status)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _saving ? null : () => _changeExpiry(gift),
+                icon: const Icon(Icons.event_outlined),
+                label: const Text('Alterar vencimento'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _saving ? null : () => _makeLifetime(gift),
+                icon: const Icon(Icons.all_inclusive_rounded),
+                label: const Text('Sem vencimento'),
+              ),
+              FilledButton.icon(
+                onPressed:
+                    _saving || (!gift.isActiveGift && gift.planType != 'gift')
+                    ? null
+                    : () => _revoke(gift),
+                icon: const Icon(Icons.block_rounded),
+                label: const Text('Revogar'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _changeExpiry(AppGiftAccess gift) async {
+    final initialDate =
+        gift.expiresAt ?? DateTime.now().add(const Duration(days: 30));
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initialDate.isBefore(DateTime.now())
+          ? DateTime.now()
+          : initialDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2035),
+    );
+    if (date == null) return;
+    await _runAction(
+      () => widget.service.updateGiftAccess(
+        userId: gift.userId,
+        expiresAt: DateTime(date.year, date.month, date.day, 23, 59, 59),
+      ),
+    );
+  }
+
+  Future<void> _makeLifetime(AppGiftAccess gift) async {
+    await _runAction(
+      () =>
+          widget.service.updateGiftAccess(userId: gift.userId, expiresAt: null),
+    );
+  }
+
+  Future<void> _revoke(AppGiftAccess gift) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Revogar presente?'),
+        content: Text(
+          'Isso remove o acesso presenteado de ${gift.email}. Se ele nao tiver assinatura paga ativa, volta para Free.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Revogar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _runAction(
+      () => widget.service.revokeGiftAccess(userId: gift.userId),
+    );
+  }
+
+  Future<void> _runAction(Future<String> Function() action) async {
+    setState(() {
+      _saving = true;
+      _feedbackMessage = null;
+      _feedbackIsError = false;
+    });
+
+    try {
+      final message = await action();
+      await widget.onUpdated();
+      if (!mounted) return;
+      setState(() {
+        _feedbackMessage = message;
+        _feedbackIsError = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _feedbackMessage = error.toString();
+        _feedbackIsError = true;
+      });
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  String _formatDate(DateTime value) {
+    final local = value.toLocal();
+    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
+  }
+}
+
+class _GiftSummaryChip extends StatelessWidget {
+  const _GiftSummaryChip({required this.label, required this.value});
+
+  final String label;
+  final int value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      avatar: const Icon(Icons.card_giftcard_rounded, size: 16),
+      label: Text('$label: $value'),
+    );
   }
 }

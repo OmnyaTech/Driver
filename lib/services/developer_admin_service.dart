@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/app_admin_audit_log.dart';
+import '../models/app_gift_access.dart';
 import '../models/app_subscription.dart';
 import 'auth_service.dart';
 
@@ -88,6 +89,68 @@ class DeveloperAdminService {
           ),
         )
         .toList();
+  }
+
+  Future<List<AppGiftAccess>> listGiftAccesses() async {
+    final client = _authService.requireClient();
+    final response = await client
+        .schema('driver')
+        .rpc('admin_list_gift_accesses');
+
+    if (response is! List) return const [];
+
+    return response.map((row) {
+      final data = Map<String, dynamic>.from(row as Map);
+      return AppGiftAccess(
+        userId: data['user_id'].toString(),
+        email: data['email']?.toString() ?? '',
+        displayName: data['display_name']?.toString(),
+        fullName: data['full_name']?.toString(),
+        planType: data['plan_type']?.toString() ?? 'free',
+        subscriptionStatus:
+            data['subscription_status']?.toString() ?? 'inactive',
+        giftedAt: _parseDate(data['gifted_at']),
+        expiresAt: _parseDate(data['expires_at']),
+        giftedByEmail: data['gifted_by_email']?.toString(),
+        isActiveGift: data['is_active_gift'] == true,
+        isExpired: data['is_expired'] == true,
+      );
+    }).toList();
+  }
+
+  Future<String> updateGiftAccess({
+    required String userId,
+    DateTime? expiresAt,
+  }) async {
+    final client = _authService.requireClient();
+    final response = await client
+        .schema('driver')
+        .rpc(
+          'admin_update_gift_access',
+          params: {
+            'p_user_id': userId,
+            'p_expires_at': expiresAt?.toUtc().toIso8601String(),
+          },
+        );
+
+    if (response is Map<String, dynamic>) {
+      return (response['message'] ?? 'Presente atualizado com sucesso.')
+          .toString();
+    }
+    return 'Presente atualizado com sucesso.';
+  }
+
+  Future<String> revokeGiftAccess({required String userId}) async {
+    final client = _authService.requireClient();
+    final response = await client
+        .schema('driver')
+        .rpc('admin_revoke_gift_access', params: {'p_user_id': userId});
+
+    if (response is Map<String, dynamic>) {
+      return (response['message'] ?? 'Presente revogado com sucesso.')
+          .toString();
+    }
+    return 'Presente revogado com sucesso.';
   }
 
   Future<Map<String, dynamic>> loadMetrics() async {
