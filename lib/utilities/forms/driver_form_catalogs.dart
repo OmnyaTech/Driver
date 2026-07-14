@@ -143,31 +143,239 @@ const fuelOptions = <String>[
   'Outro',
 ];
 
-const vehicleModelsByBrand = <String, List<String>>{
-  'Yamaha': ['Factor', 'Fazer', 'Fluo', 'NMax', 'XMax', 'XTZ', 'MT-03'],
-  'Honda': ['Biz', 'CG 160', 'PCX', 'Pop', 'XRE', 'City', 'Civic', 'HR-V'],
-  'Chevrolet': [
-    'Celta',
-    'Classic',
-    'Cobalt',
-    'Corsa',
-    'Onix',
-    'Prisma',
-    'Spin',
-  ],
-  'Peugeot': ['206', '207', '208', '2008', 'Partner'],
-  'Renault': ['Clio', 'Duster', 'Kangoo', 'Kwid', 'Logan', 'Sandero'],
-  'Fiat': ['Argo', 'Cronos', 'Fiorino', 'Mobi', 'Palio', 'Strada', 'Uno'],
-  'Citroen': ['C3', 'C4 Cactus', 'Jumpy', 'Berlingo'],
-  'Volkswagen': ['Fox', 'Gol', 'Polo', 'Saveiro', 'T-Cross', 'Up'],
-  'Toyota': ['Corolla', 'Etios', 'Hilux', 'Yaris'],
-  'Hyundai': ['HB20', 'Creta', 'i30', 'Tucson'],
-  'Ford': ['Courier', 'EcoSport', 'Fiesta', 'Ka', 'Ranger'],
-  'Nissan': ['Kicks', 'March', 'Sentra', 'Versa'],
-  'Jeep': ['Compass', 'Renegade'],
-  'Shineray': ['Jet', 'Worker', 'XY'],
-  'Dafra': ['Citycom', 'Horizon', 'Next'],
+const vehicleModelsByTypeAndBrand = <String, Map<String, List<String>>>{
+  'Moto': {
+    'BMW': [
+      'C 400',
+      'F 750 GS',
+      'F 850 GS',
+      'G 310 GS',
+      'G 310 R',
+      'R 1250 GS',
+    ],
+    'Dafra': ['Apache', 'Citycom', 'Cruisym', 'Horizon', 'Maxsym', 'Next'],
+    'Ducati': ['Diavel', 'Hypermotard', 'Monster', 'Multistrada', 'Scrambler'],
+    'Haojue': ['DK 150', 'DR 160', 'Lindy', 'Master Ride', 'Nex'],
+    'Harley-Davidson': [
+      'Fat Bob',
+      'Fat Boy',
+      'Iron 883',
+      'Sportster',
+      'Street Bob',
+    ],
+    'Honda': [
+      'ADV',
+      'Biz',
+      'CG 125',
+      'CG 150',
+      'CG 160',
+      'Elite',
+      'PCX',
+      'Pop',
+      'Twister',
+      'XRE',
+    ],
+    'Kawasaki': ['Ninja', 'Versys', 'Vulcan', 'Z300', 'Z400', 'Z650', 'Z900'],
+    'KTM': ['Duke', 'EXC', 'RC', 'Adventure'],
+    'Royal Enfield': [
+      'Classic',
+      'Continental GT',
+      'Himalayan',
+      'Hunter',
+      'Meteor',
+    ],
+    'Shineray': ['Denver', 'Jet', 'Phoenix', 'Worker', 'XY'],
+    'Suzuki': ['Burgman', 'GSX', 'Hayabusa', 'Intruder', 'V-Strom', 'Yes'],
+    'Triumph': [
+      'Bonneville',
+      'Rocket',
+      'Scrambler',
+      'Speed Twin',
+      'Tiger',
+      'Trident',
+    ],
+    'Yamaha': [
+      'Crosser',
+      'Factor',
+      'Fazer',
+      'Fluo',
+      'Lander',
+      'MT-03',
+      'NMax',
+      'R3',
+      'XMax',
+      'XTZ',
+    ],
+  },
+  'Carro': {
+    'Audi': ['A3', 'A4', 'Q3', 'Q5', 'Q7'],
+    'BMW': ['Serie 1', 'Serie 3', 'X1', 'X3', 'X5'],
+    'BYD': ['Dolphin', 'Dolphin Mini', 'King', 'Seal', 'Song Plus', 'Tan'],
+    'Caoa Chery': [
+      'Arrizo',
+      'iCar',
+      'Tiggo 2',
+      'Tiggo 5X',
+      'Tiggo 7',
+      'Tiggo 8',
+    ],
+    'Chevrolet': [
+      'Agile',
+      'Astra',
+      'Celta',
+      'Classic',
+      'Cobalt',
+      'Corsa',
+      'Cruze',
+      'Montana',
+      'Onix',
+      'Prisma',
+      'S10',
+      'Spin',
+      'Tracker',
+    ],
+    'Citroen': ['Aircross', 'Berlingo', 'C3', 'C4', 'C4 Cactus', 'Jumpy'],
+    'Fiat': [
+      'Argo',
+      'Cronos',
+      'Doblo',
+      'Fiorino',
+      'Idea',
+      'Mobi',
+      'Palio',
+      'Pulse',
+      'Siena',
+      'Strada',
+      'Toro',
+      'Uno',
+    ],
+    'Ford': [
+      'Courier',
+      'EcoSport',
+      'Fiesta',
+      'Focus',
+      'Fusion',
+      'Ka',
+      'Maverick',
+      'Ranger',
+    ],
+    'Honda': ['City', 'Civic', 'CR-V', 'Fit', 'HR-V', 'WR-V'],
+    'Hyundai': ['Creta', 'HB20', 'HB20S', 'i30', 'Santa Fe', 'Tucson'],
+    'Jeep': ['Commander', 'Compass', 'Renegade', 'Wrangler'],
+    'Kia': ['Bongo', 'Carnival', 'Cerato', 'Sportage'],
+    'Mercedes-Benz': ['Classe A', 'Classe C', 'GLA', 'Sprinter', 'Vito'],
+    'Mitsubishi': ['ASX', 'Eclipse Cross', 'L200', 'Outlander', 'Pajero'],
+    'Nissan': ['Frontier', 'Kicks', 'Livina', 'March', 'Sentra', 'Versa'],
+    'Peugeot': ['206', '207', '208', '2008', '3008', 'Partner'],
+    'Renault': [
+      'Captur',
+      'Clio',
+      'Duster',
+      'Kangoo',
+      'Kwid',
+      'Logan',
+      'Oroch',
+      'Sandero',
+    ],
+    'Toyota': [
+      'Bandeirante',
+      'Corolla',
+      'Corolla Cross',
+      'Etios',
+      'Hilux',
+      'SW4',
+      'Yaris',
+    ],
+    'Volkswagen': [
+      'Amarok',
+      'Fox',
+      'Gol',
+      'Golf',
+      'Nivus',
+      'Parati',
+      'Polo',
+      'Saveiro',
+      'T-Cross',
+      'Taos',
+      'Up',
+      'Virtus',
+      'Voyage',
+    ],
+    'Volvo': ['XC40', 'XC60', 'XC90'],
+  },
+  'Van': {
+    'Citroen': ['Jumper', 'Jumpy'],
+    'Fiat': ['Doblo', 'Ducato', 'Fiorino', 'Scudo'],
+    'Ford': ['Transit'],
+    'Hyundai': ['H-1', 'HR'],
+    'Iveco': ['Daily'],
+    'JAC': ['T8', 'V260'],
+    'Kia': ['Besta', 'Bongo'],
+    'Mercedes-Benz': ['Sprinter', 'Vito'],
+    'Peugeot': ['Boxer', 'Expert', 'Partner'],
+    'Renault': ['Kangoo', 'Master'],
+    'Volkswagen': ['Delivery', 'Kombi'],
+  },
+  'Caminhao': {
+    'Agrale': ['A7500', 'Marrua'],
+    'Ford': ['Cargo', 'F-4000'],
+    'Hyundai': ['HR'],
+    'Iveco': ['Daily', 'Tector'],
+    'MAN': ['TGX'],
+    'Mercedes-Benz': ['Accelo', 'Actros', 'Atego', 'Axor'],
+    'Scania': ['P Series', 'R Series', 'S Series'],
+    'Volkswagen': ['Constellation', 'Delivery', 'Worker'],
+    'Volvo': ['FH', 'FM', 'VM'],
+  },
+  'Bicicleta': {
+    'Audax': ['AD', 'Havok', 'Ventus'],
+    'Caloi': ['Explorer', 'Moab', 'Supra', 'Velox', 'Vulcan'],
+    'Cannondale': ['Bad Boy', 'Quick', 'Trail'],
+    'Giant': ['ATX', 'Escape', 'Talon'],
+    'Oggi': ['Agile', 'Big Wheel', 'Cattura', 'Hacker'],
+    'Sense': ['Fun', 'Impact', 'One', 'Rock'],
+    'Specialized': ['Rockhopper', 'Sirrus', 'Turbo'],
+    'Trek': ['Domane', 'Marlin', 'Verve'],
+  },
+  'Patinete': {
+    'Atrio': ['ES', 'Fun'],
+    'Foston': ['S09', 'S10'],
+    'GoBoard': ['Go S1', 'Go S2'],
+    'Multilaser': ['Urban', 'Volts'],
+    'Ninebot': ['E2', 'F2', 'G30', 'Max'],
+    'Xiaomi': ['Essential', 'Mi Electric Scooter', 'Pro 2', 'Scooter 4'],
+  },
 };
+
+Map<String, List<String>> vehicleModelsByBrandForType(String type) {
+  return vehicleModelsByTypeAndBrand[type] ?? const {};
+}
+
+List<String> vehicleBrandsForType(String type) {
+  return vehicleModelsByBrandForType(type).keys.toList()..sort();
+}
+
+List<String> vehicleModelsFor({required String type, required String brand}) {
+  final brands = vehicleModelsByBrandForType(type);
+  final exact = brands[brand.trim()];
+  if (exact != null) return exact;
+  return brands.entries
+      .firstWhere(
+        (entry) => _normalize(entry.key) == _normalize(brand),
+        orElse: () => const MapEntry('', <String>[]),
+      )
+      .value;
+}
+
+Map<String, List<String>> get vehicleModelsByBrand {
+  final merged = <String, List<String>>{};
+  for (final byBrand in vehicleModelsByTypeAndBrand.values) {
+    byBrand.forEach((brand, models) {
+      merged[brand] = {...?merged[brand], ...models}.toList()..sort();
+    });
+  }
+  return merged;
+}
 
 List<String> get vehicleBrands => vehicleModelsByBrand.keys.toList()..sort();
 

@@ -477,15 +477,29 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
                           DropdownMenuItem(value: type, child: Text(type)),
                     )
                     .toList(),
-                onChanged: (value) =>
-                    setState(() => _vehicleType = value ?? vehicleTypes.first),
+                onChanged: (value) {
+                  final nextType = value ?? vehicleTypes.first;
+                  final brands = vehicleBrandsForType(nextType);
+                  setState(() {
+                    _vehicleType = nextType;
+                    if (!brands.any(
+                      (brand) =>
+                          brand.toLowerCase() ==
+                          _brandController.text.trim().toLowerCase(),
+                    )) {
+                      _brandController.clear();
+                      _modelController.clear();
+                    }
+                  });
+                },
               ),
               Autocomplete<String>(
                 initialValue: TextEditingValue(text: _brandController.text),
                 optionsBuilder: (value) {
+                  final brands = vehicleBrandsForType(_vehicleType);
                   final query = value.text.trim().toLowerCase();
-                  if (query.isEmpty) return vehicleBrands;
-                  return vehicleBrands.where(
+                  if (query.isEmpty) return brands;
+                  return brands.where(
                     (brand) => brand.toLowerCase().contains(query),
                   );
                 },
@@ -510,16 +524,10 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
               Autocomplete<String>(
                 initialValue: TextEditingValue(text: _modelController.text),
                 optionsBuilder: (value) {
-                  final models =
-                      vehicleModelsByBrand[_brandController.text.trim()] ??
-                      vehicleModelsByBrand.entries
-                          .firstWhere(
-                            (entry) =>
-                                entry.key.toLowerCase() ==
-                                _brandController.text.trim().toLowerCase(),
-                            orElse: () => const MapEntry('', <String>[]),
-                          )
-                          .value;
+                  final models = vehicleModelsFor(
+                    type: _vehicleType,
+                    brand: _brandController.text.trim(),
+                  );
                   final query = value.text.trim().toLowerCase();
                   if (query.isEmpty) return models;
                   return models.where(

@@ -31,6 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
   _LoginPanelMode _mode = _LoginPanelMode.signIn;
   String? _feedbackMessage;
   bool _feedbackIsError = false;
+  bool _obscurePassword = true;
 
   bool get _isRegister => _mode == _LoginPanelMode.signUp;
   bool get _isRecovering => _mode == _LoginPanelMode.recover;
@@ -77,6 +78,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         onOAuth: _signInWithOAuth,
                         feedbackMessage: _feedbackMessage,
                         feedbackIsError: _feedbackIsError,
+                        obscurePassword: _obscurePassword,
+                        onTogglePasswordVisibility: _togglePasswordVisibility,
                       )
                     : Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -98,6 +101,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               onOAuth: _signInWithOAuth,
                               feedbackMessage: _feedbackMessage,
                               feedbackIsError: _feedbackIsError,
+                              obscurePassword: _obscurePassword,
+                              onTogglePasswordVisibility:
+                                  _togglePasswordVisibility,
                             ),
                           ),
                         ],
@@ -116,6 +122,10 @@ class _LoginScreenState extends State<LoginScreen> {
       _feedbackMessage = null;
       _feedbackIsError = false;
     });
+  }
+
+  void _togglePasswordVisibility() {
+    setState(() => _obscurePassword = !_obscurePassword);
   }
 
   Future<void> _submit() async {
@@ -435,6 +445,8 @@ class _AccessCard extends StatelessWidget {
     required this.onOAuth,
     this.feedbackMessage,
     this.feedbackIsError = false,
+    required this.obscurePassword,
+    required this.onTogglePasswordVisibility,
   });
 
   final GlobalKey<FormState> formKey;
@@ -451,6 +463,8 @@ class _AccessCard extends StatelessWidget {
   final ValueChanged<OauthProviderOption> onOAuth;
   final String? feedbackMessage;
   final bool feedbackIsError;
+  final bool obscurePassword;
+  final VoidCallback onTogglePasswordVisibility;
 
   bool get isRegister => mode == _LoginPanelMode.signUp;
   bool get isRecovering => mode == _LoginPanelMode.recover;
@@ -597,8 +611,19 @@ class _AccessCard extends StatelessWidget {
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.lock_outline),
                         labelText: isRegister ? 'Crie uma senha' : 'Senha',
+                        suffixIcon: IconButton(
+                          tooltip: obscurePassword
+                              ? 'Mostrar senha'
+                              : 'Ocultar senha',
+                          onPressed: onTogglePasswordVisibility,
+                          icon: Icon(
+                            obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                        ),
                       ),
-                      obscureText: true,
+                      obscureText: obscurePassword,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Digite sua senha.';

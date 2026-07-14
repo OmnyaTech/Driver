@@ -80,23 +80,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
         _journeys = journeys;
         _activeJourney = activeJourney;
       });
-      if (activeJourney == null) {
-        await ActiveJourneyNotificationService.instance.cancelActiveJourney();
-      } else {
-        await ActiveJourneyNotificationService.instance.showActiveJourney(
-          activeJourney,
-        );
-        final shouldFinishFromNotification =
-            await ActiveJourneyNotificationService.instance
-                .consumeFinishRequest();
-        if (shouldFinishFromNotification && mounted) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && _activeJourney != null) {
-              _finishAutomaticJourney();
-            }
-          });
-        }
-      }
+      await _syncActiveJourneyNotification(activeJourney);
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -107,6 +91,33 @@ class _JourneysScreenState extends State<JourneysScreen> {
       if (mounted) {
         setState(() => _loading = false);
       }
+    }
+  }
+
+  Future<void> _syncActiveJourneyNotification(
+    ActiveJourneyDraft? activeJourney,
+  ) async {
+    try {
+      if (activeJourney == null) {
+        await ActiveJourneyNotificationService.instance.cancelActiveJourney();
+        return;
+      }
+
+      await ActiveJourneyNotificationService.instance.showActiveJourney(
+        activeJourney,
+      );
+      final shouldFinishFromNotification =
+          await ActiveJourneyNotificationService.instance
+              .consumeFinishRequest();
+      if (shouldFinishFromNotification && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _activeJourney != null) {
+            _finishAutomaticJourney();
+          }
+        });
+      }
+    } catch (_) {
+      // Local notification failures should not mark loaded journeys as failed.
     }
   }
 
@@ -130,7 +141,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
 
     if (draft == null) return;
     await _activeJourneyStorage.save(draft);
-    await ActiveJourneyNotificationService.instance.showActiveJourney(draft);
+    await _syncActiveJourneyNotification(draft);
     if (!mounted) return;
     setState(() => _activeJourney = draft);
     ScaffoldMessenger.of(context).showSnackBar(

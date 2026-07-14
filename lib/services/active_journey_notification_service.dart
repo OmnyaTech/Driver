@@ -54,16 +54,21 @@ class ActiveJourneyNotificationService {
       android: AndroidNotificationDetails(
         _channelId,
         _channelName,
+        icon: '@mipmap/launcher_icon',
         channelDescription:
             'Mostra que existe uma jornada em andamento no Driver.',
         importance: Importance.high,
         priority: Priority.high,
         ongoing: true,
         autoCancel: false,
+        silent: true,
         onlyAlertOnce: true,
         showWhen: true,
         when: draft.startedAt.millisecondsSinceEpoch,
         usesChronometer: true,
+        chronometerCountDown: false,
+        visibility: NotificationVisibility.public,
+        category: AndroidNotificationCategory.progress,
         actions: const [
           AndroidNotificationAction(
             'open_active_journey',
