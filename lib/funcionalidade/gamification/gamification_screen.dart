@@ -84,7 +84,7 @@ class _GamificationScreenState extends State<GamificationScreen>
         const AppGamificationSummary(
           xp: 0,
           level: 1,
-          levelTitle: 'Motorista iniciante',
+          levelTitle: 'Entregador iniciante',
           nextLevelXp: 250,
           currentStreakDays: 0,
           bestStreakDays: 0,
@@ -113,7 +113,7 @@ class _GamificationScreenState extends State<GamificationScreen>
             _GameHero(
               summary: summary,
               animation: _pulseController,
-              displayName: profile?.displayName ?? 'Motorista',
+              displayName: profile?.displayName ?? 'Entregador',
               avatarUrl: profile?.avatarUrl,
             ),
             if (_errorMessage != null) ...[

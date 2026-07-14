@@ -20,7 +20,7 @@ class AppReferralReward {
       id: data['referral_id'].toString(),
       referredUserId: data['referred_user_id'].toString(),
       referredDisplayName:
-          (data['referred_display_name'] ?? 'Motorista indicado').toString(),
+          (data['referred_display_name'] ?? 'Entregador indicado').toString(),
       referredAvatarUrl: data['referred_avatar_url'] as String?,
       rewardXp: _parseInt(data['reward_xp']),
       acceptedAt: DateTime.tryParse((data['accepted_at'] ?? '').toString()),

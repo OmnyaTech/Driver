@@ -9,6 +9,7 @@ class AppDashboardMetrics {
     required this.openJourneys,
     required this.totalDeliveries,
     required this.totalDistanceKm,
+    required this.workedMinutes,
     required this.activeVehicles,
     required this.activePlatforms,
     required this.totalFuelings,
@@ -25,6 +26,7 @@ class AppDashboardMetrics {
   final int openJourneys;
   final int totalDeliveries;
   final double totalDistanceKm;
+  final int workedMinutes;
   final int activeVehicles;
   final int activePlatforms;
   final int totalFuelings;
@@ -42,4 +44,8 @@ class AppDashboardMetrics {
 
   double get incomePerDelivery =>
       totalDeliveries == 0 ? 0 : totalIncome / totalDeliveries;
+
+  double get workedHours => workedMinutes <= 0 ? 0 : workedMinutes / 60;
+
+  double get incomePerHour => workedHours <= 0 ? 0 : totalIncome / workedHours;
 }

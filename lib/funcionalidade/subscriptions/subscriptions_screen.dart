@@ -486,7 +486,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
               es: 'Historial operativo inicial',
             ),
             strings.pick(
-              pt: 'Metas e saldo do motorista',
+              pt: 'Metas e saldo do entregador',
               en: 'Goals and driver balance',
               es: 'Metas y saldo del conductor',
             ),

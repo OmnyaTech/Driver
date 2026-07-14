@@ -418,99 +418,16 @@ class _JourneysScreenState extends State<JourneysScreen> {
                 es: 'Ajusta la busqueda o el periodo para encontrar jornadas antiguas.',
               ),
             ),
-          ..._filteredJourneys.map(
-            (journey) => Card(
-              child: ExpansionTile(
-                title: Row(
-                  children: [
-                    Expanded(child: Text(_formatJourneyTitle(journey))),
-                    PopupMenuButton<String>(
-                      onSelected: (value) async {
-                        if (value == 'edit') {
-                          await _openEditDialog(journey);
-                          return;
-                        }
-                        if (value == 'delete') {
-                          await _deleteJourney(journey);
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        PopupMenuItem(
-                          value: 'edit',
-                          child: Text(
-                            strings.pick(
-                              pt: 'Editar',
-                              en: 'Edit',
-                              es: 'Editar',
-                            ),
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text(
-                            strings.pick(
-                              pt: 'Excluir',
-                              en: 'Delete',
-                              es: 'Eliminar',
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                subtitle: Text(
-                  [
-                    _formatDate(journey.startedAt),
-                    if (journey.vehicleLabel != null) journey.vehicleLabel!,
-                    strings.deliveriesCount(journey.totalDeliveries),
-                    format.currency(journey.totalIncome),
-                    journey.isFinished
-                        ? strings.pick(
-                            pt: 'Finalizada',
-                            en: 'Finished',
-                            es: 'Finalizada',
-                          )
-                        : strings.pick(
-                            pt: 'Em aberto',
-                            en: 'Open',
-                            es: 'Abierta',
-                          ),
-                  ].join(' - '),
-                ),
-                children: [
-                  if (journey.distanceKm != null ||
-                      (journey.notes?.trim().isNotEmpty ?? false))
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (journey.distanceKm != null)
-                            Text(
-                              '${strings.distance}: ${journey.distanceKm!.toStringAsFixed(1)} km',
-                            ),
-                          if (journey.notes?.trim().isNotEmpty ?? false)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Text(journey.notes!.trim()),
-                            ),
-                        ],
-                      ),
-                    ),
-                  if (journey.platformBreakdown.isNotEmpty)
-                    ...journey.platformBreakdown.map(
-                      (platform) => ListTile(
-                        leading: const Icon(Icons.storefront_outlined),
-                        title: Text(platform.platformName),
-                        subtitle: Text(
-                          strings.deliveriesCount(platform.deliveries),
-                        ),
-                        trailing: Text(format.currency(platform.income)),
-                      ),
-                    ),
-                ],
-              ),
+          ..._groupedJourneys.map(
+            (monthGroup) => _JourneyMonthSection(
+              title: monthGroup.label,
+              days: monthGroup.days,
+              format: format,
+              strings: strings,
+              onEdit: _openEditDialog,
+              onDelete: _deleteJourney,
+              formatJourneyTitle: _formatJourneyTitle,
+              formatDuration: _formatDuration,
             ),
           ),
         ],
@@ -605,11 +522,6 @@ class _JourneysScreenState extends State<JourneysScreen> {
     );
   }
 
-  String _formatDate(DateTime value) {
-    final date = value.toLocal();
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
-  }
-
   List<AppJourney> get _filteredJourneys {
     final query = _searchController.text.trim().toLowerCase();
     return _journeys.where((journey) {
@@ -630,6 +542,79 @@ class _JourneysScreenState extends State<JourneysScreen> {
 
   double get _filteredIncome =>
       _filteredJourneys.fold<double>(0, (sum, item) => sum + item.totalIncome);
+
+  List<_JourneyMonthGroup> get _groupedJourneys {
+    final sorted = [..._filteredJourneys]
+      ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+    final monthGroups = <_JourneyMonthGroup>[];
+
+    for (final journey in sorted) {
+      final local = journey.startedAt.toLocal();
+      final monthLabel = _formatMonth(local);
+      final dayKey = DateTime(local.year, local.month, local.day);
+      final dayLabel =
+          '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
+
+      _JourneyMonthGroup? monthGroup;
+      for (final group in monthGroups) {
+        if (group.label == monthLabel) {
+          monthGroup = group;
+          break;
+        }
+      }
+      if (monthGroup == null) {
+        monthGroup = _JourneyMonthGroup(label: monthLabel, days: []);
+        monthGroups.add(monthGroup);
+      }
+
+      _JourneyDayGroup? dayGroup;
+      for (final group in monthGroup.days) {
+        if (group.dayKey == dayKey) {
+          dayGroup = group;
+          break;
+        }
+      }
+      if (dayGroup == null) {
+        dayGroup = _JourneyDayGroup(
+          dayKey: dayKey,
+          label: dayLabel,
+          journeys: [],
+        );
+        monthGroup.days.add(dayGroup);
+      }
+
+      dayGroup.journeys.add(journey);
+    }
+
+    return monthGroups;
+  }
+
+  String _formatMonth(DateTime value) {
+    const months = [
+      'Jan',
+      'Fev',
+      'Mar',
+      'Abr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Set',
+      'Out',
+      'Nov',
+      'Dez',
+    ];
+    return '${months[value.month - 1]}/${value.year}';
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes < 0 ? 0 : duration.inMinutes;
+    final hours = minutes ~/ 60;
+    final remaining = minutes % 60;
+    if (hours <= 0) return '${remaining}min';
+    if (remaining == 0) return '${hours}h';
+    return '${hours}h ${remaining}min';
+  }
 
   bool _isWithinRange(DateTime value) {
     final local = value.toLocal();
@@ -670,6 +655,191 @@ class _JourneysScreenState extends State<JourneysScreen> {
   DateTimeRange _currentMonthRange() {
     final now = DateTime.now();
     return DateTimeRange(start: DateTime(now.year, now.month, 1), end: now);
+  }
+}
+
+class _JourneyMonthGroup {
+  _JourneyMonthGroup({required this.label, required this.days});
+
+  final String label;
+  final List<_JourneyDayGroup> days;
+}
+
+class _JourneyDayGroup {
+  _JourneyDayGroup({
+    required this.dayKey,
+    required this.label,
+    required this.journeys,
+  });
+
+  final DateTime dayKey;
+  final String label;
+  final List<AppJourney> journeys;
+
+  double get income =>
+      journeys.fold<double>(0, (sum, journey) => sum + journey.totalIncome);
+
+  int get deliveries =>
+      journeys.fold<int>(0, (sum, journey) => sum + journey.totalDeliveries);
+
+  int get workedMinutes => journeys.fold<int>(
+    0,
+    (sum, journey) => sum + journey.workedDuration.inMinutes,
+  );
+}
+
+class _JourneyMonthSection extends StatelessWidget {
+  const _JourneyMonthSection({
+    required this.title,
+    required this.days,
+    required this.format,
+    required this.strings,
+    required this.onEdit,
+    required this.onDelete,
+    required this.formatJourneyTitle,
+    required this.formatDuration,
+  });
+
+  final String title;
+  final List<_JourneyDayGroup> days;
+  final AppFormat format;
+  final AppStrings strings;
+  final ValueChanged<AppJourney> onEdit;
+  final ValueChanged<AppJourney> onDelete;
+  final String Function(AppJourney journey) formatJourneyTitle;
+  final String Function(Duration duration) formatDuration;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 18, bottom: 10, left: 4),
+          child: Text(title, style: textTheme.titleMedium),
+        ),
+        for (final day in days) ...[
+          OmnyaGlassCard(
+            highlight: true,
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${day.label} - ${strings.deliveriesCount(day.deliveries)} | '
+                    '${day.journeys.length} ${day.journeys.length == 1 ? strings.pick(pt: 'jornada', en: 'shift', es: 'turno') : strings.journeys.toLowerCase()} | '
+                    '${format.currency(day.income)}',
+                    style: textTheme.titleSmall,
+                  ),
+                ),
+                Text(
+                  formatDuration(Duration(minutes: day.workedMinutes)),
+                  style: textTheme.labelLarge,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final journey in day.journeys) ...[
+            OmnyaGlassCard(
+              padding: const EdgeInsets.all(14),
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: const EdgeInsets.only(top: 8),
+                title: Text(
+                  '${day.label} | ${formatJourneyTitle(journey)} | '
+                  '${formatDuration(journey.workedDuration)} | '
+                  '${format.currency(journey.totalIncome)}',
+                ),
+                subtitle: Text(
+                  '${strings.deliveriesCount(journey.totalDeliveries)} • '
+                  '${journey.isFinished ? strings.pick(pt: 'Finalizada', en: 'Finished', es: 'Finalizada') : strings.pick(pt: 'Em aberto', en: 'Open', es: 'Abierta')}',
+                ),
+                trailing: PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'edit') onEdit(journey);
+                    if (value == 'delete') onDelete(journey);
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Text(
+                        strings.pick(pt: 'Editar', en: 'Edit', es: 'Editar'),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text(
+                        strings.pick(
+                          pt: 'Excluir',
+                          en: 'Delete',
+                          es: 'Eliminar',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                children: [
+                  if (journey.vehicleLabel != null)
+                    _JourneyDetailLine(
+                      label: strings.vehicles,
+                      value: journey.vehicleLabel!,
+                    ),
+                  if ((journey.distanceKm ?? 0) > 0)
+                    _JourneyDetailLine(
+                      label: strings.distance,
+                      value:
+                          '${(journey.distanceKm ?? 0).toStringAsFixed(1)} km',
+                    ),
+                  for (final platform in journey.platformBreakdown)
+                    _JourneyDetailLine(
+                      label: platform.platformName,
+                      value:
+                          '${format.currency(platform.income)} • ${strings.deliveriesCount(platform.deliveries)}',
+                    ),
+                  if (journey.notes != null && journey.notes!.trim().isNotEmpty)
+                    _JourneyDetailLine(
+                      label: strings.pick(
+                        pt: 'Observacoes',
+                        en: 'Notes',
+                        es: 'Notas',
+                      ),
+                      value: journey.notes!,
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ],
+      ],
+    );
+  }
+}
+
+class _JourneyDetailLine extends StatelessWidget {
+  const _JourneyDetailLine({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 112,
+            child: Text(label, style: Theme.of(context).textTheme.labelMedium),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
   }
 }
 
@@ -1117,7 +1287,9 @@ class _JourneyFormDialogState extends State<_JourneyFormDialog> {
                       ),
                     )
                     .toList());
-    _mode = initialJourney?.mode ?? 'manual';
+    _mode = initialJourney?.mode == 'quick'
+        ? 'manual'
+        : (initialJourney?.mode ?? 'manual');
     _vehicleId = initialJourney?.vehicleId;
     _startedAt = initialJourney?.startedAt.toLocal() ?? DateTime.now();
     _endedAt = initialJourney?.endedAt?.toLocal();
@@ -1136,6 +1308,9 @@ class _JourneyFormDialogState extends State<_JourneyFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isNewAutomatic =
+        widget.initialJourney == null && _mode == 'automatic';
+
     return AlertDialog(
       title: Text(
         widget.initialJourney == null ? 'Nova jornada' : 'Editar jornada',
@@ -1153,14 +1328,26 @@ class _JourneyFormDialogState extends State<_JourneyFormDialog> {
                   decoration: const InputDecoration(labelText: 'Modo'),
                   items: const [
                     DropdownMenuItem(value: 'manual', child: Text('Manual')),
-                    DropdownMenuItem(value: 'quick', child: Text('Rapida')),
                     DropdownMenuItem(
                       value: 'automatic',
                       child: Text('Automatica'),
                     ),
                   ],
-                  onChanged: (value) =>
-                      setState(() => _mode = value ?? 'manual'),
+                  onChanged: (value) {
+                    setState(() {
+                      _mode = value ?? 'manual';
+                      if (_mode == 'automatic' &&
+                          widget.initialJourney == null) {
+                        _endedAt = null;
+                        for (final entry in _platformEntries.skip(1).toList()) {
+                          entry.dispose();
+                        }
+                        _platformEntries
+                          ..clear()
+                          ..add(_PlatformIncomeEntry());
+                      }
+                    });
+                  },
                 ),
                 DropdownButtonFormField<String?>(
                   initialValue: _vehicleId,
@@ -1185,15 +1372,21 @@ class _JourneyFormDialogState extends State<_JourneyFormDialog> {
                   value: _startedAt,
                   onChanged: (value) => setState(() => _startedAt = value),
                 ),
-                _DateTimeTile(
-                  label: 'Fim',
-                  value: _endedAt,
-                  emptyLabel: 'Em aberto',
-                  onChanged: (value) => setState(() => _endedAt = value),
-                  onClear: _endedAt == null
-                      ? null
-                      : () => setState(() => _endedAt = null),
-                ),
+                if (!isNewAutomatic)
+                  _DateTimeTile(
+                    label: 'Fim',
+                    value: _endedAt,
+                    emptyLabel: 'Em aberto',
+                    onChanged: (value) => setState(() => _endedAt = value),
+                    onClear: _endedAt == null
+                        ? null
+                        : () => setState(() => _endedAt = null),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: _AutomaticJourneyNotice(),
+                  ),
                 TextFormField(
                   controller: _odometerStartController,
                   decoration: const InputDecoration(labelText: 'Km inicial'),
@@ -1202,105 +1395,109 @@ class _JourneyFormDialogState extends State<_JourneyFormDialog> {
                   ),
                   validator: _validateDistanceField,
                 ),
-                TextFormField(
-                  controller: _odometerEndController,
-                  decoration: const InputDecoration(labelText: 'Km final'),
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+                if (!isNewAutomatic)
+                  TextFormField(
+                    controller: _odometerEndController,
+                    decoration: const InputDecoration(labelText: 'Km final'),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    validator: _validateDistanceField,
                   ),
-                  validator: _validateDistanceField,
-                ),
                 TextFormField(
                   controller: _notesController,
                   decoration: const InputDecoration(labelText: 'Observacoes'),
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Receita por plataforma',
-                        style: Theme.of(context).textTheme.titleSmall,
+                if (!isNewAutomatic) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Receita por plataforma',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(
+                            () => _platformEntries.add(_PlatformIncomeEntry()),
+                          );
+                        },
+                        child: const Text('Adicionar'),
+                      ),
+                    ],
+                  ),
+                  ..._platformEntries.asMap().entries.map(
+                    (entry) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              initialValue: entry.value.platformId,
+                              decoration: const InputDecoration(
+                                labelText: 'Plataforma',
+                              ),
+                              items: [
+                                const DropdownMenuItem(
+                                  value: '',
+                                  child: Text('Selecionar'),
+                                ),
+                                ...widget.platforms.map(
+                                  (platform) => DropdownMenuItem(
+                                    value: platform.id,
+                                    child: Text(platform.name),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                entry.value.platformId = value ?? '';
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 100,
+                            child: TextFormField(
+                              controller: entry.value.incomeController,
+                              decoration: const InputDecoration(
+                                labelText: 'Ganho',
+                              ),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 100,
+                            child: TextFormField(
+                              controller: entry.value.deliveriesController,
+                              decoration: const InputDecoration(
+                                labelText: 'Entregas',
+                              ),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                          if (_platformEntries.length > 1)
+                            IconButton(
+                              onPressed: () {
+                                final removed = _platformEntries.removeAt(
+                                  entry.key,
+                                );
+                                removed.dispose();
+                                setState(() {});
+                              },
+                              icon: const Icon(Icons.delete_outline),
+                            ),
+                        ],
                       ),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        setState(
-                          () => _platformEntries.add(_PlatformIncomeEntry()),
-                        );
-                      },
-                      child: const Text('Adicionar'),
-                    ),
-                  ],
-                ),
-                ..._platformEntries.asMap().entries.map(
-                  (entry) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            initialValue: entry.value.platformId,
-                            decoration: const InputDecoration(
-                              labelText: 'Plataforma',
-                            ),
-                            items: [
-                              const DropdownMenuItem(
-                                value: '',
-                                child: Text('Selecionar'),
-                              ),
-                              ...widget.platforms.map(
-                                (platform) => DropdownMenuItem(
-                                  value: platform.id,
-                                  child: Text(platform.name),
-                                ),
-                              ),
-                            ],
-                            onChanged: (value) {
-                              entry.value.platformId = value ?? '';
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 100,
-                          child: TextFormField(
-                            controller: entry.value.incomeController,
-                            decoration: const InputDecoration(
-                              labelText: 'Ganho',
-                            ),
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 100,
-                          child: TextFormField(
-                            controller: entry.value.deliveriesController,
-                            decoration: const InputDecoration(
-                              labelText: 'Entregas',
-                            ),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                        if (_platformEntries.length > 1)
-                          IconButton(
-                            onPressed: () {
-                              final removed = _platformEntries.removeAt(
-                                entry.key,
-                              );
-                              removed.dispose();
-                              setState(() {});
-                            },
-                            icon: const Icon(Icons.delete_outline),
-                          ),
-                      ],
-                    ),
                   ),
-                ),
+                ],
                 if (_submitError != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -1326,7 +1523,9 @@ class _JourneyFormDialogState extends State<_JourneyFormDialog> {
               ? null
               : () async {
                   if (!_formKey.currentState!.validate()) return;
-                  if (_endedAt != null && _endedAt!.isBefore(_startedAt)) {
+                  if (!isNewAutomatic &&
+                      _endedAt != null &&
+                      _endedAt!.isBefore(_startedAt)) {
                     setState(() {
                       _submitError =
                           'O horario de fim nao pode ser anterior ao inicio.';
@@ -1343,20 +1542,24 @@ class _JourneyFormDialogState extends State<_JourneyFormDialog> {
                     await widget.onSubmit(
                       mode: _mode,
                       startedAt: _startedAt,
-                      endedAt: _endedAt,
+                      endedAt: isNewAutomatic ? null : _endedAt,
                       vehicleId: _vehicleId,
                       odometerStart: _odometerStartController.text,
-                      odometerEnd: _odometerEndController.text,
+                      odometerEnd: isNewAutomatic
+                          ? ''
+                          : _odometerEndController.text,
                       notes: _notesController.text,
-                      platforms: _platformEntries
-                          .map(
-                            (entry) => JourneyPlatformDraft(
-                              platformId: entry.platformId,
-                              income: entry.incomeController.text,
-                              deliveries: entry.deliveriesController.text,
-                            ),
-                          )
-                          .toList(),
+                      platforms: isNewAutomatic
+                          ? const <JourneyPlatformDraft>[]
+                          : _platformEntries
+                                .map(
+                                  (entry) => JourneyPlatformDraft(
+                                    platformId: entry.platformId,
+                                    income: entry.incomeController.text,
+                                    deliveries: entry.deliveriesController.text,
+                                  ),
+                                )
+                                .toList(),
                     );
                     if (!mounted) return;
                     navigator.pop(true);
@@ -1415,6 +1618,39 @@ class _PlatformIncomeEntry {
   void dispose() {
     incomeController.dispose();
     deliveriesController.dispose();
+  }
+}
+
+class _AutomaticJourneyNotice extends StatelessWidget {
+  const _AutomaticJourneyNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.timer_outlined, color: theme.colorScheme.primary),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'A jornada automatica fica aberta. Quando encerrar, voce informa km final, entregas e ganhos antes de salvar o fechamento.',
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

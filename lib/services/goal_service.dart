@@ -305,6 +305,7 @@ class GoalService {
         openJourneys: int.tryParse('${response['open_journeys']}') ?? 0,
         totalDeliveries: int.tryParse('${response['total_deliveries']}') ?? 0,
         totalDistanceKm: _toDouble(response['total_distance_km']),
+        workedMinutes: 0,
         activeVehicles: int.tryParse('${response['active_vehicles']}') ?? 0,
         activePlatforms: int.tryParse('${response['active_platforms']}') ?? 0,
         totalFuelings: int.tryParse('${response['total_fuelings']}') ?? 0,
@@ -353,6 +354,10 @@ class GoalService {
         totalDistanceKm: journeys.fold<double>(
           0,
           (sum, item) => sum + (item.distanceKm ?? 0),
+        ),
+        workedMinutes: journeys.fold<int>(
+          0,
+          (sum, item) => sum + item.workedDuration.inMinutes,
         ),
         activeVehicles: 0,
         activePlatforms: 0,

@@ -235,7 +235,7 @@ class AppSession extends ChangeNotifier {
       await _pushNotificationService.registerDeviceIfPossible();
       _errorMessage = null;
     } catch (_) {
-      _errorMessage = 'Falha ao carregar o perfil do motorista.';
+      _errorMessage = 'Falha ao carregar o perfil do entregador.';
       _profile = _fallbackProfile(session.user);
     }
 
@@ -246,7 +246,7 @@ class AppSession extends ChangeNotifier {
     return AppProfile(
       id: data['id'].toString(),
       email: (data['email'] ?? '').toString(),
-      displayName: (data['display_name'] ?? data['full_name'] ?? 'Motorista')
+      displayName: (data['display_name'] ?? data['full_name'] ?? 'Entregador')
           .toString(),
       avatarUrl: data['avatar_url'] as String?,
       fullName: data['full_name'] as String?,
@@ -312,7 +312,7 @@ class AppSession extends ChangeNotifier {
     final fullName = (metadata['full_name'] ?? metadata['name'])?.toString();
     final displayName = fullName?.trim().isNotEmpty == true
         ? fullName!.trim().split(' ').first
-        : (user.email?.split('@').first ?? 'Motorista');
+        : (user.email?.split('@').first ?? 'Entregador');
 
     return AppProfile(
       id: user.id,

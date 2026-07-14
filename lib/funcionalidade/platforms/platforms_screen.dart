@@ -384,12 +384,13 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
             (platform) => Card(
               child: ListTile(
                 leading: _PlatformLogo(platform: platform),
-                title: Text(platform.name),
+                title: Text(
+                  '${_platformTypeLabel(platform.type, strings)} - ${platform.name}',
+                ),
                 subtitle: Text(
                   [
-                    platform.type,
                     if (platform.averageIncome != null)
-                      format.currency(platform.averageIncome!),
+                      '${strings.pick(pt: 'Media', en: 'Average', es: 'Promedio')} ${format.currency(platform.averageIncome!)}',
                     if (platform.averageDeliveries != null)
                       strings.deliveriesCount(platform.averageDeliveries!),
                     platform.active
@@ -399,7 +400,7 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
                             en: 'Archived',
                             es: 'Archivada',
                           ),
-                  ].join(' - '),
+                  ].join(' / '),
                 ),
                 trailing: PopupMenuButton<String>(
                   onSelected: (value) async {
@@ -510,6 +511,22 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
       ].join(' ').toLowerCase();
       return haystack.contains(query);
     }).toList();
+  }
+
+  String _platformTypeLabel(String value, AppStrings strings) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized.contains('restaurant') ||
+        normalized.contains('restaurante')) {
+      return strings.pick(
+        pt: 'Restaurante',
+        en: 'Restaurant',
+        es: 'Restaurante',
+      );
+    }
+    if (normalized.contains('market') || normalized.contains('mercado')) {
+      return strings.pick(pt: 'Mercado', en: 'Market', es: 'Mercado');
+    }
+    return strings.pick(pt: 'Plataforma', en: 'Platform', es: 'Plataforma');
   }
 }
 

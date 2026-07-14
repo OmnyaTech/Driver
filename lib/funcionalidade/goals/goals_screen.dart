@@ -34,6 +34,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   GoalBalanceSummary? _summary;
   List<JourneyOption> _journeyOptions = const [];
   String? _errorMessage;
+  bool _showSuggestions = true;
 
   @override
   void initState() {
@@ -228,11 +229,12 @@ class _GoalsScreenState extends State<GoalsScreen> {
             ),
           ],
           const SizedBox(height: 16),
-          if (_suggestions.isNotEmpty) ...[
+          if (_suggestions.isNotEmpty && _showSuggestions) ...[
             _GoalSuggestionsCard(
               suggestions: _suggestions,
               currency: _currency,
               onAccept: _acceptSuggestion,
+              onDismiss: () => setState(() => _showSuggestions = false),
             ),
             const SizedBox(height: 16),
           ],
@@ -676,11 +678,13 @@ class _GoalSuggestionsCard extends StatelessWidget {
     required this.suggestions,
     required this.currency,
     required this.onAccept,
+    required this.onDismiss,
   });
 
   final List<AppGoalSuggestion> suggestions;
   final String Function(double value) currency;
   final Future<void> Function(AppGoalSuggestion suggestion) onAccept;
+  final VoidCallback onDismiss;
 
   @override
   Widget build(BuildContext context) {
@@ -703,12 +707,21 @@ class _GoalSuggestionsCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     strings.pick(
-                      pt: 'Sugestoes para se organizar',
+                      pt: 'Ideias rapidas para guardar dinheiro',
                       en: 'Ideas to stay organized',
                       es: 'Ideas para organizarte',
                     ),
                     style: theme.textTheme.titleMedium,
                   ),
+                ),
+                IconButton(
+                  tooltip: strings.pick(
+                    pt: 'Fechar sugestoes',
+                    en: 'Hide ideas',
+                    es: 'Cerrar ideas',
+                  ),
+                  onPressed: onDismiss,
+                  icon: const Icon(Icons.close_rounded),
                 ),
               ],
             ),

@@ -169,7 +169,7 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: strings.pick(
-                  pt: 'Buscar motorista, @usuario ou cidade',
+                  pt: 'Buscar entregador, @usuario ou cidade',
                   en: 'Search driver, @user or city',
                   es: 'Buscar conductor, @usuario o ciudad',
                 ),
@@ -197,7 +197,7 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
             const SizedBox(height: 16),
             Text(
               strings.pick(
-                pt: 'Encontrar motoristas',
+                pt: 'Encontrar entregadores',
                 en: 'Find drivers',
                 es: 'Encontrar conductores',
               ),
@@ -589,7 +589,7 @@ class _ReferralRewardsCard extends StatelessWidget {
                               es: 'Invita amigos y gana XP cuando entren.',
                             )
                           : strings.pick(
-                              pt: '${rewards.length} motorista(s) entraram | +$totalXp XP',
+                              pt: '${rewards.length} entregador(es) entraram | +$totalXp XP',
                               en: '${rewards.length} driver(s) joined | +$totalXp XP',
                               es: '${rewards.length} conductor(es) entraron | +$totalXp XP',
                             ),

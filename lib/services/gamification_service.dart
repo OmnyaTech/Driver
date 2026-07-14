@@ -22,7 +22,7 @@ class GamificationService {
     return AppGamificationSummary(
       xp: _toInt(data['xp']),
       level: _toInt(data['level']),
-      levelTitle: data['level_title']?.toString() ?? 'Motorista iniciante',
+      levelTitle: _driverTitle(data['level_title']),
       nextLevelXp: _nullableInt(data['next_level_xp']),
       currentStreakDays: _toInt(data['current_streak_days']),
       bestStreakDays: _toInt(data['best_streak_days']),
@@ -121,6 +121,12 @@ class GamificationService {
         .schema('driver')
         .rpc('claim_driver_mission', params: {'p_mission_key': missionKey});
     return Map<String, dynamic>.from((response as Map?) ?? const {});
+  }
+
+  String _driverTitle(Object? value) {
+    return (value?.toString() ?? 'Entregador iniciante')
+        .replaceAll('Motorista', 'Entregador')
+        .replaceAll('motorista', 'entregador');
   }
 
   int _toInt(Object? value) => int.tryParse('$value') ?? 0;

@@ -162,7 +162,7 @@ class AuthService {
         .trim();
     final displayName = fullName.isNotEmpty
         ? fullName.split(' ').first
-        : (user.email?.split('@').first ?? 'Motorista');
+        : (user.email?.split('@').first ?? 'Entregador');
     final payload = {
       'id': user.id,
       'email': user.email,

@@ -118,6 +118,27 @@ class PublicProfileService {
     }, onConflict: 'user_id');
   }
 
+  Future<bool> isSlugAvailable(String? value) async {
+    final normalizedSlug = _normalizeSlug(value);
+    if (normalizedSlug == null) return true;
+
+    final client = _authService.requireClient();
+    final user = client.auth.currentUser;
+    if (user == null) {
+      throw StateError('Usuario nao autenticado.');
+    }
+
+    final rows = await client
+        .schema('driver')
+        .from('profiles')
+        .select('id')
+        .eq('public_slug', normalizedSlug)
+        .neq('id', user.id)
+        .limit(1);
+
+    return rows.isEmpty;
+  }
+
   String? _normalize(String? value) {
     final trimmed = value?.trim();
     return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
@@ -147,7 +168,6 @@ class PublicProfileService {
         publicSlug: suggested,
         publicBio: settings.publicBio,
         publicCity: settings.publicCity,
-        publicTitle: settings.publicTitle,
         publicBannerUrl: settings.publicBannerUrl,
         selectedBadgeKeys: settings.selectedBadgeKeys,
         rankingOptIn: true,
@@ -161,7 +181,6 @@ class PublicProfileService {
         publicSlug: fallback,
         publicBio: settings.publicBio,
         publicCity: settings.publicCity,
-        publicTitle: settings.publicTitle,
         publicBannerUrl: settings.publicBannerUrl,
         selectedBadgeKeys: settings.selectedBadgeKeys,
         rankingOptIn: true,
@@ -199,11 +218,17 @@ class PublicProfileService {
     final source =
         _normalize(displayName) ??
         _normalize(email?.split('@').first) ??
-        'motorista-${userId.replaceAll('-', '').substring(0, 6)}';
+        'entregador-${userId.replaceAll('-', '').substring(0, 6)}';
     final slug = _normalizeSlug(source);
     return slug == null || slug.isEmpty
-        ? 'motorista-${userId.replaceAll('-', '').substring(0, 6)}'
+        ? 'entregador-${userId.replaceAll('-', '').substring(0, 6)}'
         : slug;
+  }
+
+  String _driverTitle(Object? value, {String fallback = 'Entregador'}) {
+    return (value?.toString() ?? fallback)
+        .replaceAll('Motorista', 'Entregador')
+        .replaceAll('motorista', 'entregador');
   }
 
   Future<AppPublicDriverProfile?> loadPublicProfile(String slug) async {
@@ -232,12 +257,12 @@ class PublicProfileService {
     );
 
     return AppPublicDriverProfile(
-      displayName: data['display_name']?.toString() ?? 'Motorista',
+      displayName: data['display_name']?.toString() ?? 'Entregador',
       avatarUrl: data['avatar_url']?.toString(),
       publicSlug: data['public_slug']?.toString() ?? slug,
       publicBio: data['public_bio']?.toString(),
       publicCity: data['public_city']?.toString(),
-      publicTitle: data['public_title']?.toString(),
+      publicTitle: _driverTitle(data['public_title']),
       publicBannerUrl: data['public_banner_url']?.toString(),
       tier: data['tier']?.toString() ?? 'Bronze',
       publicScore: _toInt(data['public_score']),
@@ -255,7 +280,7 @@ class PublicProfileService {
           .where((item) => item.trim().isNotEmpty)
           .toList(),
       level: _toInt(data['level']),
-      levelTitle: data['level_title']?.toString() ?? 'Motorista',
+      levelTitle: _driverTitle(data['level_title']),
       xp: _toInt(data['xp']),
       medalsCount: _toInt(data['medals_count']),
       currentStreakDays: _toInt(data['current_streak_days']),
@@ -300,12 +325,12 @@ class PublicProfileService {
           (item) => AppPublicDriverPreview(
             rankPosition: _toInt((item as Map)['rank_position']),
             publicSlug: item['public_slug']?.toString() ?? '',
-            displayName: item['display_name']?.toString() ?? 'Motorista',
+            displayName: item['display_name']?.toString() ?? 'Entregador',
             avatarUrl: item['avatar_url']?.toString(),
             publicCity:
                 item['public_city']?.toString() ?? item['city']?.toString(),
             level: _toInt(item['level']),
-            levelTitle: item['level_title']?.toString() ?? 'Motorista',
+            levelTitle: _driverTitle(item['level_title']),
             medalsCount: _toInt(item['medals_count']),
             publicScore: _toInt(item['public_score']),
             bestStreakDays: _toInt(item['best_streak_days']),
@@ -334,11 +359,11 @@ class PublicProfileService {
         .map<AppPublicDriverPreview>(
           (item) => AppPublicDriverPreview(
             publicSlug: (item as Map)['public_slug']?.toString() ?? '',
-            displayName: item['display_name']?.toString() ?? 'Motorista',
+            displayName: item['display_name']?.toString() ?? 'Entregador',
             avatarUrl: item['avatar_url']?.toString(),
             publicCity: item['public_city']?.toString(),
             level: _toInt(item['level']),
-            levelTitle: item['level_title']?.toString() ?? 'Motorista',
+            levelTitle: _driverTitle(item['level_title']),
             medalsCount: _toInt(item['medals_count']),
             publicScore: _toInt(item['public_score']),
             bestStreakDays: _toInt(item['best_streak_days']),

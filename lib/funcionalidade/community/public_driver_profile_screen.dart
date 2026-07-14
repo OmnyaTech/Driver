@@ -219,7 +219,7 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Conquistas escolhidas pelo motorista para aparecer no perfil.',
+                      'Conquistas escolhidas pelo entregador para aparecer no perfil.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 12),

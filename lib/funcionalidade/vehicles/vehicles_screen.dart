@@ -277,17 +277,15 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
           ..._vehicles.map(
             (vehicle) => Card(
               child: ListTile(
-                title: Text('${vehicle.brand} ${vehicle.model}'),
+                leading: CircleAvatar(child: Icon(_vehicleIcon(vehicle))),
+                title: Text(
+                  '${strings.pick(pt: 'Veiculo', en: 'Vehicle', es: 'Vehiculo')} - ${vehicle.brand} ${vehicle.model}',
+                ),
                 subtitle: Text(
                   [
                     if (vehicle.modelYear != null)
-                      strings.pick(
-                        pt: 'Ano ${vehicle.modelYear}',
-                        en: 'Year ${vehicle.modelYear}',
-                        es: 'Ano ${vehicle.modelYear}',
-                      ),
+                      '${strings.pick(pt: 'Ano', en: 'Year', es: 'Ano')} ${vehicle.modelYear}',
                     if (vehicle.fuelType != null) vehicle.fuelType,
-                    if (vehicle.plate != null) vehicle.plate,
                     vehicle.active
                         ? strings.pick(pt: 'Ativo', en: 'Active', es: 'Activo')
                         : strings.pick(
@@ -295,7 +293,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                             en: 'Archived',
                             es: 'Archivado',
                           ),
-                  ].join(' - '),
+                  ].join(' / '),
                 ),
                 trailing: PopupMenuButton<String>(
                   onSelected: (value) async {
@@ -364,6 +362,19 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
       ],
       body: content,
     );
+  }
+
+  IconData _vehicleIcon(AppVehicle vehicle) {
+    final label = '${vehicle.brand} ${vehicle.model}'.toLowerCase();
+    if (label.contains('van')) return Icons.airport_shuttle_outlined;
+    if (label.contains('car') ||
+        label.contains('auto') ||
+        label.contains('civic') ||
+        label.contains('gol') ||
+        label.contains('uno')) {
+      return Icons.directions_car_outlined;
+    }
+    return Icons.two_wheeler_outlined;
   }
 }
 

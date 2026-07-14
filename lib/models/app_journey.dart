@@ -29,6 +29,12 @@ class AppJourney {
 
   bool get isFinished => endedAt != null;
 
+  Duration get workedDuration {
+    final end = endedAt;
+    if (end == null || end.isBefore(startedAt)) return Duration.zero;
+    return end.difference(startedAt);
+  }
+
   double? get distanceKm {
     if (odometerStart == null || odometerEnd == null) return null;
     final distance = odometerEnd! - odometerStart!;

@@ -3,17 +3,14 @@ import 'package:provider/provider.dart';
 
 import '../funcionalidade/community/community_hub_screen.dart';
 import '../funcionalidade/finance/finance_hub_screen.dart';
-import '../funcionalidade/gamification/gamification_screen.dart';
 import '../funcionalidade/goals/goals_screen.dart';
 import '../funcionalidade/journeys/journeys_screen.dart';
 import '../funcionalidade/notifications/notifications_screen.dart';
 import '../funcionalidade/platforms/platforms_screen.dart';
 import '../funcionalidade/vehicles/vehicles_screen.dart';
 import '../models/app_dashboard_metrics.dart';
-import '../models/app_gamification.dart';
 import '../models/app_operational_intelligence.dart';
 import '../services/engagement_notification_service.dart';
-import '../services/gamification_service.dart';
 import '../services/operational_intelligence_service.dart';
 import '../settings/settings_screen.dart';
 import '../utilities/localization/app_format.dart';
@@ -72,8 +69,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         page: _OverviewTab(
           session: session,
           onNotificationsChanged: _loadUnreadNotifications,
-          onCreateJourney: _journeyController.openCreate,
-          onCreateGoal: _goalController.openCreate,
         ),
         icon: Icons.dashboard_outlined,
         selectedIcon: Icons.dashboard,
@@ -498,14 +493,10 @@ class _OverviewTab extends StatefulWidget {
   const _OverviewTab({
     required this.session,
     required this.onNotificationsChanged,
-    required this.onCreateJourney,
-    required this.onCreateGoal,
   });
 
   final AppSession session;
   final Future<void> Function() onNotificationsChanged;
-  final VoidCallback onCreateJourney;
-  final VoidCallback onCreateGoal;
 
   @override
   State<_OverviewTab> createState() => _OverviewTabState();
@@ -514,10 +505,8 @@ class _OverviewTab extends StatefulWidget {
 class _OverviewTabState extends State<_OverviewTab> {
   final OperationalIntelligenceService _intelligenceService =
       OperationalIntelligenceService();
-  final GamificationService _gamificationService = GamificationService();
   bool _loading = true;
   AppOperationalIntelligence? _intelligence;
-  AppGamificationSummary? _gamification;
   String? _errorMessage;
   OperationalRangePreset _preset = OperationalRangePreset.today;
   DateTimeRange? _range;
@@ -539,11 +528,9 @@ class _OverviewTabState extends State<_OverviewTab> {
         preset: _preset,
         customRange: _range,
       );
-      final gamification = await _gamificationService.loadSummary();
       if (!mounted) return;
       setState(() {
         _intelligence = intelligence;
-        _gamification = gamification;
       });
       await widget.onNotificationsChanged();
     } catch (_) {
@@ -584,6 +571,7 @@ class _OverviewTabState extends State<_OverviewTab> {
             openJourneys: 0,
             totalDeliveries: 0,
             totalDistanceKm: 0,
+            workedMinutes: 0,
             activeVehicles: 0,
             activePlatforms: 0,
             totalFuelings: 0,
@@ -600,6 +588,7 @@ class _OverviewTabState extends State<_OverviewTab> {
             openJourneys: 0,
             totalDeliveries: 0,
             totalDistanceKm: 0,
+            workedMinutes: 0,
             activeVehicles: 0,
             activePlatforms: 0,
             totalFuelings: 0,
@@ -609,34 +598,9 @@ class _OverviewTabState extends State<_OverviewTab> {
           trend: const [],
           insights: const [],
           suggestedReserve: 0,
-          suggestedReserveLabel: strings.pick(
-            pt: 'Sem reserva sugerida agora',
-            en: 'No reserve suggestion right now',
-            es: 'Sin sugerencia de reserva ahora',
-          ),
+          suggestedReserveLabel: '',
         );
     final metrics = intelligence.currentMetrics;
-    final gamification =
-        _gamification ??
-        const AppGamificationSummary(
-          xp: 0,
-          level: 1,
-          levelTitle: 'Motorista iniciante',
-          nextLevelXp: 250,
-          currentStreakDays: 0,
-          bestStreakDays: 0,
-          medalsCount: 0,
-          rankingOptIn: false,
-          publicScore: 0,
-          records: AppDriverRecords(
-            bestFridayDate: null,
-            highestRevenueDayDate: null,
-            highestProfitPerHourStartedAt: null,
-            highestDeliveriesDayDate: null,
-            highestDeliveriesCount: 0,
-          ),
-          medals: [],
-        );
 
     return RefreshIndicator(
       onRefresh: _loadMetrics,
@@ -726,45 +690,13 @@ class _OverviewTabState extends State<_OverviewTab> {
                   value: '${metrics.totalDistanceKm.toStringAsFixed(1)} km',
                   icon: Icons.speed_outlined,
                 ),
+                _HeroStat(
+                  label: strings.pick(pt: 'Tempo', en: 'Time', es: 'Tiempo'),
+                  value: _formatWorkedTime(metrics.workedMinutes),
+                  icon: Icons.timer_outlined,
+                ),
               ],
             ),
-          ),
-          const SizedBox(height: 14),
-          _QuickActionDock(
-            actions: [
-              _QuickActionData(
-                title: strings.newJourney,
-                subtitle: strings.pick(
-                  pt: 'Comece ou registre seu turno',
-                  en: 'Start or log a shift',
-                  es: 'Inicia o registra tu jornada',
-                ),
-                icon: Icons.route,
-                onTap: widget.onCreateJourney,
-              ),
-              _QuickActionData(
-                title: strings.newGoal,
-                subtitle: strings.pick(
-                  pt: 'Guarde dinheiro com destino',
-                  en: 'Set money aside with purpose',
-                  es: 'Guarda dinero con objetivo',
-                ),
-                icon: Icons.savings,
-                onTap: widget.onCreateGoal,
-              ),
-              _QuickActionData(
-                title: strings.viewProgress,
-                subtitle: strings.pick(
-                  pt: 'XP, ranking e conquistas',
-                  en: 'XP, ranking and achievements',
-                  es: 'XP, ranking y logros',
-                ),
-                icon: Icons.emoji_events_outlined,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const GamificationScreen()),
-                ),
-              ),
-            ],
           ),
           if (_errorMessage != null) ...[
             const SizedBox(height: 16),
@@ -823,13 +755,20 @@ class _OverviewTabState extends State<_OverviewTab> {
                 icon: Icons.payments_outlined,
               ),
               _MetricData(
-                title: strings.leftOver,
-                value: _currency(metrics.netResult),
-                detail: _deltaLabel(
-                  intelligence.netDeltaPct(),
-                  strings.journeysCount(metrics.totalJourneys),
+                title: strings.pick(
+                  pt: 'Reservado',
+                  en: 'Reserved',
+                  es: 'Reservado',
                 ),
-                icon: Icons.account_balance_wallet_outlined,
+                value: _currency(intelligence.suggestedReserve),
+                detail: intelligence.suggestedReserveLabel.isEmpty
+                    ? strings.pick(
+                        pt: 'conforme sua regra',
+                        en: 'by your rule',
+                        es: 'segun tu regla',
+                      )
+                    : intelligence.suggestedReserveLabel,
+                icon: Icons.savings_outlined,
               ),
               _MetricData(
                 title: strings.deliveries,
@@ -843,11 +782,13 @@ class _OverviewTabState extends State<_OverviewTab> {
                 icon: Icons.local_shipping_outlined,
               ),
               _MetricData(
-                title: strings.freeBalance,
-                value: _currency(metrics.availableBalance),
-                detail:
-                    '${strings.goalsDetail} ${_currency(metrics.allocatedToGoals)}',
-                icon: Icons.savings_outlined,
+                title: strings.leftOver,
+                value: _currency(metrics.netResult),
+                detail: _deltaLabel(
+                  intelligence.netDeltaPct(),
+                  strings.journeysCount(metrics.totalJourneys),
+                ),
+                icon: Icons.account_balance_wallet_outlined,
               ),
               _MetricData(
                 title: strings.costs,
@@ -867,130 +808,51 @@ class _OverviewTabState extends State<_OverviewTab> {
               ),
               _MetricData(
                 title: strings.pick(
-                  pt: 'Valor/entrega',
-                  en: 'Per delivery',
-                  es: 'Por entrega',
+                  pt: 'Tempo trabalhado',
+                  en: 'Time worked',
+                  es: 'Tiempo trabajado',
                 ),
-                value: _currency(metrics.incomePerDelivery),
+                value: _formatWorkedTime(metrics.workedMinutes),
+                detail: strings.pick(
+                  pt: 'somado no periodo',
+                  en: 'total in period',
+                  es: 'total del periodo',
+                ),
+                icon: Icons.timer_outlined,
+              ),
+              _MetricData(
+                title: strings.pick(
+                  pt: 'Valor/hora',
+                  en: 'Hourly value',
+                  es: 'Valor/hora',
+                ),
+                value: _currency(metrics.incomePerHour),
                 detail: strings.pick(
                   pt: 'media do periodo',
                   en: 'period average',
                   es: 'promedio del periodo',
                 ),
-                icon: Icons.stacked_line_chart,
-              ),
-              _MetricData(
-                title: strings.pick(
-                  pt: 'Fontes ativas',
-                  en: 'Active sources',
-                  es: 'Fuentes activas',
-                ),
-                value: '${metrics.activePlatforms}',
-                detail: strings.pick(
-                  pt: '${metrics.activeVehicles} veiculos ativos',
-                  en: '${metrics.activeVehicles} active vehicles',
-                  es: '${metrics.activeVehicles} vehiculos activos',
-                ),
-                icon: Icons.storefront_outlined,
+                icon: Icons.speed_outlined,
               ),
             ],
           ),
           const SizedBox(height: 18),
           _InsightBoard(intelligence: intelligence),
-          const SizedBox(height: 18),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final vertical = constraints.maxWidth < 840;
-              final children = [
-                Expanded(
-                  child: OmnyaGlassCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          strings.saveForLater,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          _currency(intelligence.suggestedReserve),
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(intelligence.suggestedReserveLabel),
-                      ],
-                    ),
-                  ),
-                ),
-                if (!vertical)
-                  const SizedBox(width: 12)
-                else
-                  const SizedBox(height: 12),
-                Expanded(
-                  child: OmnyaGlassCard(
-                    highlight: gamification.rankingOptIn,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          strings.yourProgress,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          strings.level(gamification.level),
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          strings.xpAndAchievements(
-                            gamification.xp,
-                            gamification.medalsCount,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            FilledButton.tonal(
-                              onPressed: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const GamificationScreen(),
-                                ),
-                              ),
-                              child: Text(strings.viewProgress),
-                            ),
-                            OutlinedButton(
-                              onPressed: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const CommunityHubScreen(),
-                                ),
-                              ),
-                              child: Text(strings.community),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ];
-
-              return vertical
-                  ? Column(children: children)
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: children,
-                    );
-            },
-          ),
         ],
       ),
     );
   }
 
   String _currency(double value) => AppFormat.of(context).currency(value);
+
+  String _formatWorkedTime(int minutes) {
+    final safeMinutes = minutes < 0 ? 0 : minutes;
+    final hours = safeMinutes ~/ 60;
+    final remaining = safeMinutes % 60;
+    if (hours <= 0) return '${remaining}min';
+    if (remaining == 0) return '${hours}h';
+    return '${hours}h ${remaining}min';
+  }
 
   String get _periodDisplayLabel {
     final strings = AppStrings.of(context);
@@ -1250,92 +1112,6 @@ class _HeroStatTile extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _QuickActionData {
-  const _QuickActionData({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final VoidCallback onTap;
-}
-
-class _QuickActionDock extends StatelessWidget {
-  const _QuickActionDock({required this.actions});
-
-  final List<_QuickActionData> actions;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 680;
-        final spacing = 12.0;
-        final width = compact
-            ? constraints.maxWidth
-            : (constraints.maxWidth - spacing * (actions.length - 1)) /
-                  actions.length;
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: actions
-              .map(
-                (action) => SizedBox(
-                  width: width,
-                  child: OmnyaGlassCard(
-                    padding: const EdgeInsets.all(14),
-                    onTap: action.onTap,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: OmnyaVisualTokens.electricBlue.withValues(
-                              alpha: 0.18,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Icon(
-                            action.icon,
-                            color: OmnyaVisualTokens.cyan,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                action.title,
-                                style: Theme.of(context).textTheme.titleSmall,
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                action.subtitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.chevron_right),
-                      ],
-                    ),
-                  ),
-                ),
-              )
-              .toList(),
-        );
-      },
     );
   }
 }

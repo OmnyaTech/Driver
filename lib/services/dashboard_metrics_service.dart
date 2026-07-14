@@ -56,6 +56,10 @@ class DashboardMetricsService {
           .single();
 
       final goalSummary = await _goalService.loadBalanceSummary();
+      final workedMinutes = await _loadWorkedMinutes(
+        startAt: startAt,
+        endAt: endAt,
+      );
 
       return AppDashboardMetrics(
         totalIncome: _toDouble(response['total_income']),
@@ -67,6 +71,7 @@ class DashboardMetricsService {
         openJourneys: _toInt(response['open_journeys']),
         totalDeliveries: _toInt(response['total_deliveries']),
         totalDistanceKm: _toDouble(response['total_distance_km']),
+        workedMinutes: workedMinutes,
         activeVehicles: _toInt(response['active_vehicles']),
         activePlatforms: _toInt(response['active_platforms']),
         totalFuelings: _toInt(response['total_fuelings']),
@@ -123,6 +128,10 @@ class DashboardMetricsService {
       0,
       (sum, item) => sum + (item.distanceKm ?? 0),
     );
+    final workedMinutes = journeys.fold<int>(
+      0,
+      (sum, item) => sum + item.workedDuration.inMinutes,
+    );
 
     return AppDashboardMetrics(
       totalIncome: totalIncome,
@@ -134,6 +143,7 @@ class DashboardMetricsService {
       openJourneys: journeys.where((item) => !item.isFinished).length,
       totalDeliveries: totalDeliveries,
       totalDistanceKm: totalDistanceKm,
+      workedMinutes: workedMinutes,
       activeVehicles: vehicles.where((item) => item.active).length,
       activePlatforms: platforms.where((item) => item.active).length,
       totalFuelings: fuelings.length,
@@ -147,6 +157,17 @@ class DashboardMetricsService {
     if (startAt != null && utc.isBefore(startAt.toUtc())) return false;
     if (endAt != null && utc.isAfter(endAt.toUtc())) return false;
     return true;
+  }
+
+  Future<int> _loadWorkedMinutes({DateTime? startAt, DateTime? endAt}) async {
+    try {
+      final journeys = await _journeyService.listJourneys();
+      return journeys
+          .where((item) => _matchesPeriod(item.startedAt, startAt, endAt))
+          .fold<int>(0, (sum, item) => sum + item.workedDuration.inMinutes);
+    } catch (_) {
+      return 0;
+    }
   }
 
   double _toDouble(Object? value) => double.tryParse('$value') ?? 0;

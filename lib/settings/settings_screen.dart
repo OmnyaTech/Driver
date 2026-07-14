@@ -642,7 +642,9 @@ class _SettingsHeroCard extends StatelessWidget {
             runSpacing: 10,
             children: [
               _HeroPill(label: 'Plano ${profile?.planType.name ?? 'free'}'),
-              _HeroPill(label: 'Perfil ${profile?.displayName ?? 'Motorista'}'),
+              _HeroPill(
+                label: 'Perfil ${profile?.displayName ?? 'Entregador'}',
+              ),
               _HeroPill(
                 label: session.themeMode == ThemeMode.dark
                     ? 'Tema escuro'
@@ -784,6 +786,9 @@ class _ProfileSheetState extends State<_ProfileSheet> {
   late final TextEditingController _displayNameController;
   late final TextEditingController _fullNameController;
   late final TextEditingController _phoneController;
+  late final TextEditingController _cityController;
+  late final TextEditingController _stateController;
+  late final TextEditingController _countryController;
   bool _saving = false;
   bool _uploadingAvatar = false;
   String? _errorMessage;
@@ -797,6 +802,13 @@ class _ProfileSheetState extends State<_ProfileSheet> {
     );
     _fullNameController = TextEditingController(text: profile?.fullName ?? '');
     _phoneController = TextEditingController(text: profile?.phone ?? '');
+    _cityController = TextEditingController(text: profile?.city ?? '');
+    _stateController = TextEditingController(text: profile?.state ?? '');
+    _countryController = TextEditingController(
+      text: profile?.country?.trim().isNotEmpty == true
+          ? profile!.country!
+          : 'Brasil',
+    );
   }
 
   @override
@@ -804,6 +816,9 @@ class _ProfileSheetState extends State<_ProfileSheet> {
     _displayNameController.dispose();
     _fullNameController.dispose();
     _phoneController.dispose();
+    _cityController.dispose();
+    _stateController.dispose();
+    _countryController.dispose();
     super.dispose();
   }
 
@@ -864,7 +879,7 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                         ProfileAvatar(
                           displayName:
                               _displayNameController.text.trim().isEmpty
-                              ? 'Motorista'
+                              ? 'Entregador'
                               : _displayNameController.text.trim(),
                           avatarUrl: profile?.avatarUrl,
                           radius: 42,
@@ -949,6 +964,74 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  Text(
+                    strings.pick(
+                      pt: 'Regiao da sua rotina',
+                      en: 'Your work region',
+                      es: 'Region de tu rutina',
+                    ),
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact = constraints.maxWidth < 620;
+                      final fields = [
+                        TextFormField(
+                          controller: _cityController,
+                          decoration: InputDecoration(
+                            labelText: strings.pick(
+                              pt: 'Cidade',
+                              en: 'City',
+                              es: 'Ciudad',
+                            ),
+                          ),
+                        ),
+                        TextFormField(
+                          controller: _stateController,
+                          decoration: InputDecoration(
+                            labelText: strings.pick(
+                              pt: 'Estado',
+                              en: 'State',
+                              es: 'Estado',
+                            ),
+                          ),
+                        ),
+                        TextFormField(
+                          controller: _countryController,
+                          decoration: InputDecoration(
+                            labelText: strings.pick(
+                              pt: 'Pais',
+                              en: 'Country',
+                              es: 'Pais',
+                            ),
+                          ),
+                        ),
+                      ];
+
+                      if (compact) {
+                        return Column(
+                          children: [
+                            for (final field in fields) ...[
+                              field,
+                              if (field != fields.last)
+                                const SizedBox(height: 12),
+                            ],
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        children: [
+                          for (final field in fields) ...[
+                            Expanded(child: field),
+                            if (field != fields.last) const SizedBox(width: 12),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
                   if (_errorMessage != null) ...[
                     const SizedBox(height: 12),
                     Text(
@@ -1015,6 +1098,9 @@ class _ProfileSheetState extends State<_ProfileSheet> {
         displayName: _displayNameController.text,
         fullName: _fullNameController.text,
         phone: _phoneController.text,
+        city: _cityController.text,
+        state: _stateController.text,
+        country: _countryController.text,
       );
       await session.refreshProfile();
       if (!mounted) return;
@@ -1112,7 +1198,6 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
   final _slugController = TextEditingController();
   final _bioController = TextEditingController();
   final _cityController = TextEditingController();
-  final _titleController = TextEditingController();
   final _bannerController = TextEditingController();
   bool _enabled = false;
   bool _rankingOptIn = false;
@@ -1131,7 +1216,6 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
     _slugController.dispose();
     _bioController.dispose();
     _cityController.dispose();
-    _titleController.dispose();
     _bannerController.dispose();
     super.dispose();
   }
@@ -1146,7 +1230,6 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
         _slugController.text = settings.publicSlug ?? '';
         _bioController.text = settings.publicBio ?? '';
         _cityController.text = settings.publicCity ?? '';
-        _titleController.text = settings.publicTitle ?? '';
         _bannerController.text = settings.publicBannerUrl ?? '';
         _loading = false;
       });
@@ -1207,7 +1290,7 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                         const SizedBox(height: 6),
                         Text(
                           strings.pick(
-                            pt: 'Escolha como outros motoristas vao te encontrar. Seus ganhos continuam privados.',
+                            pt: 'Escolha como outros entregadores vao te encontrar. Seus ganhos continuam privados.',
                             en: 'Choose how other drivers find you. Your earnings stay private.',
                             es: 'Elige como otros conductores te encuentran. Tus ingresos siguen privados.',
                           ),
@@ -1258,33 +1341,22 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
-                          controller: _titleController,
-                          decoration: InputDecoration(
-                            labelText: strings.pick(
-                              pt: 'Titulo publico',
-                              en: 'Public title',
-                              es: 'Titulo publico',
-                            ),
-                            hintText: strings.pick(
-                              pt: 'ex: Rei da sexta, Rota constante',
-                              en: 'e.g. Friday king, Steady route',
-                              es: 'ej: Rey del viernes, Ruta constante',
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        TextFormField(
                           controller: _bannerController,
                           decoration: InputDecoration(
                             labelText: strings.pick(
-                              pt: 'Banner do perfil',
+                              pt: 'Cor do banner',
                               en: 'Profile banner',
                               es: 'Banner del perfil',
                             ),
                             hintText: strings.pick(
-                              pt: 'Cole uma URL de imagem desbloqueada',
-                              en: 'Paste an unlocked image URL',
-                              es: 'Pega una URL de imagen desbloqueada',
+                              pt: 'ex: #001BFF',
+                              en: 'e.g. #001BFF',
+                              es: 'ej: #001BFF',
+                            ),
+                            helperText: strings.pick(
+                              pt: 'O visual do perfil publico segue a ideia de banner, como no Discord.',
+                              en: 'Your public profile uses this as a Discord-like banner style.',
+                              es: 'Tu perfil publico usa esto como un banner estilo Discord.',
                             ),
                           ),
                         ),
@@ -1379,18 +1451,42 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
   }
 
   Future<void> _save() async {
+    if (_enabled && _slugController.text.trim().isEmpty) {
+      setState(() {
+        _errorMessage = AppStrings.of(context).pick(
+          pt: 'Escolha um @ para ativar seu perfil publico.',
+          en: 'Choose an @ to activate your public profile.',
+          es: 'Elige un @ para activar tu perfil publico.',
+        );
+      });
+      return;
+    }
+
     setState(() {
       _saving = true;
       _errorMessage = null;
     });
 
     try {
+      final available = await _service.isSlugAvailable(_slugController.text);
+      if (!available) {
+        if (!mounted) return;
+        setState(() {
+          _saving = false;
+          _errorMessage = AppStrings.of(context).pick(
+            pt: 'Esse @ ja esta em uso. Escolha outro para continuar.',
+            en: 'This @ is already taken. Choose another one to continue.',
+            es: 'Ese @ ya esta en uso. Elige otro para continuar.',
+          );
+        });
+        return;
+      }
+
       await _service.updateSettings(
         publicProfileEnabled: _enabled,
         publicSlug: _slugController.text,
         publicBio: _bioController.text,
         publicCity: _cityController.text,
-        publicTitle: _titleController.text,
         publicBannerUrl: _bannerController.text,
         rankingOptIn: _rankingOptIn,
       );

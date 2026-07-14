@@ -100,7 +100,7 @@ class AppStrings {
   );
 
   String get driverFallback =>
-      pick(pt: 'Motorista', en: 'Driver', es: 'Conductor');
+      pick(pt: 'Entregador', en: 'Driver', es: 'Repartidor');
 
   String planLabel(String planName) =>
       pick(pt: 'Plano $planName', en: '$planName plan', es: 'Plan $planName');
@@ -225,7 +225,7 @@ class AppStrings {
   );
 
   String get driverProfile => pick(
-    pt: 'Perfil do motorista',
+    pt: 'Perfil do entregador',
     en: 'Driver profile',
     es: 'Perfil del conductor',
   );
@@ -365,7 +365,7 @@ class AppStrings {
   );
 
   String get driverProgress => pick(
-    pt: 'Progresso do motorista',
+    pt: 'Progresso do entregador',
     en: 'Driver progress',
     es: 'Progreso del conductor',
   );
@@ -380,7 +380,7 @@ class AppStrings {
       pick(pt: 'Comunidade', en: 'Community', es: 'Comunidad');
 
   String get communitySubtitle => pick(
-    pt: 'Chame amigos e encontre motoristas',
+    pt: 'Chame amigos e encontre entregadores',
     en: 'Invite friends and find drivers',
     es: 'Invita amigos y encuentra conductores',
   );
