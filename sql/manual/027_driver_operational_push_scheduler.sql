@@ -3,7 +3,7 @@
 -- Date: 2026-07-13
 -- Execute manually in Supabase SQL Editor after sql/manual/024_driver_growth_operations.sql.
 -- Then schedule your backend/cron to call the Edge Function driver-send-push
--- periodically with SUPABASE_SERVICE_ROLE_KEY + DRIVER_PUSH_SERVICE_SECRET.
+-- periodically with DRIVER_PUSH_SERVICE_SECRET.
 
 create or replace function driver.enqueue_operational_push_jobs()
 returns jsonb

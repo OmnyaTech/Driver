@@ -301,10 +301,17 @@ class _SecurityScreenState extends State<SecurityScreen> {
   Future<void> _loadMfa() async {
     setState(() => _loadingMfa = true);
     try {
-      final factors = await _mfaService.listVerifiedTotpFactors();
+      var factors = await _mfaService.listVerifiedTotpFactors();
       if (!mounted) return;
       final hasVerifiedFactor = factors.isNotEmpty;
       final profile = context.read<AppSession>().profile;
+      if (profile?.totpMfaEnabled != true) {
+        final allFactors = await _mfaService.listTotpFactors();
+        if (allFactors.isNotEmpty) {
+          await _mfaService.resetOwnTotpFactors();
+          factors = const [];
+        }
+      }
       if (!hasVerifiedFactor && profile?.totpMfaEnabled == true) {
         await _mfaService.setTotpMfaEnabled(false);
         if (mounted) {
@@ -793,6 +800,11 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
         _requiresCurrentFactor = false;
       });
     } on MfaAal2RequiredException {
+      final removed = await _tryResetStaleFactors();
+      if (removed > 0) {
+        await _start();
+        return;
+      }
       if (!mounted) return;
       setState(() {
         _requiresCurrentFactor = true;
@@ -823,6 +835,14 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
         ),
       ),
     );
+  }
+
+  Future<int> _tryResetStaleFactors() async {
+    try {
+      return await _service.resetOwnTotpFactors();
+    } catch (_) {
+      return 0;
+    }
   }
 
   Future<void> _verify() async {

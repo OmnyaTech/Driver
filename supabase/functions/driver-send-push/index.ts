@@ -1,5 +1,4 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { JWT } from "npm:google-auth-library@9";
 
 type PushBody = {
   jobId?: string | null;
@@ -72,6 +71,85 @@ const stringifyData = (data: Record<string, unknown> | null | undefined) =>
     Object.entries(data ?? {}).map(([key, value]) => [key, String(value)]),
   );
 
+const base64Url = (input: string | ArrayBuffer) => {
+  const bytes = typeof input === "string"
+    ? new TextEncoder().encode(input)
+    : new Uint8Array(input);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll(
+    "=",
+    "",
+  );
+};
+
+const importPrivateKey = async (privateKey: string) => {
+  const pem = privateKey
+    .replaceAll("\\n", "\n")
+    .replace("-----BEGIN PRIVATE KEY-----", "")
+    .replace("-----END PRIVATE KEY-----", "")
+    .replace(/\s/g, "");
+  const binary = atob(pem);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return crypto.subtle.importKey(
+    "pkcs8",
+    bytes.buffer,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+};
+
+const createFirebaseAccessToken = async (
+  serviceAccount: {
+    client_email?: string;
+    private_key?: string;
+  },
+) => {
+  if (!serviceAccount.client_email || !serviceAccount.private_key) return null;
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "RS256", typ: "JWT" };
+  const claim = {
+    iss: serviceAccount.client_email,
+    scope: "https://www.googleapis.com/auth/firebase.messaging",
+    aud: "https://oauth2.googleapis.com/token",
+    iat: now,
+    exp: now + 3600,
+  };
+  const unsigned = `${base64Url(JSON.stringify(header))}.${
+    base64Url(JSON.stringify(claim))
+  }`;
+  const key = await importPrivateKey(serviceAccount.private_key);
+  const signature = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    key,
+    new TextEncoder().encode(unsigned),
+  );
+  const assertion = `${unsigned}.${base64Url(signature)}`;
+
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(
+      String(result.error_description ?? result.error ?? "OAuth Firebase falhou."),
+    );
+  }
+
+  return String(result.access_token ?? "").trim() || null;
+};
+
 const markJob = async (
   admin: ReturnType<typeof createClient>,
   jobId: string,
@@ -89,6 +167,26 @@ const markJob = async (
       updated_at: new Date().toISOString(),
     })
     .eq("id", jobId);
+};
+
+const markNotificationDelivered = async (
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  notificationKey: string | null | undefined,
+) => {
+  const key = String(notificationKey ?? "").trim();
+  if (!key) return;
+
+  await admin
+    .schema("driver")
+    .from("driver_notifications")
+    .update({
+      delivered_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+    .eq("notification_key", key)
+    .is("read_at", null);
 };
 
 const sendToUser = async ({
@@ -147,13 +245,12 @@ const sendToUser = async ({
   }
 
   if (serviceAccount?.client_email && serviceAccount.private_key && projectId) {
-    const authClient = new JWT({
-      email: serviceAccount.client_email,
-      key: serviceAccount.private_key,
-      scopes: ["https://www.googleapis.com/auth/firebase.messaging"],
-    });
-    const access = await authClient.authorize();
-    const accessToken = access.access_token;
+    const accessToken = await createFirebaseAccessToken(serviceAccount).catch(
+      (error) => {
+        console.error("firebase_oauth_failed", error);
+        return null;
+      },
+    );
     if (!accessToken) {
       return {
         ok: false,
@@ -261,7 +358,7 @@ const sendToUser = async ({
   };
 };
 
-Deno.serve(async (req) => {
+const handleRequest = async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -292,18 +389,22 @@ Deno.serve(async (req) => {
   let message = (body.body ?? "").trim();
   let payloadData = stringifyData(body.data);
   const jobId = (body.jobId ?? "").trim();
+  let jobNotificationKey: string | null = null;
 
   if (!jobId && serviceCall && !targetUserId && !title && !message) {
     const limit = Math.min(Math.max(Number(body.limit ?? 25), 1), 100);
-    await admin
-      .schema("driver")
-      .rpc("enqueue_operational_push_jobs")
-      .catch(() => null);
+    try {
+      await admin
+        .schema("driver")
+        .rpc("enqueue_operational_push_jobs");
+    } catch (error) {
+      console.error("enqueue_operational_push_jobs_failed", error);
+    }
 
     const { data: jobs, error: jobsError } = await admin
       .schema("driver")
       .from("driver_push_jobs")
-      .select("id, user_id, title, body, payload")
+      .select("id, user_id, notification_key, title, body, payload")
       .eq("status", "queued")
       .lte("scheduled_at", new Date().toISOString())
       .order("scheduled_at", { ascending: true })
@@ -332,6 +433,13 @@ Deno.serve(async (req) => {
         result.ok ? "sent" : "failed",
         result.ok ? null : result.message,
       );
+      if (result.ok && result.delivered > 0) {
+        await markNotificationDelivered(
+          admin,
+          String(job.user_id),
+          String(job.notification_key ?? ""),
+        );
+      }
 
       results.push({
         jobId: job.id,
@@ -356,7 +464,7 @@ Deno.serve(async (req) => {
     const { data: job, error: jobError } = await admin
       .schema("driver")
       .from("driver_push_jobs")
-      .select("id, user_id, title, body, payload, status")
+      .select("id, user_id, notification_key, title, body, payload, status")
       .eq("id", jobId)
       .maybeSingle();
 
@@ -372,6 +480,7 @@ Deno.serve(async (req) => {
     title = String(job.title ?? "").trim();
     message = String(job.body ?? "").trim();
     payloadData = stringifyData(job.payload as Record<string, unknown> | null);
+    jobNotificationKey = String(job.notification_key ?? "");
   }
 
   if (!title || !message) {
@@ -434,6 +543,9 @@ Deno.serve(async (req) => {
 
   if (jobId) {
     await markJob(admin, jobId, "sent");
+    if (result.delivered > 0) {
+      await markNotificationDelivered(admin, targetUserId, jobNotificationKey);
+    }
   }
 
   return json({
@@ -441,4 +553,19 @@ Deno.serve(async (req) => {
     delivered: result.delivered,
     failed: result.failed,
   });
+};
+
+Deno.serve(async (req) => {
+  try {
+    return await handleRequest(req);
+  } catch (error) {
+    console.error("driver_send_push_unhandled", error);
+    return json(
+      {
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno.",
+      },
+      500,
+    );
+  }
 });

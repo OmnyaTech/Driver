@@ -180,6 +180,7 @@ class EngagementNotificationService {
       await _enqueueDevicePush(notification);
       await _showLocalDeviceNotification(notification);
     }
+    await showUndeliveredUnreadDeviceNotifications();
   }
 
   Future<List<Map<String, dynamic>>> _filterNewNotifications(
@@ -245,9 +246,59 @@ class EngagementNotificationService {
         title: notification['title'].toString(),
         body: notification['body'].toString(),
       );
+      await _markDeliveredByKey(notification['notification_key'].toString());
     } catch (_) {
       // Local system notifications should never block in-app notices.
     }
+  }
+
+  Future<void> showUndeliveredUnreadDeviceNotifications() async {
+    final client = _authService.requireClient();
+    final user = client.auth.currentUser;
+    if (user == null) return;
+
+    final rows = await client
+        .schema('driver')
+        .from('driver_notifications')
+        .select('notification_key,title,body')
+        .eq('user_id', user.id)
+        .isFilter('read_at', null)
+        .isFilter('delivered_at', null)
+        .order('created_at', ascending: false)
+        .limit(5);
+
+    for (final row in rows) {
+      final key = row['notification_key']?.toString() ?? '';
+      if (key.isEmpty) continue;
+      try {
+        await _deviceNotificationService.showAlert(
+          notificationKey: key,
+          title: row['title']?.toString() ?? 'Aviso',
+          body: row['body']?.toString() ?? '',
+        );
+        await _markDeliveredByKey(key);
+      } catch (_) {
+        // Keep it unread/undelivered so the next sync can try again.
+      }
+    }
+  }
+
+  Future<void> _markDeliveredByKey(String notificationKey) async {
+    if (notificationKey.isEmpty) return;
+    final client = _authService.requireClient();
+    final user = client.auth.currentUser;
+    if (user == null) return;
+
+    await client
+        .schema('driver')
+        .from('driver_notifications')
+        .update({
+          'delivered_at': DateTime.now().toUtc().toIso8601String(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('user_id', user.id)
+        .eq('notification_key', notificationKey)
+        .isFilter('read_at', null);
   }
 
   Future<List<AppDriverNotification>> listNotifications() async {
@@ -332,7 +383,6 @@ class EngagementNotificationService {
       'body': body,
       'action_type': actionType,
       'action_payload': actionPayload ?? const <String, dynamic>{},
-      'delivered_at': DateTime.now().toUtc().toIso8601String(),
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     };
   }

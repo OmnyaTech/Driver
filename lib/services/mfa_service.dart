@@ -43,6 +43,16 @@ class MfaService {
     return response.totp;
   }
 
+  Future<int> resetOwnTotpFactors() async {
+    final response = await _authService
+        .requireClient()
+        .schema('driver')
+        .rpc('reset_own_totp_mfa_factors');
+    if (response is int) return response;
+    if (response is num) return response.toInt();
+    return int.tryParse(response?.toString() ?? '') ?? 0;
+  }
+
   Future<List<Factor>> listVerifiedTotpFactors() async {
     final factors = await listTotpFactors();
     return factors

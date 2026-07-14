@@ -14,10 +14,7 @@ class CaptchaService {
     required String siteKey,
     required TurnstileFlow flow,
   }) async {
-    final visible =
-        kIsWeb ||
-        defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS;
+    final visible = kIsWeb;
     final result = await showDialog<String?>(
       context: context,
       barrierDismissible: false,
