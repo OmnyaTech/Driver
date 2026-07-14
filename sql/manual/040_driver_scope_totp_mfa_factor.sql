@@ -1,12 +1,13 @@
 -- Omnya Driver
--- Safe Driver-only cleanup for stale TOTP MFA preference.
+-- Scope native Supabase TOTP MFA to the Driver app without deleting global factors.
 -- Date: 2026-07-14
--- Execute manually in Supabase SQL Editor after sql/manual/038_driver_more_gamification_missions.sql.
--- Updated: do not delete from auth.mfa_factors because Supabase Auth MFA is
--- project-global and may be used by other OmnyaTech apps in the same project.
+-- Execute manually in Supabase SQL Editor after sql/manual/039_driver_reset_own_totp_mfa_factors.sql.
 
 alter table driver.profiles
   add column if not exists totp_mfa_factor_id text;
+
+comment on column driver.profiles.totp_mfa_factor_id is
+  'Supabase auth.mfa_factors.id owned by Driver. Native MFA factors are project-global, so Driver must only enforce the factor linked here.';
 
 create or replace function driver.reset_own_totp_mfa_factors()
 returns integer
