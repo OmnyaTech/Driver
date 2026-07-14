@@ -12,6 +12,7 @@ class AndroidPermissionService {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
 
     await _invoke('requestNotificationPermission');
+    await Future<void>.delayed(const Duration(milliseconds: 700));
     await _requestBatteryOptimizationOnce();
   }
 

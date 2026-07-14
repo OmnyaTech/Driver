@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -28,6 +29,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   _LoginPanelMode _mode = _LoginPanelMode.signIn;
+  String? _feedbackMessage;
+  bool _feedbackIsError = false;
 
   bool get _isRegister => _mode == _LoginPanelMode.signUp;
   bool get _isRecovering => _mode == _LoginPanelMode.recover;
@@ -72,6 +75,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         onModeChanged: _setMode,
                         onSubmit: _submit,
                         onOAuth: _signInWithOAuth,
+                        feedbackMessage: _feedbackMessage,
+                        feedbackIsError: _feedbackIsError,
                       )
                     : Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -91,6 +96,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               onModeChanged: _setMode,
                               onSubmit: _submit,
                               onOAuth: _signInWithOAuth,
+                              feedbackMessage: _feedbackMessage,
+                              feedbackIsError: _feedbackIsError,
                             ),
                           ),
                         ],
@@ -104,7 +111,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _setMode(_LoginPanelMode mode) {
-    setState(() => _mode = mode);
+    setState(() {
+      _mode = mode;
+      _feedbackMessage = null;
+      _feedbackIsError = false;
+    });
   }
 
   Future<void> _submit() async {
@@ -112,6 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    _setFeedback('Validando seguranca do app...', isError: false);
     final token = await _captchaService.obtainToken(
       context,
       siteKey: SupabaseRuntimeConfig.turnstileSiteKey,
@@ -119,16 +131,23 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (!mounted || token == null || token.isEmpty) {
+      _setFeedback(
+        'Nao foi possivel concluir a verificacao de seguranca. Tente novamente.',
+      );
       return;
     }
 
     final session = context.read<AppSession>();
     if (_isRecovering) {
+      _setFeedback('Enviando link de recuperacao...', isError: false);
       final sent = await session.resetPasswordForEmail(
         email: _emailController.text.trim(),
         captchaToken: token,
       );
-      if (!mounted || !sent) return;
+      if (!mounted || !sent) {
+        _showAuthError(session.errorMessage);
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -137,11 +156,13 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       );
+      _setFeedback('Link enviado para seu e-mail.', isError: false);
       setState(() => _mode = _LoginPanelMode.signIn);
       return;
     }
 
     if (_isRegister) {
+      _setFeedback('Criando sua conta...', isError: false);
       await session.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
@@ -160,29 +181,50 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       );
+      _setFeedback(
+        'Conta criada. Confira seu e-mail para confirmar o acesso.',
+        isError: false,
+      );
       return;
     }
 
+    _setFeedback('Entrando no Driver...', isError: false);
     final signedIn = await session.signInWithPassword(
       email: _emailController.text.trim(),
       password: _passwordController.text,
       captchaToken: token,
     );
-    if (!mounted || signedIn) return;
+    if (!mounted) return;
+    if (signedIn) {
+      _setFeedback('Login bem sucedido. Abrindo o app...', isError: false);
+      return;
+    }
     _showAuthError(session.errorMessage);
   }
 
   Future<void> _signInWithOAuth(OauthProviderOption provider) async {
-    final token = await _captchaService.obtainToken(
-      context,
-      siteKey: SupabaseRuntimeConfig.turnstileSiteKey,
-      flow: TurnstileFlow.oauth,
-    );
+    String token = 'native-oauth';
+    if (kIsWeb) {
+      _setFeedback('Validando seguranca do app...', isError: false);
+      final webToken = await _captchaService.obtainToken(
+        context,
+        siteKey: SupabaseRuntimeConfig.turnstileSiteKey,
+        flow: TurnstileFlow.oauth,
+      );
 
-    if (!mounted || token == null || token.isEmpty) {
-      return;
+      if (!mounted || webToken == null || webToken.isEmpty) {
+        _setFeedback(
+          'Nao foi possivel concluir a verificacao de seguranca. Tente novamente.',
+        );
+        return;
+      }
+      token = webToken;
     }
 
+    _setFeedback(
+      'Abrindo ${provider == OauthProviderOption.google ? 'Google' : 'Microsoft'}...',
+      isError: false,
+    );
     final started = await context.read<AppSession>().signInWithOAuth(
       provider,
       verificationToken: token,
@@ -193,9 +235,35 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _showAuthError(String? message) {
     if (!mounted || message == null || message.trim().isEmpty) return;
+    final friendly = _friendlyAuthMessage(message);
+    _setFeedback(friendly);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      SnackBar(content: Text(friendly), behavior: SnackBarBehavior.floating),
     );
+  }
+
+  void _setFeedback(String message, {bool isError = true}) {
+    if (!mounted) return;
+    setState(() {
+      _feedbackMessage = message;
+      _feedbackIsError = isError;
+    });
+  }
+
+  String _friendlyAuthMessage(String message) {
+    final normalized = message.toLowerCase();
+    if (normalized.contains('invalid login credentials') ||
+        normalized.contains('invalid credentials')) {
+      return 'E-mail ou senha incorretos. Confira os dados e tente novamente.';
+    }
+    if (normalized.contains('email not confirmed') ||
+        normalized.contains('not confirmed')) {
+      return 'Seu e-mail ainda nao foi confirmado. Abra o link enviado por e-mail para liberar o acesso.';
+    }
+    if (normalized.contains('captcha') || normalized.contains('challenge')) {
+      return 'A verificacao de seguranca falhou. Tente novamente.';
+    }
+    return message;
   }
 }
 
@@ -365,6 +433,8 @@ class _AccessCard extends StatelessWidget {
     required this.onModeChanged,
     required this.onSubmit,
     required this.onOAuth,
+    this.feedbackMessage,
+    this.feedbackIsError = false,
   });
 
   final GlobalKey<FormState> formKey;
@@ -379,6 +449,8 @@ class _AccessCard extends StatelessWidget {
   final ValueChanged<_LoginPanelMode> onModeChanged;
   final VoidCallback onSubmit;
   final ValueChanged<OauthProviderOption> onOAuth;
+  final String? feedbackMessage;
+  final bool feedbackIsError;
 
   bool get isRegister => mode == _LoginPanelMode.signUp;
   bool get isRecovering => mode == _LoginPanelMode.recover;
@@ -637,6 +709,13 @@ class _AccessCard extends StatelessWidget {
             if (errorMessage != null) ...[
               const SizedBox(height: 16),
               _InlineMessage(message: errorMessage!, isError: true),
+            ],
+            if (feedbackMessage != null) ...[
+              const SizedBox(height: 16),
+              _InlineMessage(
+                message: feedbackMessage!,
+                isError: feedbackIsError,
+              ),
             ],
             if (showStatusPanel) ...[
               const SizedBox(height: 16),

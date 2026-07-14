@@ -14,6 +14,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterFragmentActivity() {
     private val channelName = "br.com.omnyatech.omnyadriver/android"
     private val notificationRequestCode = 7108
+    private var pendingNotificationResult: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -21,8 +22,7 @@ class MainActivity : FlutterFragmentActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "requestNotificationPermission" -> {
-                        requestNotificationPermission()
-                        result.success(true)
+                        requestNotificationPermission(result)
                     }
                     "isIgnoringBatteryOptimizations" -> {
                         result.success(isIgnoringBatteryOptimizations())
@@ -35,13 +35,34 @@ class MainActivity : FlutterFragmentActivity() {
             }
     }
 
-    private fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requestPermissions(
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                notificationRequestCode
-            )
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == notificationRequestCode) {
+            pendingNotificationResult?.success(true)
+            pendingNotificationResult = null
         }
+    }
+
+    private fun requestNotificationPermission(result: MethodChannel.Result) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            result.success(true)
+            return
+        }
+
+        if (pendingNotificationResult != null) {
+            result.success(false)
+            return
+        }
+
+        pendingNotificationResult = result
+        requestPermissions(
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+            notificationRequestCode
+        )
     }
 
     private fun isIgnoringBatteryOptimizations(): Boolean {

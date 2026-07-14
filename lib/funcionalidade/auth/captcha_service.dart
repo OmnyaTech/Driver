@@ -14,7 +14,10 @@ class CaptchaService {
     required String siteKey,
     required TurnstileFlow flow,
   }) async {
-    final visible = kIsWeb;
+    final visible =
+        kIsWeb ||
+        defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
     final result = await showDialog<String?>(
       context: context,
       barrierDismissible: false,
@@ -51,6 +54,9 @@ class _CaptchaDialogState extends State<_CaptchaDialog> {
     super.initState();
     _timeout = Timer(const Duration(seconds: 30), () {
       if (!mounted) return;
+      setState(() {
+        _status = 'A verificacao demorou mais que o esperado. Tente novamente.';
+      });
       Navigator.of(context).pop(null);
     });
   }
