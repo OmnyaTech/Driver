@@ -31,7 +31,8 @@ class AppJourney {
 
   Duration get workedDuration {
     final end = endedAt;
-    if (end == null || end.isBefore(startedAt)) return Duration.zero;
+    if (end == null) return DateTime.now().difference(startedAt);
+    if (end.isBefore(startedAt)) return Duration.zero;
     return end.difference(startedAt);
   }
 

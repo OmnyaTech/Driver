@@ -101,7 +101,7 @@ class JourneyService {
     }).toList();
   }
 
-  Future<void> createJourney({
+  Future<String> createJourney({
     required String mode,
     required DateTime startedAt,
     DateTime? endedAt,
@@ -149,6 +149,8 @@ class JourneyService {
     if (rows.isNotEmpty) {
       await client.schema('driver').from('journey_platforms').insert(rows);
     }
+
+    return journeyId;
   }
 
   Future<void> updateJourney({

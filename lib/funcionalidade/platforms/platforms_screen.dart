@@ -615,6 +615,11 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
     _type = initialPlatform?.type ?? 'platform';
     _active = initialPlatform?.active ?? true;
     _nameController.addListener(_scheduleSuggestionRefresh);
+    if (initialPlatform == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _refreshSuggestions();
+      });
+    }
   }
 
   @override
@@ -672,9 +677,15 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           strings.pick(
-                            pt: 'Encontramos parecidos na sua regiao',
-                            en: 'Similar places found near you',
-                            es: 'Encontramos parecidos en tu region',
+                            pt: _type == 'platform'
+                                ? 'Opcoes cadastradas no sistema'
+                                : 'Encontramos parecidos na sua regiao',
+                            en: _type == 'platform'
+                                ? 'Options saved in the system'
+                                : 'Similar places found near you',
+                            es: _type == 'platform'
+                                ? 'Opciones guardadas en el sistema'
+                                : 'Encontramos parecidos en tu region',
                           ),
                           style: Theme.of(context).textTheme.labelLarge,
                         ),
@@ -684,9 +695,15 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           strings.pick(
-                            pt: 'Toque para reaproveitar nome, tipo e logo/foto ja cadastrados perto de voce.',
-                            en: 'Tap to reuse name, type and logo/photo already saved near you.',
-                            es: 'Toca para reutilizar nombre, tipo y logo/foto ya guardados cerca de ti.',
+                            pt: _type == 'platform'
+                                ? 'Toque para reaproveitar nome e logo oficiais ja cadastrados.'
+                                : 'Toque para reaproveitar nome, tipo e logo/foto ja cadastrados perto de voce.',
+                            en: _type == 'platform'
+                                ? 'Tap to reuse official name and logo already saved.'
+                                : 'Tap to reuse name, type and logo/photo already saved near you.',
+                            es: _type == 'platform'
+                                ? 'Toca para reutilizar nombre y logo oficiales ya guardados.'
+                                : 'Toca para reutilizar nombre, tipo y logo/foto ya guardados cerca de ti.',
                           ),
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
@@ -895,7 +912,7 @@ class _PlatformFormDialogState extends State<_PlatformFormDialog> {
 
   Future<void> _refreshSuggestions() async {
     final name = _nameController.text.trim();
-    if (name.length < 2) {
+    if (name.length < 2 && _type != 'platform') {
       if (mounted) setState(() => _suggestions = const []);
       return;
     }

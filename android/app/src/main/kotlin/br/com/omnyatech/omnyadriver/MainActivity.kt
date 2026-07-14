@@ -48,6 +48,10 @@ class MainActivity : FlutterFragmentActivity() {
                         result.success(requestIgnoreBatteryOptimizations())
                     }
                     "startActiveJourneyForeground" -> {
+                        if (!areNotificationsEnabled()) {
+                            result.success(false)
+                            return@setMethodCallHandler
+                        }
                         val startedAt = call.argument<Long>("startedAt") ?: System.currentTimeMillis()
                         val title = call.argument<String>("title") ?: "Jornada em andamento"
                         val body = call.argument<String>("body")

@@ -67,9 +67,9 @@ class PlatformService {
     await _upsertCatalogEntry(
       name: name,
       type: type,
-      city: location.city,
-      state: location.state,
-      country: location.country,
+      city: _isOnlinePlatformType(type) ? null : location.city,
+      state: _isOnlinePlatformType(type) ? null : location.state,
+      country: _isOnlinePlatformType(type) ? null : location.country,
       logoUrl: logoUrl,
     );
   }
@@ -80,7 +80,10 @@ class PlatformService {
   }) async {
     final client = _authService.requireClient();
     final user = client.auth.currentUser;
-    if (user == null || name.trim().length < 2) return const [];
+    if (user == null) return const [];
+    final trimmedName = name.trim();
+    final onlinePlatform = _isOnlinePlatformType(type);
+    if (trimmedName.length < 2 && !onlinePlatform) return const [];
 
     final location = await _loadProfileLocation(user.id);
     try {
@@ -88,18 +91,26 @@ class PlatformService {
           .schema('driver')
           .from('platform_catalog')
           .select('id, name, type, city, state, country, logo_url')
-          .ilike('name', '%${name.trim()}%')
           .ilike('type', type.trim())
-          .eq('country', location.country);
+          .not('logo_url', 'is', null);
 
-      if ((location.state ?? '').trim().isNotEmpty) {
-        query = query.ilike('state', location.state!.trim());
-      }
-      if ((location.city ?? '').trim().isNotEmpty) {
-        query = query.ilike('city', location.city!.trim());
+      if (trimmedName.isNotEmpty) {
+        query = query.ilike('name', '%$trimmedName%');
       }
 
-      final rows = await query.limit(5);
+      if (onlinePlatform) {
+        query = query.isFilter('city', null).isFilter('state', null);
+      } else {
+        query = query.eq('country', location.country);
+        if ((location.state ?? '').trim().isNotEmpty) {
+          query = query.ilike('state', location.state!.trim());
+        }
+        if ((location.city ?? '').trim().isNotEmpty) {
+          query = query.ilike('city', location.city!.trim());
+        }
+      }
+
+      final rows = await query.limit(8);
       if (rows is! List) return const [];
       return rows
           .map(
@@ -254,15 +265,19 @@ class PlatformService {
           .from('platform_catalog')
           .select('logo_url')
           .ilike('name', name.trim())
-          .ilike('type', type.trim())
-          .eq('country', country);
+          .ilike('type', type.trim());
 
-      query = city == null || city.trim().isEmpty
-          ? query.isFilter('city', null)
-          : query.ilike('city', city.trim());
-      query = state == null || state.trim().isEmpty
-          ? query.isFilter('state', null)
-          : query.ilike('state', state.trim());
+      if (_isOnlinePlatformType(type)) {
+        query = query.isFilter('city', null).isFilter('state', null);
+      } else {
+        query = query.eq('country', country);
+        query = city == null || city.trim().isEmpty
+            ? query.isFilter('city', null)
+            : query.ilike('city', city.trim());
+        query = state == null || state.trim().isEmpty
+            ? query.isFilter('state', null)
+            : query.ilike('state', state.trim());
+      }
 
       final rows = await query.not('logo_url', 'is', null).limit(1);
 
@@ -281,7 +296,7 @@ class PlatformService {
     required String type,
     required String? city,
     required String? state,
-    required String country,
+    required String? country,
     required String? logoUrl,
   }) async {
     try {
@@ -295,13 +310,17 @@ class PlatformService {
               'p_type': type,
               'p_city': city,
               'p_state': state,
-              'p_country': country,
+              'p_country': country ?? 'Global',
               'p_logo_url': logoUrl,
             },
           );
     } catch (_) {
       // Safe fallback for environments where sql/manual/023 is not applied yet.
     }
+  }
+
+  bool _isOnlinePlatformType(String type) {
+    return type.trim().toLowerCase() == 'platform';
   }
 }
 

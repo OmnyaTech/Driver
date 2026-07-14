@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../models/app_journey.dart';
@@ -41,13 +43,22 @@ class _JourneysScreenState extends State<JourneysScreen> {
   ActiveJourneyDraft? _activeJourney;
   String? _errorMessage;
   late DateTimeRange _range;
+  late DateTime _now;
+  Timer? _clockTimer;
 
   @override
   void initState() {
     super.initState();
     _range = _currentMonthRange();
+    _now = DateTime.now();
     widget.actionController?.bindCreate(_openCreateDialog);
     _searchController.addListener(_handleFilterChange);
+    _clockTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (!mounted) return;
+      if (_activeJourney != null || _journeys.any((item) => !item.isFinished)) {
+        setState(() => _now = DateTime.now());
+      }
+    });
     _loadJourneys();
   }
 
@@ -56,6 +67,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
     _searchController
       ..removeListener(_handleFilterChange)
       ..dispose();
+    _clockTimer?.cancel();
     widget.actionController?.clear();
     super.dispose();
   }
@@ -74,11 +86,23 @@ class _JourneysScreenState extends State<JourneysScreen> {
 
     try {
       final journeys = await _journeyService.listJourneys();
-      final activeJourney = await _activeJourneyStorage.load();
+      var activeJourney = await _activeJourneyStorage.load();
+      final openJourney = _latestOpenAutomaticJourney(journeys);
+      if (openJourney != null &&
+          (activeJourney == null ||
+              activeJourney.journeyId == null ||
+              activeJourney.journeyId == openJourney.id)) {
+        activeJourney = _draftFromOpenJourney(openJourney);
+        await _activeJourneyStorage.save(activeJourney);
+      } else if (openJourney == null && activeJourney != null) {
+        await _activeJourneyStorage.clear();
+        activeJourney = null;
+      }
       if (!mounted) return;
       setState(() {
         _journeys = journeys;
         _activeJourney = activeJourney;
+        _now = DateTime.now();
       });
       await _syncActiveJourneyNotification(activeJourney);
     } catch (_) {
@@ -140,13 +164,25 @@ class _JourneysScreenState extends State<JourneysScreen> {
     );
 
     if (draft == null) return;
-    await _activeJourneyStorage.save(draft);
-    await _syncActiveJourneyNotification(draft);
+    final journeyId = await _journeyService.createJourney(
+      mode: 'automatic',
+      startedAt: draft.startedAt,
+      endedAt: null,
+      vehicleId: draft.vehicleId,
+      odometerStart: draft.odometerStart,
+      odometerEnd: null,
+      notes: null,
+      platforms: const [],
+    );
+    final persistedDraft = draft.copyWith(journeyId: journeyId);
+    await _activeJourneyStorage.save(persistedDraft);
+    await _syncActiveJourneyNotification(persistedDraft);
     if (!mounted) return;
-    setState(() => _activeJourney = draft);
+    setState(() => _activeJourney = persistedDraft);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Jornada iniciada. Boa corrida!')),
     );
+    await _loadJourneys();
   }
 
   Future<void> _finishAutomaticJourney() async {
@@ -163,16 +199,31 @@ class _JourneysScreenState extends State<JourneysScreen> {
         platforms: platforms.where((item) => item.active).toList(),
         onSubmit:
             ({required odometerEnd, required notes, required platforms}) async {
-              await _journeyService.createJourney(
-                mode: 'automatic',
-                startedAt: activeJourney.startedAt,
-                endedAt: DateTime.now(),
-                vehicleId: activeJourney.vehicleId,
-                odometerStart: activeJourney.odometerStart,
-                odometerEnd: odometerEnd,
-                notes: notes,
-                platforms: platforms,
-              );
+              final journeyId = activeJourney.journeyId;
+              if (journeyId == null || journeyId.trim().isEmpty) {
+                await _journeyService.createJourney(
+                  mode: 'automatic',
+                  startedAt: activeJourney.startedAt,
+                  endedAt: DateTime.now(),
+                  vehicleId: activeJourney.vehicleId,
+                  odometerStart: activeJourney.odometerStart,
+                  odometerEnd: odometerEnd,
+                  notes: notes,
+                  platforms: platforms,
+                );
+              } else {
+                await _journeyService.updateJourney(
+                  id: journeyId,
+                  mode: 'automatic',
+                  startedAt: activeJourney.startedAt,
+                  endedAt: DateTime.now(),
+                  vehicleId: activeJourney.vehicleId,
+                  odometerStart: activeJourney.odometerStart,
+                  odometerEnd: odometerEnd,
+                  notes: notes,
+                  platforms: platforms,
+                );
+              }
               await _activeJourneyStorage.clear();
               await ActiveJourneyNotificationService.instance
                   .cancelActiveJourney();
@@ -196,6 +247,14 @@ class _JourneysScreenState extends State<JourneysScreen> {
 
   Future<void> _openEditDialog(AppJourney journey) async {
     await _openJourneyDialog(initialJourney: journey);
+  }
+
+  Future<void> _finishOpenJourney(AppJourney journey) async {
+    final draft = _draftFromOpenJourney(journey);
+    await _activeJourneyStorage.save(draft);
+    if (!mounted) return;
+    setState(() => _activeJourney = draft);
+    await _finishAutomaticJourney();
   }
 
   Future<void> _openJourneyDialog({AppJourney? initialJourney}) async {
@@ -283,6 +342,30 @@ class _JourneysScreenState extends State<JourneysScreen> {
       const SnackBar(content: Text('Jornada removida com sucesso.')),
     );
     await _loadJourneys();
+  }
+
+  AppJourney? _latestOpenAutomaticJourney(List<AppJourney> journeys) {
+    final open = journeys
+        .where((item) => item.mode == 'automatic' && !item.isFinished)
+        .toList()
+      ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+    return open.isEmpty ? null : open.first;
+  }
+
+  ActiveJourneyDraft _draftFromOpenJourney(AppJourney journey) {
+    return ActiveJourneyDraft(
+      journeyId: journey.id,
+      startedAt: journey.startedAt,
+      vehicleId: journey.vehicleId,
+      vehicleLabel: journey.vehicleLabel,
+      odometerStart: journey.odometerStart?.toStringAsFixed(1) ?? '',
+    );
+  }
+
+  Duration _workedDurationFor(AppJourney journey) {
+    final end = journey.endedAt ?? _now;
+    if (end.isBefore(journey.startedAt)) return Duration.zero;
+    return end.difference(journey.startedAt);
   }
 
   @override
@@ -436,9 +519,11 @@ class _JourneysScreenState extends State<JourneysScreen> {
               format: format,
               strings: strings,
               onEdit: _openEditDialog,
+              onFinish: _finishOpenJourney,
               onDelete: _deleteJourney,
               formatJourneyTitle: _formatJourneyTitle,
               formatDuration: _formatDuration,
+              workedDurationFor: _workedDurationFor,
             ),
           ),
         ],
@@ -504,10 +589,15 @@ class _JourneysScreenState extends State<JourneysScreen> {
       ),
     );
     if (confirmed != true) return;
+    final journeyId = _activeJourney?.journeyId;
+    if (journeyId != null && journeyId.trim().isNotEmpty) {
+      await _journeyService.deleteJourney(journeyId);
+    }
     await _activeJourneyStorage.clear();
     await ActiveJourneyNotificationService.instance.cancelActiveJourney();
     if (!mounted) return;
     setState(() => _activeJourney = null);
+    await _loadJourneys();
   }
 
   String _formatJourneyTitle(AppJourney journey) {
@@ -706,9 +796,11 @@ class _JourneyMonthSection extends StatelessWidget {
     required this.format,
     required this.strings,
     required this.onEdit,
+    required this.onFinish,
     required this.onDelete,
     required this.formatJourneyTitle,
     required this.formatDuration,
+    required this.workedDurationFor,
   });
 
   final String title;
@@ -716,9 +808,11 @@ class _JourneyMonthSection extends StatelessWidget {
   final AppFormat format;
   final AppStrings strings;
   final ValueChanged<AppJourney> onEdit;
+  final ValueChanged<AppJourney> onFinish;
   final ValueChanged<AppJourney> onDelete;
   final String Function(AppJourney journey) formatJourneyTitle;
   final String Function(Duration duration) formatDuration;
+  final Duration Function(AppJourney journey) workedDurationFor;
 
   @override
   Widget build(BuildContext context) {
@@ -761,7 +855,7 @@ class _JourneyMonthSection extends StatelessWidget {
                 childrenPadding: const EdgeInsets.only(top: 8),
                 title: Text(
                   '${day.label} | ${formatJourneyTitle(journey)} | '
-                  '${formatDuration(journey.workedDuration)} | '
+                  '${formatDuration(workedDurationFor(journey))} | '
                   '${format.currency(journey.totalIncome)}',
                 ),
                 subtitle: Text(
@@ -770,10 +864,22 @@ class _JourneyMonthSection extends StatelessWidget {
                 ),
                 trailing: PopupMenuButton<String>(
                   onSelected: (value) {
+                    if (value == 'finish') onFinish(journey);
                     if (value == 'edit') onEdit(journey);
                     if (value == 'delete') onDelete(journey);
                   },
                   itemBuilder: (_) => [
+                    if (journey.mode == 'automatic' && !journey.isFinished)
+                      PopupMenuItem(
+                        value: 'finish',
+                        child: Text(
+                          strings.pick(
+                            pt: 'Encerrar jornada',
+                            en: 'End shift',
+                            es: 'Cerrar jornada',
+                          ),
+                        ),
+                      ),
                     PopupMenuItem(
                       value: 'edit',
                       child: Text(
@@ -868,6 +974,8 @@ class _ActiveJourneyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final startedAt = draft.startedAt.toLocal();
+    final elapsed = DateTime.now().difference(draft.startedAt);
+    final elapsedLabel = _formatElapsed(elapsed);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -894,6 +1002,10 @@ class _ActiveJourneyCard extends StatelessWidget {
             Text(
               'Comecou hoje as ${startedAt.hour.toString().padLeft(2, '0')}:${startedAt.minute.toString().padLeft(2, '0')}',
             ),
+            Text(
+              'Tempo rodando: $elapsedLabel',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
             if (draft.vehicleLabel != null) Text(draft.vehicleLabel!),
             if (draft.odometerStart.trim().isNotEmpty)
               Text('Km inicial: ${draft.odometerStart}'),
@@ -910,6 +1022,15 @@ class _ActiveJourneyCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatElapsed(Duration duration) {
+    final minutes = duration.inMinutes < 0 ? 0 : duration.inMinutes;
+    final hours = minutes ~/ 60;
+    final remaining = minutes % 60;
+    if (hours <= 0) return '${remaining}min';
+    if (remaining == 0) return '${hours}h';
+    return '${hours}h ${remaining}min';
   }
 }
 
@@ -1041,9 +1162,25 @@ class _FinishAutomaticJourneyDialogState
   final _formKey = GlobalKey<FormState>();
   final _odometerEndController = TextEditingController();
   final _notesController = TextEditingController();
-  final List<_PlatformIncomeEntry> _platformEntries = [_PlatformIncomeEntry()];
+  late final List<_PlatformIncomeEntry> _platformEntries;
   bool _saving = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _platformEntries = widget.platforms.isEmpty
+        ? [_PlatformIncomeEntry()]
+        : widget.platforms
+              .map(
+                (platform) => _PlatformIncomeEntry.fromValues(
+                  platformId: platform.id,
+                  income: '',
+                  deliveries: '',
+                ),
+              )
+              .toList();
+  }
 
   @override
   void dispose() {

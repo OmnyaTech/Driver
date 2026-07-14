@@ -50,6 +50,11 @@ class ActiveJourneyForegroundService : Service() {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .addAction(
+                R.drawable.ic_stat_driver,
+                "Finalizar",
+                pendingIntent
+            )
             .build()
 
         startForeground(NOTIFICATION_ID, notification)
