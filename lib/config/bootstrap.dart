@@ -18,14 +18,18 @@ final class AppBootstrap {
       return;
     }
 
-    await Supabase.initialize(
-      url: SupabaseRuntimeConfig.url,
-      publishableKey: SupabaseRuntimeConfig.anonKey,
-      authOptions: const FlutterAuthClientOptions(
-        autoRefreshToken: true,
-        authFlowType: AuthFlowType.pkce,
-      ),
-    );
+    try {
+      await Supabase.initialize(
+        url: SupabaseRuntimeConfig.url,
+        publishableKey: SupabaseRuntimeConfig.anonKey,
+        authOptions: const FlutterAuthClientOptions(
+          autoRefreshToken: true,
+          authFlowType: AuthFlowType.pkce,
+        ),
+      );
+    } catch (_) {
+      // A bad runtime config should not leave the APK on a black screen.
+    }
   }
 
   static Future<void> _initializeFirebaseDiagnostics() async {
