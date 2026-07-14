@@ -5,6 +5,8 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import 'turnstile_html.dart';
 
+const _turnstileNativeBaseUrl = 'https://android.omnyadriver.local';
+
 Widget buildTurnstilePlatformView({
   required String siteKey,
   required bool visible,
@@ -48,6 +50,7 @@ class _TurnstileIoViewState extends State<_TurnstileIoView> {
       )
       ..loadHtmlString(
         buildTurnstileHtml(siteKey: widget.siteKey, visible: widget.visible),
+        baseUrl: _turnstileNativeBaseUrl,
       );
   }
 

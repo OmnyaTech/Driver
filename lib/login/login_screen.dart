@@ -59,24 +59,19 @@ class _LoginScreenState extends State<LoginScreen> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1120),
                 child: compact
-                    ? Column(
-                        children: [
-                          _LoginHero(compact: true),
-                          const SizedBox(height: 18),
-                          _AccessCard(
-                            formKey: _formKey,
-                            mode: _mode,
-                            isBusy: session.isBusy,
-                            errorMessage: session.errorMessage,
-                            supabaseConfigured: session.supabaseConfigured,
-                            fullNameController: _fullNameController,
-                            emailController: _emailController,
-                            passwordController: _passwordController,
-                            onModeChanged: _setMode,
-                            onSubmit: _submit,
-                            onOAuth: _signInWithOAuth,
-                          ),
-                        ],
+                    ? _AccessCard(
+                        formKey: _formKey,
+                        mode: _mode,
+                        isBusy: session.isBusy,
+                        errorMessage: session.errorMessage,
+                        supabaseConfigured: session.supabaseConfigured,
+                        showStatusPanel: false,
+                        fullNameController: _fullNameController,
+                        emailController: _emailController,
+                        passwordController: _passwordController,
+                        onModeChanged: _setMode,
+                        onSubmit: _submit,
+                        onOAuth: _signInWithOAuth,
                       )
                     : Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -193,25 +188,22 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 class _LoginHero extends StatelessWidget {
-  const _LoginHero({this.compact = false});
-
-  final bool compact;
+  const _LoginHero();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return OmnyaAnimatedEntrance(
       child: OmnyaHeroCard(
-        compact: compact,
-        padding: EdgeInsets.all(compact ? 22 : 34),
+        padding: const EdgeInsets.all(34),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  width: compact ? 58 : 72,
-                  height: compact ? 58 : 72,
+                  width: 72,
+                  height: 72,
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.22),
@@ -231,7 +223,7 @@ class _LoginHero extends StatelessWidget {
                         'Driver',
                         style: theme.textTheme.titleLarge?.copyWith(
                           color: Colors.white,
-                          fontSize: compact ? 20 : 24,
+                          fontSize: 24,
                         ),
                       ),
                       Text(
@@ -245,13 +237,13 @@ class _LoginHero extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: compact ? 24 : 44),
+            const SizedBox(height: 44),
             Text(
               'Seu corre no controle. Sem planilha, sem bagunca.',
               style: theme.textTheme.headlineMedium?.copyWith(
                 color: Colors.white,
                 height: 1.08,
-                fontSize: compact ? 26 : 38,
+                fontSize: 38,
               ),
             ),
             const SizedBox(height: 12),
@@ -272,28 +264,26 @@ class _LoginHero extends StatelessWidget {
                 OmnyaGlowChip(label: 'Premium'),
               ],
             ),
-            if (!compact) ...[
-              const SizedBox(height: 34),
-              Row(
-                children: const [
-                  Expanded(
-                    child: _HeroMiniStat(
-                      title: 'Hoje',
-                      value: 'R\$',
-                      detail: 'Ganhos e sobras do dia',
-                    ),
+            const SizedBox(height: 34),
+            Row(
+              children: const [
+                Expanded(
+                  child: _HeroMiniStat(
+                    title: 'Hoje',
+                    value: 'R\$',
+                    detail: 'Ganhos e sobras do dia',
                   ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _HeroMiniStat(
-                      title: 'Progresso',
-                      value: 'XP',
-                      detail: 'Missoes, medalhas e ranking',
-                    ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: _HeroMiniStat(
+                    title: 'Progresso',
+                    value: 'XP',
+                    detail: 'Missoes, medalhas e ranking',
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -356,6 +346,7 @@ class _AccessCard extends StatelessWidget {
     required this.isBusy,
     required this.errorMessage,
     required this.supabaseConfigured,
+    this.showStatusPanel = true,
     required this.fullNameController,
     required this.emailController,
     required this.passwordController,
@@ -369,6 +360,7 @@ class _AccessCard extends StatelessWidget {
   final bool isBusy;
   final String? errorMessage;
   final bool supabaseConfigured;
+  final bool showStatusPanel;
   final TextEditingController fullNameController;
   final TextEditingController emailController;
   final TextEditingController passwordController;
@@ -635,8 +627,10 @@ class _AccessCard extends StatelessWidget {
               const SizedBox(height: 16),
               _InlineMessage(message: errorMessage!, isError: true),
             ],
-            const SizedBox(height: 16),
-            _AuthStatusPanel(supabaseConfigured: supabaseConfigured),
+            if (showStatusPanel) ...[
+              const SizedBox(height: 16),
+              _AuthStatusPanel(supabaseConfigured: supabaseConfigured),
+            ],
           ],
         ),
       ),
