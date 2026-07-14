@@ -48,6 +48,19 @@ class SubscriptionService {
     return Map<String, dynamic>.from((response as Map?) ?? const {});
   }
 
+  Future<Map<String, dynamic>> cancelPendingCheckout({
+    String reason = 'checkout_abandoned',
+  }) async {
+    final client = _authService.requireClient();
+    final response = await client
+        .schema('driver')
+        .rpc(
+          'cancel_pending_subscription_checkout',
+          params: {'p_reason': reason},
+        );
+    return Map<String, dynamic>.from((response as Map?) ?? const {});
+  }
+
   Future<Map<String, dynamic>> requestPlanChange(String planType) async {
     final client = _authService.requireClient();
     final response = await client

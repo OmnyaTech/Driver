@@ -55,7 +55,7 @@ class ReportExportService {
   }) async {
     final document = pw.Document(
       title: 'Relatorio operacional Omnya Driver',
-      author: 'OmnyaTech',
+      author: 'Driver',
     );
 
     document.addPage(

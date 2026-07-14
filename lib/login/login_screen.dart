@@ -235,7 +235,7 @@ class _LoginHero extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'By OmnyaTech',
+                        'Driver',
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: Colors.white.withValues(alpha: 0.7),
                         ),

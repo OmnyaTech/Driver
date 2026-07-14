@@ -17,7 +17,7 @@ class MaintenanceService {
         .from('maintenances')
         .select()
         .eq('user_id', user.id)
-        .order('maintenance_date', ascending: false);
+        .order('maintenance_at', ascending: false);
 
     final vehicleRows = await client
         .schema('driver')
@@ -60,13 +60,20 @@ class MaintenanceService {
       final vehicleId = row['vehicle_id'].toString();
       return AppMaintenance(
         id: id,
-        maintenanceDate: DateTime.parse('${row['maintenance_date']}T00:00:00'),
+        maintenanceDate:
+            DateTime.tryParse((row['maintenance_at'] ?? '').toString()) ??
+            DateTime.parse('${row['maintenance_date']}T00:00:00'),
         vehicleId: vehicleId,
         vehicleLabel: vehicleLabels[vehicleId],
         workshop: row['workshop'] as String?,
         reason: row['reason'] as String?,
         description: row['description'] as String?,
         totalAmount: _toDouble(row['total_amount']),
+        paymentMethod: row['payment_method'] as String?,
+        currentOdometer: _toNullableDouble(row['current_odometer']),
+        nextMaintenanceOdometer: _toNullableDouble(
+          row['next_maintenance_odometer'],
+        ),
         items: itemsByMaintenance[id] ?? const [],
       );
     }).toList();
@@ -79,6 +86,9 @@ class MaintenanceService {
     String? workshop,
     String? reason,
     String? description,
+    String? paymentMethod,
+    String? currentOdometer,
+    String? nextMaintenanceOdometer,
     required List<MaintenanceItemDraft> items,
   }) async {
     final client = _authService.requireClient();
@@ -97,10 +107,14 @@ class MaintenanceService {
               .toIso8601String()
               .split('T')
               .first,
+          'maintenance_at': maintenanceDate.toUtc().toIso8601String(),
           'workshop': _normalizeString(workshop),
           'reason': _normalizeString(reason),
           'description': _normalizeString(description),
           'total_amount': _stringToDouble(totalAmount) ?? 0,
+          'payment_method': _normalizeString(paymentMethod),
+          'current_odometer': _stringToDouble(currentOdometer),
+          'next_maintenance_odometer': _stringToDouble(nextMaintenanceOdometer),
         })
         .select('id')
         .single();
@@ -130,6 +144,9 @@ class MaintenanceService {
     String? workshop,
     String? reason,
     String? description,
+    String? paymentMethod,
+    String? currentOdometer,
+    String? nextMaintenanceOdometer,
     required List<MaintenanceItemDraft> items,
   }) async {
     final client = _authService.requireClient();
@@ -143,10 +160,14 @@ class MaintenanceService {
               .toIso8601String()
               .split('T')
               .first,
+          'maintenance_at': maintenanceDate.toUtc().toIso8601String(),
           'workshop': _normalizeString(workshop),
           'reason': _normalizeString(reason),
           'description': _normalizeString(description),
           'total_amount': _stringToDouble(totalAmount) ?? 0,
+          'payment_method': _normalizeString(paymentMethod),
+          'current_odometer': _stringToDouble(currentOdometer),
+          'next_maintenance_odometer': _stringToDouble(nextMaintenanceOdometer),
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('id', id);
@@ -184,6 +205,11 @@ class MaintenanceService {
   }
 
   double _toDouble(Object? value) => double.tryParse(value.toString()) ?? 0;
+
+  double? _toNullableDouble(Object? value) {
+    if (value == null) return null;
+    return double.tryParse(value.toString());
+  }
 
   double? _stringToDouble(String? value) {
     final normalized = value?.trim().replaceAll(',', '.');

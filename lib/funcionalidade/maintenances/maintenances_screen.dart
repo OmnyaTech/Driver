@@ -121,6 +121,9 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
               required workshop,
               required reason,
               required description,
+              required paymentMethod,
+              required currentOdometer,
+              required nextMaintenanceOdometer,
               required items,
             }) async {
               if (initialMaintenance == null) {
@@ -131,6 +134,9 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
                   workshop: workshop,
                   reason: reason,
                   description: description,
+                  paymentMethod: paymentMethod,
+                  currentOdometer: currentOdometer,
+                  nextMaintenanceOdometer: nextMaintenanceOdometer,
                   items: items,
                 );
                 return;
@@ -144,6 +150,9 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
                 workshop: workshop,
                 reason: reason,
                 description: description,
+                paymentMethod: paymentMethod,
+                currentOdometer: currentOdometer,
+                nextMaintenanceOdometer: nextMaintenanceOdometer,
                 items: items,
               );
             },
@@ -698,6 +707,9 @@ class _MaintenanceMonthSection extends StatelessWidget {
                     if (maintenance.reason != null &&
                         maintenance.reason!.trim().isNotEmpty)
                       maintenance.reason!,
+                    if (maintenance.paymentMethod != null &&
+                        maintenance.paymentMethod!.trim().isNotEmpty)
+                      maintenance.paymentMethod!,
                     format.currency(maintenance.totalAmount),
                   ].join(' | '),
                 ),
@@ -772,6 +784,9 @@ class _MaintenanceFormDialog extends StatefulWidget {
     required String workshop,
     required String reason,
     required String description,
+    required String paymentMethod,
+    required String currentOdometer,
+    required String nextMaintenanceOdometer,
     required List<MaintenanceItemDraft> items,
   })
   onSubmit;
@@ -786,8 +801,11 @@ class _MaintenanceFormDialogState extends State<_MaintenanceFormDialog> {
   late final TextEditingController _reasonController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _totalController;
+  late final TextEditingController _currentOdometerController;
+  late final TextEditingController _nextMaintenanceOdometerController;
   late final List<_MaintenanceItemEntry> _items;
   String? _vehicleId;
+  String? _paymentMethod;
   late DateTime _maintenanceDate;
   bool _saving = false;
   String? _submitError;
@@ -810,6 +828,16 @@ class _MaintenanceFormDialogState extends State<_MaintenanceFormDialog> {
           ? ''
           : initialMaintenance.totalAmount.toStringAsFixed(2),
     );
+    _currentOdometerController = TextEditingController(
+      text: initialMaintenance?.currentOdometer == null
+          ? ''
+          : initialMaintenance!.currentOdometer!.toStringAsFixed(0),
+    );
+    _nextMaintenanceOdometerController = TextEditingController(
+      text: initialMaintenance?.nextMaintenanceOdometer == null
+          ? ''
+          : initialMaintenance!.nextMaintenanceOdometer!.toStringAsFixed(0),
+    );
     _items = initialMaintenance == null
         ? [_MaintenanceItemEntry()]
         : (initialMaintenance.items.isEmpty
@@ -825,6 +853,7 @@ class _MaintenanceFormDialogState extends State<_MaintenanceFormDialog> {
                     )
                     .toList());
     _vehicleId = initialMaintenance?.vehicleId;
+    _paymentMethod = initialMaintenance?.paymentMethod;
     _maintenanceDate =
         initialMaintenance?.maintenanceDate.toLocal() ?? DateTime.now();
   }
@@ -835,6 +864,8 @@ class _MaintenanceFormDialogState extends State<_MaintenanceFormDialog> {
     _reasonController.dispose();
     _descriptionController.dispose();
     _totalController.dispose();
+    _currentOdometerController.dispose();
+    _nextMaintenanceOdometerController.dispose();
     for (final item in _items) {
       item.dispose();
     }
@@ -900,6 +931,59 @@ class _MaintenanceFormDialogState extends State<_MaintenanceFormDialog> {
                     decimal: true,
                   ),
                   validator: _required,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _paymentMethod,
+                  decoration: const InputDecoration(
+                    labelText: 'Forma de pagamento',
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'Pix', child: Text('Pix')),
+                    DropdownMenuItem(
+                      value: 'Dinheiro',
+                      child: Text('Dinheiro'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Cartao de credito',
+                      child: Text('Cartao de credito'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Cartao de debito',
+                      child: Text('Cartao de debito'),
+                    ),
+                    DropdownMenuItem(value: 'Boleto', child: Text('Boleto')),
+                    DropdownMenuItem(value: 'Outro', child: Text('Outro')),
+                  ],
+                  onChanged: (value) => setState(() => _paymentMethod = value),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _currentOdometerController,
+                        decoration: const InputDecoration(
+                          labelText: 'Km atual',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _nextMaintenanceOdometerController,
+                        decoration: const InputDecoration(
+                          labelText: 'Km proxima manutencao',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 if (itemsTotal > 0)
                   Align(
@@ -1010,6 +1094,10 @@ class _MaintenanceFormDialogState extends State<_MaintenanceFormDialog> {
                       workshop: _workshopController.text,
                       reason: _reasonController.text,
                       description: _descriptionController.text,
+                      paymentMethod: _paymentMethod ?? '',
+                      currentOdometer: _currentOdometerController.text,
+                      nextMaintenanceOdometer:
+                          _nextMaintenanceOdometerController.text,
                       items: _items
                           .map(
                             (item) => MaintenanceItemDraft(
@@ -1078,9 +1166,10 @@ class _MaintenanceDateTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      title: const Text('Data'),
+      title: const Text('Data e horario'),
       subtitle: Text(
-        '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}',
+        '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year} '
+        '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}',
       ),
       trailing: const Icon(Icons.calendar_today_outlined),
       onTap: () async {
@@ -1091,7 +1180,21 @@ class _MaintenanceDateTile extends StatelessWidget {
           lastDate: DateTime(2035),
         );
         if (date == null) return;
-        onChanged(DateTime(date.year, date.month, date.day));
+        if (!context.mounted) return;
+        final time = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.fromDateTime(value),
+        );
+        final selectedTime = time ?? TimeOfDay.fromDateTime(value);
+        onChanged(
+          DateTime(
+            date.year,
+            date.month,
+            date.day,
+            selectedTime.hour,
+            selectedTime.minute,
+          ),
+        );
       },
     );
   }

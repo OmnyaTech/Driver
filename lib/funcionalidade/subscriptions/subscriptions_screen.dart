@@ -127,7 +127,11 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
             _CurrentPlanCard(subscription: currentPlan),
             if (hasPendingCheckout) ...[
               const SizedBox(height: 12),
-              _PendingCheckoutNotice(onRefresh: _loadData),
+              _PendingCheckoutNotice(
+                busy: _managingSubscription,
+                onRefresh: _loadData,
+                onCancel: _cancelPendingCheckout,
+              ),
             ],
             if (currentPlan != null && currentPlan.isCurrent) ...[
               const SizedBox(height: 12),
@@ -376,6 +380,42 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
               pt: 'Cancelamento registrado. Se houver cobranca ativa no Asaas, a baixa ja foi solicitada.',
               en: 'Cancellation requested. If there is an active Asaas charge, we already asked to stop it.',
               es: 'Cancelacion registrada. Si hay cobro activo en Asaas, ya pedimos la baja.',
+            ),
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.toString());
+    } finally {
+      if (mounted) setState(() => _managingSubscription = false);
+    }
+  }
+
+  Future<void> _cancelPendingCheckout() async {
+    if (_managingSubscription) return;
+    setState(() {
+      _managingSubscription = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await _subscriptionService.cancelPendingCheckout();
+      await _loadData();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppStrings.of(context).pick(
+              pt: result['ok'] == true
+                  ? 'Tentativa cancelada. Seu acesso voltou para o plano free.'
+                  : 'Nao encontrei pagamento pendente para cancelar.',
+              en: result['ok'] == true
+                  ? 'Attempt cancelled. Your access returned to the free plan.'
+                  : 'No pending payment found to cancel.',
+              es: result['ok'] == true
+                  ? 'Intento cancelado. Tu acceso volvio al plan gratis.'
+                  : 'No encontre pago pendiente para cancelar.',
             ),
           ),
         ),
@@ -742,9 +782,15 @@ class _CurrentPlanCard extends StatelessWidget {
 }
 
 class _PendingCheckoutNotice extends StatelessWidget {
-  const _PendingCheckoutNotice({required this.onRefresh});
+  const _PendingCheckoutNotice({
+    required this.busy,
+    required this.onRefresh,
+    required this.onCancel,
+  });
 
+  final bool busy;
   final Future<void> Function() onRefresh;
+  final Future<void> Function() onCancel;
 
   @override
   Widget build(BuildContext context) {
@@ -752,26 +798,64 @@ class _PendingCheckoutNotice extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
-        child: Row(
-          children: [
-            const Icon(Icons.hourglass_top_rounded, color: Color(0xFF27D17F)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                strings.pick(
-                  pt: 'Pagamento em andamento. Assim que o Asaas confirmar, o Premium entra sozinho aqui no app.',
-                  en: 'Payment in progress. Once Asaas confirms it, Premium turns on automatically in the app.',
-                  es: 'Pago en curso. Cuando Asaas lo confirme, Premium se activa automaticamente en la app.',
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 560;
+            final content = [
+              const Icon(Icons.hourglass_top_rounded, color: Color(0xFF27D17F)),
+              const SizedBox(width: 12, height: 12),
+              Expanded(
+                child: Text(
+                  strings.pick(
+                    pt: 'Pagamento em andamento. Assim que o Asaas confirmar, o Premium entra sozinho aqui no app.',
+                    en: 'Payment in progress. Once Asaas confirms it, Premium turns on automatically in the app.',
+                    es: 'Pago en curso. Cuando Asaas lo confirme, Premium se activa automaticamente en la app.',
+                  ),
                 ),
               ),
-            ),
-            TextButton(
-              onPressed: onRefresh,
-              child: Text(
-                strings.pick(pt: 'Atualizar', en: 'Refresh', es: 'Actualizar'),
+              const SizedBox(width: 12, height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  TextButton(
+                    onPressed: busy ? null : onRefresh,
+                    child: Text(
+                      strings.pick(
+                        pt: 'Atualizar',
+                        en: 'Refresh',
+                        es: 'Actualizar',
+                      ),
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: busy ? null : onCancel,
+                    icon: const Icon(Icons.close_rounded),
+                    label: Text(
+                      strings.pick(
+                        pt: 'Cancelar tentativa',
+                        en: 'Cancel attempt',
+                        es: 'Cancelar intento',
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+            ];
+
+            if (compact) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: content.take(3).toList()),
+                  const SizedBox(height: 12),
+                  content.last,
+                ],
+              );
+            }
+
+            return Row(children: content);
+          },
         ),
       ),
     );

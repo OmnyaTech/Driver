@@ -241,7 +241,7 @@ class AppStrings {
 
   String get publicProfileSubtitle => pick(
     pt: 'Seu @, cidade e convite',
-    en: 'Your @, city and invite',
+    en: 'Your @, invite and profile',
     es: 'Tu @, ciudad e invitacion',
   );
 
@@ -505,9 +505,9 @@ class AppStrings {
   ];
 
   String get helpCenterFooter => pick(
-    pt: 'Nao achou o que precisava? Fale com a OmnyaTech pelo suporte do app ou pelo e-mail suporte@omnyatech.com.',
-    en: 'Did not find what you need? Contact OmnyaTech through app support or suporte@omnyatech.com.',
-    es: 'No encontraste lo que necesitabas? Habla con OmnyaTech por el soporte de la app o suporte@omnyatech.com.',
+    pt: 'Nao achou o que precisava? Fale com o suporte do Driver pelo app ou pelo e-mail suporte@omnyatech.com.',
+    en: 'Did not find what you need? Contact Driver support in the app or at suporte@omnyatech.com.',
+    es: 'No encontraste lo que necesitabas? Habla con soporte de Driver en la app o por suporte@omnyatech.com.',
   );
 
   String get aboutOmnyaDriver =>
@@ -544,9 +544,9 @@ class AppStrings {
   );
 
   String get aboutOmnyaDriverTech => pick(
-    pt: 'Desenvolvido pela OmnyaTech para autonomos que querem organizar a renda sem depender de planilha. Contato: suporte@omnyatech.com.',
-    en: 'Built by OmnyaTech for independent workers who want to organize income without depending on spreadsheets. Contact: suporte@omnyatech.com.',
-    es: 'Desarrollado por OmnyaTech para autonomos que quieren organizar ingresos sin depender de planillas. Contacto: suporte@omnyatech.com.',
+    pt: 'Driver foi criado para entregadores que querem organizar renda, custos, metas e progresso sem depender de planilha. Contato: suporte@omnyatech.com.',
+    en: 'Driver was built for delivery workers who want to organize income, costs, goals and progress without relying on spreadsheets. Contact: suporte@omnyatech.com.',
+    es: 'Driver fue creado para repartidores que quieren organizar ingresos, costos, metas y progreso sin depender de planillas. Contacto: suporte@omnyatech.com.',
   );
 
   List<String> get aboutSectionLabels => [
@@ -557,7 +557,7 @@ class AppStrings {
       es: 'Que controlas',
     ),
     pick(pt: 'Principios', en: 'Principles', es: 'Principios'),
-    pick(pt: 'OmnyaTech', en: 'OmnyaTech', es: 'OmnyaTech'),
+    pick(pt: 'Driver', en: 'Driver', es: 'Driver'),
   ];
 
   List<String> get aboutHighlights => [
@@ -653,9 +653,9 @@ class AppStrings {
   );
 
   String get privacyPolicyBody => pick(
-    pt: 'A OmnyaTech respeita sua privacidade e trata seus dados para fazer o app funcionar com seguranca, clareza e conforme a LGPD.',
-    en: 'OmnyaTech respects your privacy and handles your data so the app works safely, clearly and in line with privacy laws.',
-    es: 'OmnyaTech respeta tu privacidad y trata tus datos para que la app funcione con seguridad, claridad y segun la ley.',
+    pt: 'O Driver respeita sua privacidade e trata seus dados para fazer o app funcionar com seguranca, clareza e conforme a LGPD.',
+    en: 'Driver respects your privacy and handles your data so the app works safely, clearly and in line with privacy laws.',
+    es: 'Driver respeta tu privacidad y trata tus datos para que la app funcione con seguridad, claridad y segun la ley.',
   );
 
   String get privacyPolicyCollected => pick(
@@ -677,9 +677,9 @@ class AppStrings {
   );
 
   String get privacyPolicyContact => pick(
-    pt: 'Voce pode pedir acesso, correcao, portabilidade, exclusao ou revisao de consentimentos. Para duvidas de privacidade, fale com o suporte OmnyaTech pelos canais oficiais do app.',
-    en: 'You can request access, correction, portability, deletion or consent review. For privacy questions, contact OmnyaTech support through the official app channels.',
-    es: 'Puedes pedir acceso, correccion, portabilidad, eliminacion o revision de consentimientos. Para dudas de privacidad, habla con soporte OmnyaTech por los canales oficiales de la app.',
+    pt: 'Voce pode pedir acesso, correcao, portabilidade, exclusao ou revisao de consentimentos. Para duvidas de privacidade, fale com o suporte pelos canais oficiais do app.',
+    en: 'You can request access, correction, portability, deletion or consent review. For privacy questions, contact support through the official app channels.',
+    es: 'Puedes pedir acceso, correccion, portabilidad, eliminacion o revision de consentimientos. Para dudas de privacidad, habla con soporte por los canales oficiales de la app.',
   );
 
   String get privacyPolicyPublicProfile => pick(
@@ -718,9 +718,9 @@ class AppStrings {
   ];
 
   String get developerTools => pick(
-    pt: 'Ferramentas internas da OmnyaTech',
-    en: 'OmnyaTech internal tools',
-    es: 'Herramientas internas de OmnyaTech',
+    pt: 'Ferramentas internas do Driver',
+    en: 'Driver internal tools',
+    es: 'Herramientas internas de Driver',
   );
 
   String get signOut =>

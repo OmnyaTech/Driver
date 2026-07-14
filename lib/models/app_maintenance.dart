@@ -8,6 +8,9 @@ class AppMaintenance {
     required this.reason,
     required this.description,
     required this.totalAmount,
+    required this.paymentMethod,
+    required this.currentOdometer,
+    required this.nextMaintenanceOdometer,
     required this.items,
   });
 
@@ -19,6 +22,9 @@ class AppMaintenance {
   final String? reason;
   final String? description;
   final double totalAmount;
+  final String? paymentMethod;
+  final double? currentOdometer;
+  final double? nextMaintenanceOdometer;
   final List<AppMaintenanceItem> items;
 }
 

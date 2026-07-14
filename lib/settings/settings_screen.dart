@@ -23,6 +23,131 @@ import '../utilities/ui/omnya_visuals.dart';
 import '../utilities/ui/profile_avatar.dart';
 
 const _driverLogoAsset = 'src/driver_icon/driver_icon_png.png';
+const List<String> _publicBannerPalette = [
+  '#001BFF',
+  '#111827',
+  '#0F172A',
+  '#92400E',
+  '#B45309',
+  '#64748B',
+  '#0F766E',
+  '#6D28D9',
+  '#BE123C',
+  '#0EA5E9',
+  '#16A34A',
+  '#F59E0B',
+];
+
+const List<String> _driverCountryOptions = [
+  'Brasil',
+  'Estados Unidos',
+  'Portugal',
+  'Espanha',
+  'Outro',
+];
+
+const Map<String, List<String>> _driverStatesByCountry = {
+  'Brasil': [
+    'Acre',
+    'Alagoas',
+    'Amapa',
+    'Amazonas',
+    'Bahia',
+    'Ceara',
+    'Distrito Federal',
+    'Espirito Santo',
+    'Goias',
+    'Maranhao',
+    'Mato Grosso',
+    'Mato Grosso do Sul',
+    'Minas Gerais',
+    'Para',
+    'Paraiba',
+    'Parana',
+    'Pernambuco',
+    'Piaui',
+    'Rio de Janeiro',
+    'Rio Grande do Norte',
+    'Rio Grande do Sul',
+    'Rondonia',
+    'Roraima',
+    'Santa Catarina',
+    'Sao Paulo',
+    'Sergipe',
+    'Tocantins',
+    'Outro',
+  ],
+  'Estados Unidos': ['California', 'Florida', 'New York', 'Texas', 'Outro'],
+  'Portugal': ['Lisboa', 'Porto', 'Braga', 'Coimbra', 'Outro'],
+  'Espanha': ['Madrid', 'Catalunha', 'Andaluzia', 'Valencia', 'Outro'],
+  'Outro': ['Outro'],
+};
+
+const Map<String, List<String>> _driverCitiesByState = {
+  'Goias': [
+    'Catalao',
+    'Goiania',
+    'Aparecida de Goiania',
+    'Anapolis',
+    'Rio Verde',
+    'Itumbiara',
+    'Jatai',
+    'Caldas Novas',
+    'Formosa',
+    'Outro',
+  ],
+  'Sao Paulo': [
+    'Sao Paulo',
+    'Campinas',
+    'Santos',
+    'Ribeirao Preto',
+    'Sao Jose dos Campos',
+    'Sorocaba',
+    'Outro',
+  ],
+  'Minas Gerais': [
+    'Belo Horizonte',
+    'Uberlandia',
+    'Contagem',
+    'Juiz de Fora',
+    'Betim',
+    'Montes Claros',
+    'Outro',
+  ],
+  'Rio de Janeiro': [
+    'Rio de Janeiro',
+    'Niteroi',
+    'Duque de Caxias',
+    'Nova Iguacu',
+    'Sao Goncalo',
+    'Outro',
+  ],
+  'Parana': ['Curitiba', 'Londrina', 'Maringa', 'Ponta Grossa', 'Outro'],
+  'Santa Catarina': [
+    'Florianopolis',
+    'Joinville',
+    'Blumenau',
+    'Chapeco',
+    'Outro',
+  ],
+  'Rio Grande do Sul': [
+    'Porto Alegre',
+    'Caxias do Sul',
+    'Pelotas',
+    'Canoas',
+    'Outro',
+  ],
+  'Distrito Federal': ['Brasilia', 'Outro'],
+  'California': ['Los Angeles', 'San Francisco', 'San Diego', 'Outro'],
+  'Florida': ['Miami', 'Orlando', 'Tampa', 'Outro'],
+  'New York': ['New York', 'Buffalo', 'Rochester', 'Outro'],
+  'Texas': ['Austin', 'Dallas', 'Houston', 'San Antonio', 'Outro'],
+  'Lisboa': ['Lisboa', 'Sintra', 'Cascais', 'Outro'],
+  'Porto': ['Porto', 'Vila Nova de Gaia', 'Matosinhos', 'Outro'],
+  'Madrid': ['Madrid', 'Alcala de Henares', 'Getafe', 'Outro'],
+  'Catalunha': ['Barcelona', 'Girona', 'Tarragona', 'Outro'],
+  'Outro': ['Outro'],
+};
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -578,7 +703,6 @@ class _SettingsHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final profile = session.profile;
     final theme = Theme.of(context);
-    final strings = AppStrings.of(context);
 
     return OmnyaHeroCard(
       compact: true,
@@ -619,7 +743,7 @@ class _SettingsHeroCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${strings.settingsTitle} OmnyaTech',
+                      'Driver',
                       style: theme.textTheme.titleLarge?.copyWith(
                         color: Colors.white,
                       ),
@@ -977,29 +1101,26 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final compact = constraints.maxWidth < 620;
+                      final countryOptions = _withCurrentOption(
+                        _driverCountryOptions,
+                        _countryController.text,
+                      );
+                      final stateOptions = _withCurrentOption(
+                        _driverStatesByCountry[_countryController.text] ??
+                            const ['Outro'],
+                        _stateController.text,
+                      );
+                      final cityOptions = _withCurrentOption(
+                        _driverCitiesByState[_stateController.text] ??
+                            const ['Outro'],
+                        _cityController.text,
+                      );
                       final fields = [
-                        TextFormField(
-                          controller: _cityController,
-                          decoration: InputDecoration(
-                            labelText: strings.pick(
-                              pt: 'Cidade',
-                              en: 'City',
-                              es: 'Ciudad',
-                            ),
+                        DropdownButtonFormField<String>(
+                          initialValue: _optionValue(
+                            _countryController.text,
+                            countryOptions,
                           ),
-                        ),
-                        TextFormField(
-                          controller: _stateController,
-                          decoration: InputDecoration(
-                            labelText: strings.pick(
-                              pt: 'Estado',
-                              en: 'State',
-                              es: 'Estado',
-                            ),
-                          ),
-                        ),
-                        TextFormField(
-                          controller: _countryController,
                           decoration: InputDecoration(
                             labelText: strings.pick(
                               pt: 'Pais',
@@ -1007,6 +1128,85 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                               es: 'Pais',
                             ),
                           ),
+                          items: countryOptions
+                              .map(
+                                (item) => DropdownMenuItem(
+                                  value: item,
+                                  child: Text(item),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() {
+                              _countryController.text = value;
+                              final nextStates =
+                                  _driverStatesByCountry[value] ??
+                                  const ['Outro'];
+                              if (!nextStates.contains(_stateController.text)) {
+                                _stateController.clear();
+                                _cityController.clear();
+                              }
+                            });
+                          },
+                        ),
+                        DropdownButtonFormField<String>(
+                          initialValue: _optionValue(
+                            _stateController.text,
+                            stateOptions,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: strings.pick(
+                              pt: 'Estado',
+                              en: 'State',
+                              es: 'Estado',
+                            ),
+                          ),
+                          items: stateOptions
+                              .map(
+                                (item) => DropdownMenuItem(
+                                  value: item,
+                                  child: Text(item),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() {
+                              _stateController.text = value;
+                              final nextCities =
+                                  _driverCitiesByState[value] ??
+                                  const ['Outro'];
+                              if (!nextCities.contains(_cityController.text)) {
+                                _cityController.clear();
+                              }
+                            });
+                          },
+                        ),
+                        DropdownButtonFormField<String>(
+                          initialValue: _optionValue(
+                            _cityController.text,
+                            cityOptions,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: strings.pick(
+                              pt: 'Cidade',
+                              en: 'City',
+                              es: 'Ciudad',
+                            ),
+                          ),
+                          items: cityOptions
+                              .map(
+                                (item) => DropdownMenuItem(
+                                  value: item,
+                                  child: Text(item),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _cityController.text = value);
+                          },
                         ),
                       ];
 
@@ -1183,6 +1383,17 @@ class _ProfileSheetState extends State<_ProfileSheet> {
     }
     return null;
   }
+
+  List<String> _withCurrentOption(List<String> options, String current) {
+    final normalized = current.trim();
+    if (normalized.isEmpty || options.contains(normalized)) return options;
+    return [normalized, ...options];
+  }
+
+  String? _optionValue(String current, List<String> options) {
+    final normalized = current.trim();
+    return options.contains(normalized) ? normalized : null;
+  }
 }
 
 class _PublicProfileSheet extends StatefulWidget {
@@ -1197,8 +1408,7 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
   final _service = PublicProfileService();
   final _slugController = TextEditingController();
   final _bioController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _bannerController = TextEditingController();
+  String _selectedBannerColor = _publicBannerPalette.first;
   bool _enabled = false;
   bool _rankingOptIn = false;
   bool _loading = true;
@@ -1215,8 +1425,6 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
   void dispose() {
     _slugController.dispose();
     _bioController.dispose();
-    _cityController.dispose();
-    _bannerController.dispose();
     super.dispose();
   }
 
@@ -1229,8 +1437,7 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
         _rankingOptIn = settings.rankingOptIn;
         _slugController.text = settings.publicSlug ?? '';
         _bioController.text = settings.publicBio ?? '';
-        _cityController.text = settings.publicCity ?? '';
-        _bannerController.text = settings.publicBannerUrl ?? '';
+        _selectedBannerColor = _normalizeBannerColor(settings.publicBannerUrl);
         _loading = false;
       });
     } catch (_) {
@@ -1308,9 +1515,9 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                           ),
                           subtitle: Text(
                             strings.pick(
-                              pt: 'Mostra seu nome, foto, cidade e conquistas.',
-                              en: 'Shows your name, photo, city and achievements.',
-                              es: 'Muestra tu nombre, foto, ciudad y conquistas.',
+                              pt: 'Mostra seu nome, foto e conquistas.',
+                              en: 'Shows your name, photo and achievements.',
+                              es: 'Muestra tu nombre, foto y conquistas.',
                             ),
                           ),
                           value: _enabled,
@@ -1329,36 +1536,10 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                           ),
                         ),
                         const SizedBox(height: 14),
-                        TextFormField(
-                          controller: _cityController,
-                          decoration: InputDecoration(
-                            labelText: strings.pick(
-                              pt: 'Cidade',
-                              en: 'City',
-                              es: 'Ciudad',
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        TextFormField(
-                          controller: _bannerController,
-                          decoration: InputDecoration(
-                            labelText: strings.pick(
-                              pt: 'Cor do banner',
-                              en: 'Profile banner',
-                              es: 'Banner del perfil',
-                            ),
-                            hintText: strings.pick(
-                              pt: 'ex: #001BFF',
-                              en: 'e.g. #001BFF',
-                              es: 'ej: #001BFF',
-                            ),
-                            helperText: strings.pick(
-                              pt: 'O visual do perfil publico segue a ideia de banner, como no Discord.',
-                              en: 'Your public profile uses this as a Discord-like banner style.',
-                              es: 'Tu perfil publico usa esto como un banner estilo Discord.',
-                            ),
-                          ),
+                        _BannerPalettePicker(
+                          selectedColor: _selectedBannerColor,
+                          onChanged: (value) =>
+                              setState(() => _selectedBannerColor = value),
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
@@ -1486,8 +1667,8 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
         publicProfileEnabled: _enabled,
         publicSlug: _slugController.text,
         publicBio: _bioController.text,
-        publicCity: _cityController.text,
-        publicBannerUrl: _bannerController.text,
+        publicCity: null,
+        publicBannerUrl: _selectedBannerColor,
         rankingOptIn: _rankingOptIn,
       );
       if (!mounted) return;
@@ -1517,6 +1698,96 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
         setState(() => _saving = false);
       }
     }
+  }
+}
+
+String _normalizeBannerColor(String? value) {
+  final normalized = value?.trim().toUpperCase();
+  if (normalized != null && _publicBannerPalette.contains(normalized)) {
+    return normalized;
+  }
+  return _publicBannerPalette.first;
+}
+
+Color _bannerColorFromHex(String hex) {
+  final clean = hex.replaceFirst('#', '');
+  return Color(int.parse('FF$clean', radix: 16));
+}
+
+class _BannerPalettePicker extends StatelessWidget {
+  const _BannerPalettePicker({
+    required this.selectedColor,
+    required this.onChanged,
+  });
+
+  final String selectedColor;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          strings.pick(
+            pt: 'Cor do banner',
+            en: 'Banner color',
+            es: 'Color del banner',
+          ),
+          style: theme.textTheme.labelLarge,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          strings.pick(
+            pt: 'Escolha uma cor liberada para o visual do seu perfil publico.',
+            en: 'Choose an allowed color for your public profile look.',
+            es: 'Elige un color permitido para el visual de tu perfil publico.',
+          ),
+          style: theme.textTheme.bodySmall,
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: _publicBannerPalette.map((hex) {
+            final selected = selectedColor == hex;
+            return InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => onChanged(hex),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: _bannerColorFromHex(hex),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: selected ? Colors.white : theme.dividerColor,
+                    width: selected ? 2 : 1,
+                  ),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: _bannerColorFromHex(
+                              hex,
+                            ).withValues(alpha: 0.42),
+                            blurRadius: 18,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: selected
+                    ? const Icon(Icons.check_rounded, color: Colors.white)
+                    : null,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
   }
 }
 

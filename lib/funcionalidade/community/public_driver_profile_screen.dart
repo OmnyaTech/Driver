@@ -52,6 +52,10 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
         body: Center(child: Text('Esse perfil nao esta disponivel.')),
       );
     }
+    final bannerValue = profile.publicBannerUrl?.trim();
+    final bannerColor = _tryBannerColor(bannerValue) ?? const Color(0xFF001BFF);
+    final bannerIsImage = _isRemoteBanner(bannerValue);
+    final tierColors = _tierColors(profile.tier);
 
     return OmnyaSubPageScaffold(
       title: 'Perfil',
@@ -62,27 +66,27 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
-              image: (profile.publicBannerUrl ?? '').trim().isEmpty
-                  ? null
-                  : DecorationImage(
-                      image: NetworkImage(profile.publicBannerUrl!.trim()),
+              image: bannerIsImage
+                  ? DecorationImage(
+                      image: NetworkImage(bannerValue!),
                       fit: BoxFit.cover,
                       colorFilter: ColorFilter.mode(
                         Colors.black.withValues(alpha: 0.45),
                         BlendMode.darken,
                       ),
-                    ),
-              gradient: (profile.publicBannerUrl ?? '').trim().isEmpty
-                  ? const LinearGradient(
+                    )
+                  : null,
+              gradient: bannerIsImage
+                  ? null
+                  : LinearGradient(
                       colors: [
-                        Color(0xFF111522),
-                        Color(0xFF1A1F31),
-                        Color(0xFF0000CD),
+                        const Color(0xFF111522),
+                        bannerColor.withValues(alpha: 0.52),
+                        bannerColor,
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                    )
-                  : null,
+                    ),
               border: Border.all(color: Theme.of(context).dividerColor),
             ),
             child: Column(
@@ -130,9 +134,12 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                   children: [
                     _PublicPill(label: '#${profile.publicScore} pts'),
                     _PublicPill(label: profile.levelTitle),
-                    _PublicPill(label: 'Liga ${profile.tier}'),
-                    if ((profile.publicCity ?? '').isNotEmpty)
-                      _PublicPill(label: profile.publicCity!),
+                    _PublicPill(
+                      label: 'Liga ${profile.tier}',
+                      background: tierColors.background,
+                      foreground: tierColors.foreground,
+                      border: tierColors.border,
+                    ),
                     _PublicPill(label: '${profile.medalsCount} conquistas'),
                   ],
                 ),
@@ -200,7 +207,7 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                 child: _PublicStatCard(
                   title: 'No app ha',
                   value: '${profile.accountDays} dias',
-                  subtitle: 'jornada com Omnya',
+                  subtitle: 'jornada com Driver',
                 ),
               ),
             ],
@@ -227,7 +234,7 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                       spacing: 10,
                       runSpacing: 10,
                       children: profile.badges
-                          .map((badge) => Chip(label: Text(badge)))
+                          .map((badge) => _PublicBadgePill(label: badge))
                           .toList(),
                     ),
                   ],
@@ -278,26 +285,128 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
 }
 
 class _PublicPill extends StatelessWidget {
-  const _PublicPill({required this.label});
+  const _PublicPill({
+    required this.label,
+    this.background,
+    this.foreground,
+    this.border,
+  });
 
   final String label;
+  final Color? background;
+  final Color? foreground;
+  final Color? border;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
+        color: background ?? Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: border ?? Colors.white10),
       ),
       child: Text(
         label,
         style: Theme.of(
           context,
-        ).textTheme.labelLarge?.copyWith(color: Colors.white),
+        ).textTheme.labelLarge?.copyWith(color: foreground ?? Colors.white),
       ),
     );
   }
+}
+
+class _PublicBadgePill extends StatelessWidget {
+  const _PublicBadgePill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF001BFF).withValues(alpha: 0.26),
+            const Color(0xFF00D4FF).withValues(alpha: 0.14),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFF00D4FF).withValues(alpha: 0.5),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.workspace_premium_rounded, size: 16),
+          const SizedBox(width: 8),
+          Text(label, style: Theme.of(context).textTheme.labelMedium),
+        ],
+      ),
+    );
+  }
+}
+
+bool _isRemoteBanner(String? value) =>
+    value != null &&
+    RegExp(r'^https?://', caseSensitive: false).hasMatch(value);
+
+Color? _tryBannerColor(String? value) {
+  if (value == null) return null;
+  final match = RegExp(r'^#?([0-9a-fA-F]{6})$').firstMatch(value.trim());
+  if (match == null) return null;
+  return Color(int.parse('FF${match.group(1)}', radix: 16));
+}
+
+class _TierColors {
+  const _TierColors({
+    required this.background,
+    required this.foreground,
+    required this.border,
+  });
+
+  final Color background;
+  final Color foreground;
+  final Color border;
+}
+
+_TierColors _tierColors(String tier) {
+  final normalized = tier.toLowerCase();
+  if (normalized.contains('lend')) {
+    return const _TierColors(
+      background: Color(0xFF38115E),
+      foreground: Color(0xFFFFE7FF),
+      border: Color(0xFFFF4DFF),
+    );
+  }
+  if (normalized.contains('diam')) {
+    return const _TierColors(
+      background: Color(0xFF083344),
+      foreground: Color(0xFFE0F7FF),
+      border: Color(0xFF67E8F9),
+    );
+  }
+  if (normalized.contains('ouro')) {
+    return const _TierColors(
+      background: Color(0xFF422006),
+      foreground: Color(0xFFFFF7CC),
+      border: Color(0xFFFACC15),
+    );
+  }
+  if (normalized.contains('prata')) {
+    return const _TierColors(
+      background: Color(0xFF334155),
+      foreground: Color(0xFFF8FAFC),
+      border: Color(0xFFCBD5E1),
+    );
+  }
+  return const _TierColors(
+    background: Color(0xFF451A03),
+    foreground: Color(0xFFFFEDD5),
+    border: Color(0xFFCD7F32),
+  );
 }
 
 class _PublicStatCard extends StatelessWidget {
