@@ -36,7 +36,8 @@ Checklist gratuito para ativar envio real no Android:
    - `DRIVER_PUSH_SECRET`
    - Preferencial: `DRIVER_FIREBASE_PROJECT_ID` e
      `DRIVER_FIREBASE_SERVICE_ACCOUNT_JSON`
-   - Alternativa legada: `DRIVER_FCM_SERVER_KEY` ou `FCM_SERVER_KEY`
+   - Alternativas/fallbacks: `FIREBASE_SERVICE_ACCOUNT_JSON`,
+     `FCM_SERVICE_ACCOUNT_JSON`, `DRIVER_FCM_SERVER_KEY` ou `FCM_SERVER_KEY`
 8. Execute o SQL manual `028_driver_push_cron.sql` trocando os placeholders:
    - `<SUPABASE_SERVICE_ROLE_KEY>`
    - `<DRIVER_PUSH_SERVICE_SECRET>`

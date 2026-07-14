@@ -44,7 +44,8 @@ const resolveServerKey = () =>
 const resolveFirebaseServiceAccount = () => {
   const raw =
     Deno.env.get("DRIVER_FIREBASE_SERVICE_ACCOUNT_JSON") ??
-    Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
+    Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON") ??
+    Deno.env.get("FCM_SERVICE_ACCOUNT_JSON");
   if (!raw) return null;
 
   try {

@@ -19,6 +19,7 @@ migrate_working_dir/
 *.secrets
 *.tmp
 *.bak
+.driver_push_secret.local
 
 # IntelliJ related
 *.iml
@@ -61,6 +62,7 @@ crash.log
 android/key.properties
 *.jks
 *.keystore
+android/app/google-services.json
 
 # Public repository exclusions
 Planejamento/Historico_Chat_Levantamento_ChatGPT.md
