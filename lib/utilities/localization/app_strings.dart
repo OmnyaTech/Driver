@@ -258,9 +258,9 @@ class AppStrings {
   );
 
   String get appPreferencesDescription => pick(
-    pt: 'Escolha como o Omnya Driver fala com voce e mostra seus valores.',
-    en: 'Choose how Omnya Driver talks to you and shows your values.',
-    es: 'Elige como Omnya Driver habla contigo y muestra tus valores.',
+    pt: 'Escolha como o Driver fala com voce e mostra seus valores.',
+    en: 'Choose how Driver talks to you and shows your values.',
+    es: 'Elige como Driver habla contigo y muestra tus valores.',
   );
 
   String languageLabel(String code) => switch (code) {
@@ -323,9 +323,9 @@ class AppStrings {
         es: 'Reserva apagada',
       ),
       DriverReserveMode.dailyPercent => pick(
-        pt: '${_percentText(preference.dailyPercentage)}% do que sobrar',
-        en: '${_percentText(preference.dailyPercentage)}% of what is left',
-        es: '${_percentText(preference.dailyPercentage)}% de lo que sobre',
+        pt: '${_percentText(preference.dailyPercentage)}% do lucro do dia',
+        en: '${_percentText(preference.dailyPercentage)}% of daily profit',
+        es: '${_percentText(preference.dailyPercentage)}% de la ganancia diaria',
       ),
       DriverReserveMode.perDeliveryFixed => pick(
         pt: '${currency(preference.amountPerDelivery)} por entrega',
@@ -520,9 +520,9 @@ class AppStrings {
   );
 
   String get aboutOmnyaDriverBody => pick(
-    pt: 'O Omnya Driver foi criado para quem vive de entregas e precisa entender o que realmente sobra no fim do dia.',
-    en: 'Omnya Driver was created for people who live from deliveries and need to understand what is really left at the end of the day.',
-    es: 'Omnya Driver fue creado para quienes viven de entregas y necesitan entender lo que realmente queda al final del dia.',
+    pt: 'O Driver foi criado para quem vive de entregas e precisa entender o lucro real no fim do dia.',
+    en: 'Driver was created for people who live from deliveries and need to understand real profit at the end of the day.',
+    es: 'Driver fue creado para quienes viven de entregas y necesitan entender la ganancia real al final del dia.',
   );
 
   String get aboutOmnyaDriverWhy => pick(
@@ -576,9 +576,9 @@ class AppStrings {
   );
 
   String get termsOfUseBody => pick(
-    pt: 'Ao criar uma conta ou usar o Omnya Driver, voce concorda com estes termos. Se algo aqui nao fizer sentido para voce, fale com a gente antes de continuar.',
-    en: 'By creating an account or using Omnya Driver, you agree to these terms. If anything here does not make sense to you, talk to us before continuing.',
-    es: 'Al crear una cuenta o usar Omnya Driver, aceptas estos terminos. Si algo aqui no tiene sentido para ti, habla con nosotros antes de continuar.',
+    pt: 'Ao criar uma conta ou usar o Driver, voce concorda com estes termos. Se algo aqui nao fizer sentido para voce, fale com a gente antes de continuar.',
+    en: 'By creating an account or using Driver, you agree to these terms. If anything here does not make sense to you, talk to us before continuing.',
+    es: 'Al crear una cuenta o usar Driver, aceptas estos terminos. Si algo aqui no tiene sentido para ti, habla con nosotros antes de continuar.',
   );
 
   String get termsOfUseService => pick(

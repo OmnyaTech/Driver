@@ -152,7 +152,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   Text('Bloqueio do app', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
                   Text(
-                    'Proteja o Omnya Driver quando sair e voltar para o app.',
+                    'Proteja o Driver quando sair e voltar para o app.',
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 14),

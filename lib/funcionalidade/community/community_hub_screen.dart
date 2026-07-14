@@ -266,9 +266,9 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
       await Clipboard.setData(
         ClipboardData(
           text: strings.pick(
-            pt: 'Me encontre no Omnya Driver: @$slug\n$url',
-            en: 'Find me on Omnya Driver: @$slug\n$url',
-            es: 'Encuentrame en Omnya Driver: @$slug\n$url',
+            pt: 'Me encontre no Driver: @$slug\n$url',
+            en: 'Find me on Driver: @$slug\n$url',
+            es: 'Encuentrame en Driver: @$slug\n$url',
           ),
         ),
       );

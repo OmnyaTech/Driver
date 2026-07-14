@@ -50,8 +50,8 @@ class MfaService {
   Future<MfaEnrollmentDraft> startTotpEnrollment() async {
     final response = await _authService.requireClient().auth.mfa.enroll(
       factorType: FactorType.totp,
-      issuer: 'Omnya Driver',
-      friendlyName: 'Omnya Driver',
+      issuer: 'Driver',
+      friendlyName: 'Driver',
     );
     final totp = response.totp;
     if (totp == null) {

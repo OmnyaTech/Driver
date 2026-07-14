@@ -1,15 +1,16 @@
 # Estado Atual do Sistema
 
-Atualizado em 2026-07-10.
+Atualizado em 2026-07-14.
 
 ## Visao geral
 
-O Omnya Driver ja opera com:
+O Driver, produto da OmnyaTech, ja opera com:
 
 - Flutter como client principal;
 - Supabase Auth real com onboarding real;
 - schema isolado `driver` no mesmo projeto Supabase;
 - Turnstile endurecendo login, cadastro e OAuth;
+- captcha invisivel no APK e visivel na web;
 - dashboard autenticado com modulos operacionais;
 - relatorios com filtro por periodo;
 - preparacao para billing real via Asaas;
@@ -21,10 +22,14 @@ O Omnya Driver ja opera com:
 - login e cadastro por e-mail;
 - login social Google e Microsoft;
 - Turnstile no fluxo de auth;
-- onboarding em 3 etapas:
+- onboarding em 5 etapas:
   - perfil;
+  - regiao;
+  - preferencias;
   - primeiro veiculo;
   - primeira plataforma;
+- telefone formatado por pais, salvando o numero nacional sem DDI;
+- regiao selecionavel para Brasil, com estados brasileiros e cidades de Goias;
 - criacao e listagem de jornadas;
 - criacao e listagem de despesas de percurso;
 - criacao e listagem de abastecimentos;
@@ -37,11 +42,13 @@ O Omnya Driver ja opera com:
   - retirada;
   - historico de movimentacoes;
   - saldo disponivel baseado no resultado operacional;
-- criacao e listagem de veiculos;
+- criacao e listagem de veiculos com tipo, marca/modelo sugeridos e
+  combustivel multi-selecao;
 - criacao e listagem de plataformas;
 - jornadas com detalhamento por plataforma e validacoes melhores;
 - dashboard com metricas consolidadas em cima dos dados reais;
 - dashboard com filtro por periodo;
+- tooltip explicativo no grafico "Como o dinheiro entrou";
 - relatorios operacionais via RPC no Supabase;
 - tela de assinaturas com checkout externo e historico de eventos;
 - area developer no app para:
@@ -50,6 +57,7 @@ O Omnya Driver ja opera com:
   - visualizar historico da conta atual;
   - visualizar auditoria administrativa;
 - regras basicas de plano para limitar multiplos veiculos/plataformas no free.
+- metricas developer de assinantes pagantes excluem gift e developer.
 
 ## SQL manual disponivel
 
@@ -77,6 +85,14 @@ O Omnya Driver ja opera com:
 - `sql/manual/008_driver_goal_balance_functions.sql`
   Functions seguras para saldo disponivel e movimentacoes de objetivos.
 
+- `sql/manual/037_driver_onboarding_vehicle_metrics_refinements.sql`
+  Adiciona `vehicle_type`, `fuel_types` e corrige metricas de assinantes pagos.
+
+## Documentacao operacional adicional
+
+- `docs/supabase_auth_email_templates_omnyatech.md`
+  Assuntos e HTML para padronizar e-mails Supabase Auth como OmnyaTech.
+
 ## Edge Functions disponiveis
 
 - `supabase/functions/driver-verify-turnstile`
@@ -93,9 +109,12 @@ O Omnya Driver ja opera com:
 - publicar as Edge Functions novas do Driver;
 - configurar secrets do Asaas no Supabase;
 - configurar webhook do Asaas apontando para a function do Driver;
-- executar os SQLs `006_driver_reporting_and_audit.sql` e
-  `007_driver_billing_sync.sql` em cada ambiente;
+- executar os SQLs manuais pendentes em cada ambiente, incluindo o `037` antes
+  de usar os novos campos de veiculo em producao;
 - validar checkout, webhook e sincronizacao de plano real.
+- `flutter test` pode falhar quando o workspace esta em um caminho com
+  apostrofo, como `OmnyaTech Project's`, por erro do listener gerado pelo
+  Flutter. `flutter analyze` segue funcionando nesse caminho.
 
 ## Proximo foco tecnico recomendado
 

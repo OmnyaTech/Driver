@@ -26,9 +26,11 @@ class VehicleService {
             brand: row['brand'].toString(),
             model: row['model'].toString(),
             active: row['active'] as bool? ?? true,
+            type: row['vehicle_type'] as String?,
             modelYear: row['model_year'] as int?,
             plate: row['plate'] as String?,
             fuelType: row['fuel_type'] as String?,
+            fuelTypes: _parseStringList(row['fuel_types']),
             averageConsumption: _parseDouble(row['average_consumption']),
           ),
         )
@@ -38,9 +40,11 @@ class VehicleService {
   Future<void> createVehicle({
     required String brand,
     required String model,
+    String? type,
     String? year,
     String? plate,
     String? fuelType,
+    List<String> fuelTypes = const [],
     String? averageConsumption,
   }) async {
     final client = _authService.requireClient();
@@ -53,9 +57,13 @@ class VehicleService {
       'user_id': user.id,
       'brand': brand.trim(),
       'model': model.trim(),
+      'vehicle_type': _normalizeString(type),
       'model_year': _stringToInt(year),
       'plate': _normalizeString(plate),
-      'fuel_type': _normalizeString(fuelType),
+      'fuel_type': _normalizeString(
+        fuelTypes.isNotEmpty ? fuelTypes.join(', ') : fuelType,
+      ),
+      'fuel_types': _normalizeFuelTypes(fuelTypes, fallback: fuelType),
       'average_consumption': _stringToDouble(averageConsumption),
     });
   }
@@ -64,9 +72,11 @@ class VehicleService {
     required String id,
     required String brand,
     required String model,
+    String? type,
     String? year,
     String? plate,
     String? fuelType,
+    List<String> fuelTypes = const [],
     String? averageConsumption,
     required bool active,
   }) async {
@@ -77,9 +87,13 @@ class VehicleService {
         .update({
           'brand': brand.trim(),
           'model': model.trim(),
+          'vehicle_type': _normalizeString(type),
           'model_year': _stringToInt(year),
           'plate': _normalizeString(plate),
-          'fuel_type': _normalizeString(fuelType),
+          'fuel_type': _normalizeString(
+            fuelTypes.isNotEmpty ? fuelTypes.join(', ') : fuelType,
+          ),
+          'fuel_types': _normalizeFuelTypes(fuelTypes, fallback: fuelType),
           'average_consumption': _stringToDouble(averageConsumption),
           'active': active,
           'updated_at': DateTime.now().toUtc().toIso8601String(),
@@ -112,6 +126,36 @@ class VehicleService {
   double? _parseDouble(Object? value) {
     if (value == null) return null;
     return double.tryParse(value.toString());
+  }
+
+  List<String> _parseStringList(Object? value) {
+    if (value == null) return const [];
+    if (value is List) {
+      return value
+          .map((item) => item.toString().trim())
+          .where((item) => item.isNotEmpty)
+          .toList();
+    }
+    final raw = value.toString().trim();
+    if (raw.isEmpty || raw == '{}') return const [];
+    return raw
+        .replaceAll('{', '')
+        .replaceAll('}', '')
+        .split(',')
+        .map((item) => item.trim().replaceAll('"', ''))
+        .where((item) => item.isNotEmpty)
+        .toList();
+  }
+
+  List<String> _normalizeFuelTypes(List<String> values, {String? fallback}) {
+    final normalized = values
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toSet()
+        .toList();
+    if (normalized.isNotEmpty) return normalized;
+    final legacy = _normalizeString(fallback);
+    return legacy == null ? const [] : [legacy];
   }
 
   double? _stringToDouble(String? value) {

@@ -55,7 +55,7 @@ class ActiveJourneyNotificationService {
         _channelId,
         _channelName,
         channelDescription:
-            'Mostra que existe uma jornada em andamento no Omnya Driver.',
+            'Mostra que existe uma jornada em andamento no Driver.',
         importance: Importance.high,
         priority: Priority.high,
         ongoing: true,

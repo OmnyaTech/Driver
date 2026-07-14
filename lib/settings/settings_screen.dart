@@ -715,7 +715,7 @@ class _SettingsHeroCard extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   ProfileAvatar(
-                    displayName: profile?.displayName ?? 'Omnya Driver',
+                    displayName: profile?.displayName ?? 'Driver',
                     avatarUrl: profile?.avatarUrl,
                     radius: 28,
                     showBorder: true,
@@ -1528,9 +1528,9 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                           controller: _slugController,
                           decoration: InputDecoration(
                             labelText: strings.pick(
-                              pt: 'Seu @ no Omnya Driver',
-                              en: 'Your @ on Omnya Driver',
-                              es: 'Tu @ en Omnya Driver',
+                              pt: 'Seu @ no Driver',
+                              en: 'Your @ on Driver',
+                              es: 'Tu @ en Driver',
                             ),
                             hintText: 'ex: yan-driver',
                           ),
@@ -2116,9 +2116,9 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                     ChoiceChip(
                       label: Text(
                         strings.pick(
-                          pt: '% do que sobrar',
-                          en: '% of what is left',
-                          es: '% de lo que sobra',
+                          pt: '% do lucro do dia',
+                          en: '% of daily profit',
+                          es: '% de la ganancia diaria',
                         ),
                       ),
                       selected: _mode == DriverReserveMode.dailyPercent,
@@ -2150,9 +2150,9 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                     ),
                     decoration: const InputDecoration(suffixText: '%').copyWith(
                       labelText: strings.pick(
-                        pt: 'Percentual do que sobrar',
-                        en: 'Percent of what is left',
-                        es: 'Porcentaje de lo que sobra',
+                        pt: 'Percentual do lucro',
+                        en: 'Profit percentage',
+                        es: 'Porcentaje de ganancia',
                       ),
                       hintText: strings.pick(
                         pt: 'Ex: 30',
@@ -2164,9 +2164,9 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                   const SizedBox(height: 10),
                   Text(
                     strings.pick(
-                      pt: 'A sugestao usa o valor que sobrou no periodo atual.',
-                      en: 'The suggestion uses what is left in the current period.',
-                      es: 'La sugerencia usa lo que sobra en el periodo actual.',
+                      pt: 'A sugestao usa o lucro do periodo atual.',
+                      en: 'The suggestion uses the profit from the current period.',
+                      es: 'La sugerencia usa la ganancia del periodo actual.',
                     ),
                     style: theme.textTheme.bodySmall,
                   ),

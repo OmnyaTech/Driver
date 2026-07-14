@@ -1,6 +1,6 @@
 # Checklist Manual de Ambiente e Integracoes
 
-Atualizado em 2026-07-10.
+Atualizado em 2026-07-14.
 
 ## Conceito importante
 
@@ -15,7 +15,7 @@ Existem dois redirecionamentos diferentes no OAuth:
 2. Supabase -> App final
    Esse redirect e controlado pelo `redirectTo` enviado pelo app e pela allow
    list em `Authentication > URL Configuration` no Supabase.
-   Para o Omnya Driver, o app usa:
+   Para o Driver, o app usa:
 
    `omnyadriver://auth/callback`
 
@@ -125,10 +125,10 @@ No painel do Supabase:
 
 Depois das configuracoes:
 
-1. Testar cadastro por e-mail no Omnya Driver.
-2. Testar login por e-mail no Omnya Driver.
-3. Testar login Google no Omnya Driver.
-4. Testar login Microsoft no Omnya Driver.
+1. Testar cadastro por e-mail no Driver.
+2. Testar login por e-mail no Driver.
+3. Testar login Google no Driver.
+4. Testar login Microsoft no Driver.
 5. Confirmar retorno ao app via `omnyadriver://auth/callback`.
 6. Confirmar criacao/atualizacao em `driver.profiles`.
 
@@ -151,6 +151,8 @@ Executar manualmente no Supabase SQL Editor:
 - `sql/manual/006_driver_reporting_and_audit.sql`
 - `sql/manual/007_driver_billing_sync.sql`
 - `sql/manual/008_driver_goal_balance_functions.sql`
+- scripts posteriores ainda pendentes no ambiente, em ordem numerica;
+- `sql/manual/037_driver_onboarding_vehicle_metrics_refinements.sql`
 
 Esses scripts habilitam:
 
@@ -159,6 +161,21 @@ Esses scripts habilitam:
 - funcoes RPC de dashboard por periodo;
 - funcao RPC de relatorio operacional;
 - sincronizacao de assinatura vinda do provedor externo.
+- novos campos de veiculo (`vehicle_type` e `fuel_types`);
+- painel developer com assinantes pagantes sem contar gift/developer.
+
+## 7.1. E-mails Supabase Auth
+
+Se nao for possivel separar templates por aplicativo no projeto Supabase
+compartilhado, usar a marca padrao OmnyaTech.
+
+Referencia pronta para copiar:
+
+- `docs/supabase_auth_email_templates_omnyatech.md`
+
+Aplicar em `Authentication > Emails` para Confirm sign up, Invite user, Magic
+link/OTP, Change email address, Reset password, Reauthentication e notificacoes
+de seguranca.
 
 ## 8. Secrets de billing no Supabase
 
@@ -219,6 +236,8 @@ Depois de publicar tudo:
 6. Confirmar historico em `driver.subscriptions`.
 7. Abrir `Relatorios` e validar filtro por periodo.
 8. Abrir a area developer e validar a lista de auditoria.
+9. Cadastrar veiculo com mais de um combustivel.
+10. Conferir que gift/developer nao entram na metrica `Assinantes`.
 
 ## O que nao fazer
 

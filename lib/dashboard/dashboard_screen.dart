@@ -722,6 +722,16 @@ class _OverviewTabState extends State<_OverviewTab> {
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),
+                      Tooltip(
+                        message:
+                            'Mostra a receita registrada nas jornadas do periodo selecionado. Use os filtros para comparar dia, semana ou mes.',
+                        child: Icon(
+                          Icons.info_outline,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
                       Text(
                         _periodDisplayLabel,
                         style: Theme.of(context).textTheme.labelLarge,

@@ -7,7 +7,11 @@ import 'supabase_config.dart';
 
 final class AppBootstrap {
   static Future<void> initialize() async {
-    await ActiveJourneyNotificationService.instance.initialize();
+    try {
+      await ActiveJourneyNotificationService.instance.initialize();
+    } catch (_) {
+      // Local notification setup cannot block the first Flutter frame.
+    }
     await _initializeFirebaseDiagnostics();
 
     if (!SupabaseRuntimeConfig.isConfigured) {

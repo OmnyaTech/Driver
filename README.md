@@ -1,4 +1,4 @@
-# Omnya Driver
+# Driver
 
 Aplicativo Flutter da OmnyaTech para controle de jornadas, ganhos, despesas,
 veiculos, objetivos e evolucao de entregadores e motofretistas.
@@ -32,14 +32,21 @@ flutter build apk `
 
 ## Estado atual
 
-- Projeto Flutter inicial criado.
-- Arquitetura base montada a partir do padrao de organizacao do `ciacat`.
-- Base de autenticacao, perfis, papeis e planos desenhada para o mesmo projeto
-  Supabase do OmnyaFinance, em schema isolado `driver`.
-- Integracao real com Supabase inicializada com login por e-mail.
-- Bootstrap automatico de `driver.profiles` apos autenticacao.
-- SQL inicial preparado para execucao manual no SQL Editor.
-- Documentacao viva criada em `docs/engineering`.
+- App Flutter instalavel chamado **Driver**, produto da OmnyaTech.
+- Supabase Auth compartilhado, com dados do app isolados no schema `driver`.
+- Login por e-mail, Google e Microsoft com Turnstile; no APK, o captcha roda
+  internamente/invisivel, mantendo a exigencia ativa para a web.
+- Onboarding com telefone formatado por pais, regiao selecionavel para Brasil
+  e cidades de Goias, reserva automatica com copy baseada em lucro, primeiro
+  veiculo e primeira plataforma.
+- Veiculos com tipo selecionavel, marca/modelo digitaveis com sugestoes,
+  combustivel multi-selecao e fallback para dados legados.
+- Dashboard, jornadas, despesas, abastecimentos, manutencoes, objetivos,
+  relatorios, assinaturas, comunidade, seguranca e area developer em operacao.
+- SQLs manuais versionados em `sql/manual`, incluindo o `037` para refinamentos
+  de onboarding/veiculos e metricas pagas de developer.
+- Templates de e-mail Supabase Auth padronizados em
+  `docs/supabase_auth_email_templates_omnyatech.md`.
 
 ## Pastas principais
 

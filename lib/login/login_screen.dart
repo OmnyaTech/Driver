@@ -228,7 +228,7 @@ class _LoginHero extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Omnya Driver',
+                        'Driver',
                         style: theme.textTheme.titleLarge?.copyWith(
                           color: Colors.white,
                           fontSize: compact ? 20 : 24,
@@ -256,7 +256,7 @@ class _LoginHero extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Entre, registre a jornada e veja rapidinho quanto entrou, quanto sobrou e onde vale melhorar amanha.',
+              'Entre, registre a jornada e veja rapidinho quanto entrou, quanto lucrou e onde vale melhorar amanha.',
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: Colors.white.withValues(alpha: 0.78),
               ),

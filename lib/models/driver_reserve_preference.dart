@@ -15,7 +15,7 @@ class DriverReservePreference {
     return switch (mode) {
       DriverReserveMode.none => 'Reserva automatica desativada',
       DriverReserveMode.dailyPercent =>
-        '${dailyPercentage.toStringAsFixed(dailyPercentage.truncateToDouble() == dailyPercentage ? 0 : 1)}% do que sobrar',
+        '${dailyPercentage.toStringAsFixed(dailyPercentage.truncateToDouble() == dailyPercentage ? 0 : 1)}% do lucro do dia',
       DriverReserveMode.perDeliveryFixed => 'Valor por entrega concluida',
     };
   }
@@ -24,7 +24,7 @@ class DriverReservePreference {
     return switch (mode) {
       DriverReserveMode.none => 'Reserva automatica desativada',
       DriverReserveMode.dailyPercent =>
-        '${dailyPercentage.toStringAsFixed(dailyPercentage.truncateToDouble() == dailyPercentage ? 0 : 1)}% do que sobrar',
+        '${dailyPercentage.toStringAsFixed(dailyPercentage.truncateToDouble() == dailyPercentage ? 0 : 1)}% do lucro do dia',
       DriverReserveMode.perDeliveryFixed =>
         '${currency(amountPerDelivery)} por entrega concluida',
     };

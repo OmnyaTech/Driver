@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/app_vehicle.dart';
 import '../../services/plan_access_service.dart';
 import '../../services/vehicle_service.dart';
+import '../../utilities/forms/driver_form_catalogs.dart';
 import '../../utilities/localization/app_strings.dart';
 import '../../utilities/state/app_session.dart';
 import '../../utilities/ui/omnya_shell.dart';
@@ -97,9 +98,10 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
             ({
               required brand,
               required model,
+              required type,
               required year,
               required plate,
-              required fuelType,
+              required fuelTypes,
               required averageConsumption,
               required active,
             }) async {
@@ -123,9 +125,10 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                 await _vehicleService.createVehicle(
                   brand: brand,
                   model: model,
+                  type: type,
                   year: year,
                   plate: plate,
-                  fuelType: fuelType,
+                  fuelTypes: fuelTypes,
                   averageConsumption: averageConsumption,
                 );
                 return;
@@ -135,9 +138,10 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                 id: initialVehicle.id,
                 brand: brand,
                 model: model,
+                type: type,
                 year: year,
                 plate: plate,
-                fuelType: fuelType,
+                fuelTypes: fuelTypes,
                 averageConsumption: averageConsumption,
                 active: active,
               );
@@ -285,7 +289,9 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                   [
                     if (vehicle.modelYear != null)
                       '${strings.pick(pt: 'Ano', en: 'Year', es: 'Ano')} ${vehicle.modelYear}',
-                    if (vehicle.fuelType != null) vehicle.fuelType,
+                    if (vehicle.type != null) vehicle.type,
+                    if (vehicle.effectiveFuelTypes.isNotEmpty)
+                      vehicle.effectiveFuelTypes.join(', '),
                     vehicle.active
                         ? strings.pick(pt: 'Ativo', en: 'Active', es: 'Activo')
                         : strings.pick(
@@ -366,6 +372,12 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
 
   IconData _vehicleIcon(AppVehicle vehicle) {
     final label = '${vehicle.brand} ${vehicle.model}'.toLowerCase();
+    final type = vehicle.type?.toLowerCase();
+    if (type == 'bicicleta') return Icons.pedal_bike_outlined;
+    if (type == 'patinete') return Icons.electric_scooter_outlined;
+    if (type == 'van') return Icons.airport_shuttle_outlined;
+    if (type == 'carro') return Icons.directions_car_outlined;
+    if (type == 'moto') return Icons.two_wheeler_outlined;
     if (label.contains('van')) return Icons.airport_shuttle_outlined;
     if (label.contains('car') ||
         label.contains('auto') ||
@@ -390,9 +402,10 @@ class _VehicleFormDialog extends StatefulWidget {
   final Future<void> Function({
     required String brand,
     required String model,
+    required String type,
     required String year,
     required String plate,
-    required String fuelType,
+    required List<String> fuelTypes,
     required String averageConsumption,
     required bool active,
   })
@@ -408,8 +421,9 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
   late final TextEditingController _modelController;
   late final TextEditingController _yearController;
   late final TextEditingController _plateController;
-  late final TextEditingController _fuelTypeController;
   late final TextEditingController _consumptionController;
+  late String _vehicleType;
+  late List<String> _fuelTypes;
   late bool _active;
   bool _saving = false;
   String? _submitError;
@@ -424,12 +438,11 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
       text: initialVehicle?.modelYear?.toString() ?? '',
     );
     _plateController = TextEditingController(text: initialVehicle?.plate ?? '');
-    _fuelTypeController = TextEditingController(
-      text: initialVehicle?.fuelType ?? '',
-    );
     _consumptionController = TextEditingController(
       text: initialVehicle?.averageConsumption?.toStringAsFixed(2) ?? '',
     );
+    _vehicleType = initialVehicle?.type ?? vehicleTypes.first;
+    _fuelTypes = initialVehicle?.effectiveFuelTypes.toList() ?? const [];
     _active = initialVehicle?.active ?? true;
   }
 
@@ -439,7 +452,6 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
     _modelController.dispose();
     _yearController.dispose();
     _plateController.dispose();
-    _fuelTypeController.dispose();
     _consumptionController.dispose();
     super.dispose();
   }
@@ -456,15 +468,78 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(
-                controller: _brandController,
-                decoration: const InputDecoration(labelText: 'Marca'),
-                validator: _required,
+              DropdownButtonFormField<String>(
+                initialValue: _vehicleType,
+                decoration: const InputDecoration(labelText: 'Tipo'),
+                items: vehicleTypes
+                    .map(
+                      (type) =>
+                          DropdownMenuItem(value: type, child: Text(type)),
+                    )
+                    .toList(),
+                onChanged: (value) =>
+                    setState(() => _vehicleType = value ?? vehicleTypes.first),
               ),
-              TextFormField(
-                controller: _modelController,
-                decoration: const InputDecoration(labelText: 'Modelo'),
-                validator: _required,
+              Autocomplete<String>(
+                initialValue: TextEditingValue(text: _brandController.text),
+                optionsBuilder: (value) {
+                  final query = value.text.trim().toLowerCase();
+                  if (query.isEmpty) return vehicleBrands;
+                  return vehicleBrands.where(
+                    (brand) => brand.toLowerCase().contains(query),
+                  );
+                },
+                fieldViewBuilder:
+                    (context, controller, focusNode, onFieldSubmitted) {
+                      if (controller.text != _brandController.text) {
+                        controller.text = _brandController.text;
+                      }
+                      return TextFormField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        decoration: const InputDecoration(labelText: 'Marca'),
+                        onChanged: (value) => _brandController.text = value,
+                        validator: _required,
+                      );
+                    },
+                onSelected: (value) {
+                  _brandController.text = value;
+                  setState(() => _modelController.clear());
+                },
+              ),
+              Autocomplete<String>(
+                initialValue: TextEditingValue(text: _modelController.text),
+                optionsBuilder: (value) {
+                  final models =
+                      vehicleModelsByBrand[_brandController.text.trim()] ??
+                      vehicleModelsByBrand.entries
+                          .firstWhere(
+                            (entry) =>
+                                entry.key.toLowerCase() ==
+                                _brandController.text.trim().toLowerCase(),
+                            orElse: () => const MapEntry('', <String>[]),
+                          )
+                          .value;
+                  final query = value.text.trim().toLowerCase();
+                  if (query.isEmpty) return models;
+                  return models.where(
+                    (model) => model.toLowerCase().contains(query),
+                  );
+                },
+                fieldViewBuilder:
+                    (context, controller, focusNode, onFieldSubmitted) {
+                      if (controller.text != _modelController.text) {
+                        controller.text = _modelController.text;
+                      }
+                      return TextFormField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        decoration: const InputDecoration(labelText: 'Modelo'),
+                        onChanged: (value) => _modelController.text = value,
+                        validator: _required,
+                      );
+                    },
+                onSelected: (value) => _modelController.text = value,
               ),
               TextFormField(
                 controller: _yearController,
@@ -475,9 +550,38 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
                 controller: _plateController,
                 decoration: const InputDecoration(labelText: 'Placa'),
               ),
-              TextFormField(
-                controller: _fuelTypeController,
-                decoration: const InputDecoration(labelText: 'Combustivel'),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 6),
+                  child: Text(
+                    'Combustivel',
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                ),
+              ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: fuelOptions
+                    .map(
+                      (fuel) => FilterChip(
+                        label: Text(fuel),
+                        selected: _fuelTypes.contains(fuel),
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              _fuelTypes = {..._fuelTypes, fuel}.toList();
+                            } else {
+                              _fuelTypes = _fuelTypes
+                                  .where((item) => item != fuel)
+                                  .toList();
+                            }
+                          });
+                        },
+                      ),
+                    )
+                    .toList(),
               ),
               TextFormField(
                 controller: _consumptionController,
@@ -534,9 +638,10 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
                     await widget.onSubmit(
                       brand: _brandController.text,
                       model: _modelController.text,
+                      type: _vehicleType,
                       year: _yearController.text,
                       plate: _plateController.text,
-                      fuelType: _fuelTypeController.text,
+                      fuelTypes: _fuelTypes,
                       averageConsumption: _consumptionController.text,
                       active: _active,
                     );

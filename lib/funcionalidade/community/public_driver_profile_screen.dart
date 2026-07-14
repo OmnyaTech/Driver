@@ -158,7 +158,7 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                     await Clipboard.setData(
                       ClipboardData(
                         text:
-                            'Me encontre no Omnya Driver: @${profile.publicSlug}\n${PublicProfileService.buildInviteUrl(profile.publicSlug)}',
+                            'Me encontre no Driver: @${profile.publicSlug}\n${PublicProfileService.buildInviteUrl(profile.publicSlug)}',
                       ),
                     );
                     if (!context.mounted) return;
