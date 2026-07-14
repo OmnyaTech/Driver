@@ -433,14 +433,12 @@ class _AccessCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    isRecovering
-                        ? Icons.lock_reset
-                        : isRegister
-                        ? Icons.person_add_alt_1
-                        : Icons.route,
-                    color: Colors.white,
-                  ),
+                  child: isRecovering
+                      ? const Icon(Icons.lock_reset, color: Colors.white)
+                      : Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Image.asset(_driverLogoAsset),
+                        ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -521,8 +519,9 @@ class _AccessCard extends StatelessWidget {
                         if (value == null || value.isEmpty) {
                           return 'Digite sua senha.';
                         }
-                        if (isRegister && value.length < 6) {
-                          return 'Use pelo menos 6 caracteres.';
+                        if (isRegister) {
+                          final passwordError = _validateStrongPassword(value);
+                          if (passwordError != null) return passwordError;
                         }
                         return null;
                       },
@@ -635,6 +634,25 @@ class _AccessCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String? _validateStrongPassword(String value) {
+    if (value.length < 8) {
+      return 'Use no minimo 8 caracteres.';
+    }
+    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+      return 'Inclua pelo menos uma letra maiuscula.';
+    }
+    if (!RegExp(r'[a-z]').hasMatch(value)) {
+      return 'Inclua pelo menos uma letra minuscula.';
+    }
+    if (!RegExp(r'\d').hasMatch(value)) {
+      return 'Inclua pelo menos um numero.';
+    }
+    if (!RegExp(r'[^A-Za-z0-9]').hasMatch(value)) {
+      return 'Inclua pelo menos um caractere especial.';
+    }
+    return null;
   }
 }
 

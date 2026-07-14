@@ -35,7 +35,6 @@ class AuthService {
       password: password,
       captchaToken: captchaToken,
     );
-    await ensureDriverProfile();
     return response;
   }
 
@@ -75,13 +74,19 @@ class AuthService {
       OauthProviderOption.microsoft => OAuthProvider.azure,
     };
 
-    await activeClient.auth.signInWithOAuth(
+    final launched = await activeClient.auth.signInWithOAuth(
       oauthProvider,
       redirectTo: _oauthRedirectTo,
       scopes: provider == OauthProviderOption.google
           ? 'email profile'
           : 'openid profile email',
+      authScreenLaunchMode: kIsWeb
+          ? LaunchMode.platformDefault
+          : LaunchMode.externalApplication,
     );
+    if (!launched) {
+      throw const AuthException('Nao foi possivel abrir o provedor de login.');
+    }
   }
 
   Future<void> signOut() async {
