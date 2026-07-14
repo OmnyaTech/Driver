@@ -1,6 +1,7 @@
 import '../models/app_driver_notification.dart';
 import 'auth_service.dart';
 import 'dashboard_metrics_service.dart';
+import 'device_notification_service.dart';
 import 'driver_preference_service.dart';
 import 'gamification_service.dart';
 import 'goal_service.dart';
@@ -16,6 +17,7 @@ class EngagementNotificationService {
     GamificationService? gamificationService,
     DriverPreferenceService? driverPreferenceService,
     PushNotificationService? pushNotificationService,
+    DeviceNotificationService? deviceNotificationService,
   }) : _authService = authService ?? const AuthService(),
        _journeyService =
            journeyService ?? JourneyService(authService: authService),
@@ -29,7 +31,9 @@ class EngagementNotificationService {
            driverPreferenceService ?? DriverPreferenceService(),
        _pushNotificationService =
            pushNotificationService ??
-           PushNotificationService(authService: authService);
+           PushNotificationService(authService: authService),
+       _deviceNotificationService =
+           deviceNotificationService ?? DeviceNotificationService.instance;
 
   final AuthService _authService;
   final JourneyService _journeyService;
@@ -38,6 +42,7 @@ class EngagementNotificationService {
   final GamificationService _gamificationService;
   final DriverPreferenceService _driverPreferenceService;
   final PushNotificationService _pushNotificationService;
+  final DeviceNotificationService _deviceNotificationService;
 
   Future<void> syncSmartNotifications() async {
     final client = _authService.requireClient();
@@ -163,12 +168,53 @@ class EngagementNotificationService {
     }
 
     if (notifications.isEmpty) return;
+    final newNotifications = await _filterNewNotifications(
+      user.id,
+      notifications,
+    );
     await client
         .schema('driver')
         .from('driver_notifications')
         .upsert(notifications, onConflict: 'user_id,notification_key');
-    for (final notification in notifications) {
+    for (final notification in newNotifications) {
       await _enqueueDevicePush(notification);
+      await _showLocalDeviceNotification(notification);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _filterNewNotifications(
+    String userId,
+    List<Map<String, dynamic>> notifications,
+  ) async {
+    final keys = notifications
+        .map((notification) => notification['notification_key']?.toString())
+        .whereType<String>()
+        .where((key) => key.isNotEmpty)
+        .toSet()
+        .toList();
+    if (keys.isEmpty) return notifications;
+
+    try {
+      final existingRows = await _authService
+          .requireClient()
+          .schema('driver')
+          .from('driver_notifications')
+          .select('notification_key')
+          .eq('user_id', userId)
+          .inFilter('notification_key', keys);
+      final existingKeys = existingRows
+          .map<String>((row) => row['notification_key']?.toString() ?? '')
+          .where((key) => key.isNotEmpty)
+          .toSet();
+      return notifications
+          .where(
+            (notification) => !existingKeys.contains(
+              notification['notification_key']?.toString() ?? '',
+            ),
+          )
+          .toList();
+    } catch (_) {
+      return notifications;
     }
   }
 
@@ -187,6 +233,20 @@ class EngagementNotificationService {
       );
     } catch (_) {
       // In-app notices should still exist even if server push is unavailable.
+    }
+  }
+
+  Future<void> _showLocalDeviceNotification(
+    Map<String, dynamic> notification,
+  ) async {
+    try {
+      await _deviceNotificationService.showAlert(
+        notificationKey: notification['notification_key'].toString(),
+        title: notification['title'].toString(),
+        body: notification['body'].toString(),
+      );
+    } catch (_) {
+      // Local system notifications should never block in-app notices.
     }
   }
 

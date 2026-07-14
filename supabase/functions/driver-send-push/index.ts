@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { JWT } from "npm:google-auth-library@9";
 
 type PushBody = {
   jobId?: string | null;
@@ -37,7 +38,33 @@ const resolveSupabaseAdmin = () => {
 };
 
 const resolveServerKey = () =>
-  Deno.env.get("DRIVER_FCM_SERVER_KEY") ?? Deno.env.get("FCM_SERVER_KEY");
+  Deno.env.get("DRIVER_FCM_SERVER_KEY") ?? Deno.env.get("FCM_SERVER_KEY") ??
+  null;
+
+const resolveFirebaseServiceAccount = () => {
+  const raw =
+    Deno.env.get("DRIVER_FIREBASE_SERVICE_ACCOUNT_JSON") ??
+    Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw) as {
+      client_email?: string;
+      private_key?: string;
+      project_id?: string;
+    };
+  } catch {
+    return null;
+  }
+};
+
+const resolveFirebaseProjectId = (
+  serviceAccount: { project_id?: string } | null,
+) =>
+  Deno.env.get("DRIVER_FIREBASE_PROJECT_ID") ??
+  Deno.env.get("FIREBASE_PROJECT_ID") ??
+  serviceAccount?.project_id ??
+  null;
 
 const stringifyData = (data: Record<string, unknown> | null | undefined) =>
   Object.fromEntries(
@@ -66,13 +93,21 @@ const markJob = async (
 const sendToUser = async ({
   admin,
   serverKey,
+  serviceAccount,
+  projectId,
   userId,
   title,
   message,
   data,
 }: {
   admin: ReturnType<typeof createClient>;
-  serverKey: string;
+  serverKey: string | null;
+  serviceAccount: {
+    client_email?: string;
+    private_key?: string;
+    project_id?: string;
+  } | null;
+  projectId: string | null;
   userId: string;
   title: string;
   message: string;
@@ -107,6 +142,82 @@ const sendToUser = async ({
       failed: 0,
       message: "Sem dispositivo ativo.",
       status: 200,
+    };
+  }
+
+  if (serviceAccount?.client_email && serviceAccount.private_key && projectId) {
+    const authClient = new JWT({
+      email: serviceAccount.client_email,
+      key: serviceAccount.private_key,
+      scopes: ["https://www.googleapis.com/auth/firebase.messaging"],
+    });
+    const access = await authClient.authorize();
+    const accessToken = access.access_token;
+    if (!accessToken) {
+      return {
+        ok: false,
+        delivered: 0,
+        failed: tokens.length,
+        message: "Nao foi possivel autenticar no Firebase HTTP v1.",
+        status: 502,
+      };
+    }
+
+    let delivered = 0;
+    let failed = 0;
+    const details = [];
+    for (const token of tokens) {
+      const response = await fetch(
+        `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: {
+              token,
+              notification: { title, body: message },
+              data,
+              android: {
+                priority: "HIGH",
+                notification: {
+                  channel_id: "omnya_driver_alerts",
+                  notification_priority: "PRIORITY_HIGH",
+                  visibility: "PUBLIC",
+                },
+              },
+            },
+          }),
+        },
+      );
+      const result = await response.json().catch(() => ({}));
+      details.push(result);
+      if (response.ok) {
+        delivered += 1;
+      } else {
+        failed += 1;
+      }
+    }
+
+    return {
+      ok: delivered > 0 || failed === 0,
+      delivered,
+      failed,
+      message: delivered > 0 ? "Push enviado." : "FCM recusou o envio.",
+      status: delivered > 0 ? 200 : 502,
+      details,
+    };
+  }
+
+  if (!serverKey) {
+    return {
+      ok: false,
+      delivered: 0,
+      failed: tokens.length,
+      message: "Firebase nao configurado no servidor.",
+      status: 500,
     };
   }
 
@@ -160,7 +271,9 @@ Deno.serve(async (req) => {
 
   const admin = resolveSupabaseAdmin();
   const serverKey = resolveServerKey();
-  if (!admin || !serverKey) {
+  const serviceAccount = resolveFirebaseServiceAccount();
+  const projectId = resolveFirebaseProjectId(serviceAccount);
+  if (!admin || (!serverKey && !serviceAccount)) {
     return json(
       { success: false, message: "Push nao configurado no servidor." },
       500,
@@ -204,6 +317,8 @@ Deno.serve(async (req) => {
       const result = await sendToUser({
         admin,
         serverKey,
+        serviceAccount,
+        projectId,
         userId: String(job.user_id),
         title: String(job.title ?? "").trim(),
         message: String(job.body ?? "").trim(),
@@ -287,6 +402,8 @@ Deno.serve(async (req) => {
   const result = await sendToUser({
     admin,
     serverKey,
+    serviceAccount,
+    projectId,
     userId: targetUserId,
     title,
     message,

@@ -562,9 +562,11 @@ class _MfaSetupSheet extends StatefulWidget {
 class _MfaSetupSheetState extends State<_MfaSetupSheet> {
   final _service = const MfaService();
   final _codeController = TextEditingController();
+  final _currentFactorCodeController = TextEditingController();
   MfaEnrollmentDraft? _draft;
   bool _loading = true;
   bool _verifying = false;
+  bool _requiresCurrentFactor = false;
   String? _errorMessage;
 
   @override
@@ -576,6 +578,7 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
   @override
   void dispose() {
     _codeController.dispose();
+    _currentFactorCodeController.dispose();
     super.dispose();
   }
 
@@ -625,7 +628,45 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
                 const SizedBox(height: 18),
                 if (_loading)
                   const Center(child: CircularProgressIndicator())
-                else if (_draft != null) ...[
+                else if (_requiresCurrentFactor) ...[
+                  Icon(
+                    Icons.verified_user_outlined,
+                    color: theme.colorScheme.primary,
+                    size: 36,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    strings.pick(
+                      pt: 'Sua sessao precisa ser confirmada antes de alterar o 2FA.',
+                      en: 'Confirm your session before changing 2FA.',
+                      es: 'Confirma tu sesion antes de cambiar el 2FA.',
+                    ),
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _currentFactorCodeController,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    decoration: InputDecoration(
+                      labelText: strings.pick(
+                        pt: 'Codigo do autenticador atual',
+                        en: 'Current authenticator code',
+                        es: 'Codigo del autenticador actual',
+                      ),
+                      counterText: '',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    strings.pick(
+                      pt: 'Depois dessa confirmacao, o Driver vai gerar o QR Code para configurar um novo autenticador.',
+                      en: 'After this confirmation, Driver will generate the QR Code for a new authenticator.',
+                      es: 'Despues de esta confirmacion, Driver generara el QR Code para un nuevo autenticador.',
+                    ),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ] else if (_draft != null) ...[
                   Center(
                     child: Container(
                       width: 236,
@@ -726,13 +767,7 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : Text(
-                                strings.pick(
-                                  pt: 'Ativar 2FA',
-                                  en: 'Enable 2FA',
-                                  es: 'Activar 2FA',
-                                ),
-                              ),
+                            : Text(_primaryButtonLabel(strings)),
                       ),
                     ),
                   ],
@@ -746,13 +781,31 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
   }
 
   Future<void> _start() async {
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
     try {
       final draft = await _service.startTotpEnrollment();
       if (!mounted) return;
-      setState(() => _draft = draft);
+      setState(() {
+        _draft = draft;
+        _requiresCurrentFactor = false;
+      });
+    } on MfaAal2RequiredException {
+      if (!mounted) return;
+      setState(() {
+        _requiresCurrentFactor = true;
+        _draft = null;
+        _errorMessage = AppStrings.of(context).pick(
+          pt: 'Digite o codigo do autenticador ja vinculado para liberar a configuracao de um novo 2FA.',
+          en: 'Enter the code from the authenticator already linked to unlock a new 2FA setup.',
+          es: 'Ingresa el codigo del autenticador ya vinculado para liberar una nueva configuracion 2FA.',
+        );
+      });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _errorMessage = error.toString());
+      setState(() => _errorMessage = _friendlyMfaError(error));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -773,6 +826,11 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
   }
 
   Future<void> _verify() async {
+    if (_requiresCurrentFactor) {
+      await _confirmCurrentFactorAndRetry();
+      return;
+    }
+
     final draft = _draft;
     if (draft == null) return;
     final code = _codeController.text.trim();
@@ -810,9 +868,71 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
       );
     } catch (error) {
       if (!mounted) return;
-      setState(() => _errorMessage = error.toString());
+      setState(() => _errorMessage = _friendlyMfaError(error));
     } finally {
       if (mounted) setState(() => _verifying = false);
     }
+  }
+
+  Future<void> _confirmCurrentFactorAndRetry() async {
+    final code = _currentFactorCodeController.text.trim();
+    if (code.length != 6) {
+      setState(() {
+        _errorMessage = AppStrings.of(context).pick(
+          pt: 'Informe o codigo de 6 digitos do autenticador atual.',
+          en: 'Enter the 6-digit code from your current authenticator.',
+          es: 'Ingresa el codigo de 6 digitos del autenticador actual.',
+        );
+      });
+      return;
+    }
+
+    setState(() {
+      _verifying = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _service.verifyFirstTotpChallenge(code);
+      if (!mounted) return;
+      _currentFactorCodeController.clear();
+      await _start();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = _friendlyMfaError(error));
+    } finally {
+      if (mounted) setState(() => _verifying = false);
+    }
+  }
+
+  String _primaryButtonLabel(AppStrings strings) {
+    if (_requiresCurrentFactor) {
+      return strings.pick(
+        pt: 'Confirmar sessao',
+        en: 'Confirm session',
+        es: 'Confirmar sesion',
+      );
+    }
+    return strings.pick(pt: 'Ativar 2FA', en: 'Enable 2FA', es: 'Activar 2FA');
+  }
+
+  String _friendlyMfaError(Object error) {
+    final raw = error.toString();
+    if (raw.contains('insufficient_aal')) {
+      return AppStrings.of(context).pick(
+        pt: 'O Supabase exige confirmacao pelo autenticador atual antes de alterar o 2FA.',
+        en: 'Supabase requires confirmation with the current authenticator before changing 2FA.',
+        es: 'Supabase exige confirmacion con el autenticador actual antes de cambiar el 2FA.',
+      );
+    }
+    if (raw.toLowerCase().contains('invalid') ||
+        raw.toLowerCase().contains('code')) {
+      return AppStrings.of(context).pick(
+        pt: 'Codigo invalido ou expirado. Confira o autenticador e tente novamente.',
+        en: 'Invalid or expired code. Check your authenticator and try again.',
+        es: 'Codigo invalido o vencido. Revisa tu autenticador e intenta de nuevo.',
+      );
+    }
+    return raw;
   }
 }

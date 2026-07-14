@@ -24,6 +24,14 @@ class MfaEnrollmentDraft {
   }
 }
 
+class MfaAal2RequiredException implements Exception {
+  const MfaAal2RequiredException();
+
+  @override
+  String toString() =>
+      'Confirme o codigo do autenticador atual antes de configurar um novo 2FA.';
+}
+
 class MfaService {
   const MfaService({AuthService authService = const AuthService()})
     : _authService = authService;
@@ -56,11 +64,19 @@ class MfaService {
   }
 
   Future<MfaEnrollmentDraft> startTotpEnrollment() async {
-    final response = await _authService.requireClient().auth.mfa.enroll(
-      factorType: FactorType.totp,
-      issuer: 'Driver',
-      friendlyName: 'Driver',
-    );
+    late final AuthMFAEnrollResponse response;
+    try {
+      response = await _authService.requireClient().auth.mfa.enroll(
+        factorType: FactorType.totp,
+        issuer: 'Driver',
+        friendlyName: 'Driver',
+      );
+    } on AuthException catch (error) {
+      if (error.code == 'insufficient_aal') {
+        throw const MfaAal2RequiredException();
+      }
+      rethrow;
+    }
     final totp = response.totp;
     if (totp == null) {
       throw StateError('Nao foi possivel gerar a chave do autenticador.');

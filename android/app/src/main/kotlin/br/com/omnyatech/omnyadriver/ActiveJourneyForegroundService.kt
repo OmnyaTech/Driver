@@ -37,7 +37,7 @@ class ActiveJourneyForegroundService : Service() {
         )
 
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.launcher_icon)
+            .setSmallIcon(R.drawable.ic_stat_driver)
             .setContentTitle(title)
             .setContentText(body)
             .setContentIntent(pendingIntent)

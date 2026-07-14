@@ -27,7 +27,7 @@ class ActiveJourneyNotificationService {
   Future<void> initialize() async {
     if (kIsWeb || _initialized) return;
 
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const android = AndroidInitializationSettings('ic_stat_driver');
     const darwin = DarwinInitializationSettings();
     const settings = InitializationSettings(android: android, iOS: darwin);
 
@@ -54,8 +54,8 @@ class ActiveJourneyNotificationService {
         ? 'Toque para informar km final, entregas e ganhos antes de encerrar.'
         : '$vehicle em jornada. Toque para informar km final, entregas e ganhos.';
 
-    await _startForegroundJourney(draft, body);
-    if (defaultTargetPlatform == TargetPlatform.android) {
+    final foregroundStarted = await _startForegroundJourney(draft, body);
+    if (defaultTargetPlatform == TargetPlatform.android && foregroundStarted) {
       return;
     }
 
@@ -63,7 +63,7 @@ class ActiveJourneyNotificationService {
       android: AndroidNotificationDetails(
         _channelId,
         _channelName,
-        icon: '@mipmap/launcher_icon',
+        icon: 'ic_stat_driver',
         channelDescription:
             'Mostra que existe uma jornada em andamento no Driver.',
         importance: Importance.high,
@@ -109,19 +109,22 @@ class ActiveJourneyNotificationService {
     await _notifications.cancel(_notificationId);
   }
 
-  Future<void> _startForegroundJourney(
+  Future<bool> _startForegroundJourney(
     ActiveJourneyDraft draft,
     String body,
   ) async {
-    if (defaultTargetPlatform != TargetPlatform.android) return;
+    if (defaultTargetPlatform != TargetPlatform.android) return false;
     try {
-      await _androidChannel.invokeMethod<void>('startActiveJourneyForeground', {
-        'startedAt': draft.startedAt.millisecondsSinceEpoch,
-        'title': 'Jornada em andamento',
-        'body': body,
-      });
+      return await _androidChannel
+              .invokeMethod<bool>('startActiveJourneyForeground', {
+                'startedAt': draft.startedAt.millisecondsSinceEpoch,
+                'title': 'Jornada em andamento',
+                'body': body,
+              }) ??
+          false;
     } catch (_) {
       // The plugin notification remains as a fallback.
+      return false;
     }
   }
 
