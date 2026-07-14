@@ -149,6 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
         captchaToken: token,
       );
       if (!mounted || session.errorMessage != null) {
+        _showAuthError(session.errorMessage);
         return;
       }
 
@@ -162,11 +163,13 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    await session.signInWithPassword(
+    final signedIn = await session.signInWithPassword(
       email: _emailController.text.trim(),
       password: _passwordController.text,
       captchaToken: token,
     );
+    if (!mounted || signedIn) return;
+    _showAuthError(session.errorMessage);
   }
 
   Future<void> _signInWithOAuth(OauthProviderOption provider) async {
@@ -180,9 +183,18 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    await context.read<AppSession>().signInWithOAuth(
+    final started = await context.read<AppSession>().signInWithOAuth(
       provider,
       verificationToken: token,
+    );
+    if (!mounted || started) return;
+    _showAuthError(context.read<AppSession>().errorMessage);
+  }
+
+  void _showAuthError(String? message) {
+    if (!mounted || message == null || message.trim().isEmpty) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 }

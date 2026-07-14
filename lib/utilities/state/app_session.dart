@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -70,7 +72,7 @@ class AppSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> signInWithPassword({
+  Future<bool> signInWithPassword({
     required String email,
     required String password,
     required String captchaToken,
@@ -85,10 +87,18 @@ class AppSession extends ChangeNotifier {
         captchaToken: captchaToken,
       );
       await _refreshFromSession();
+      if (!_authenticated) {
+        _errorMessage =
+            'Login validado, mas a sessao nao foi criada. Confira e-mail, senha e confirmacao da conta.';
+        return false;
+      }
+      return true;
     } on AuthException catch (error) {
       _errorMessage = error.message;
+      return false;
     } catch (_) {
       _errorMessage = 'Nao foi possivel entrar agora.';
+      return false;
     } finally {
       _setBusy(false);
     }
@@ -155,15 +165,14 @@ class AppSession extends ChangeNotifier {
     _errorMessage = null;
 
     try {
-      final verified = await _authService.verifyTurnstileForOAuth(
-        token: verificationToken,
-        provider: provider,
+      unawaited(
+        _authService
+            .verifyTurnstileForOAuth(
+              token: verificationToken,
+              provider: provider,
+            )
+            .catchError((_) => false),
       );
-      if (!verified) {
-        _errorMessage = 'Nao foi possivel validar a verificacao de seguranca.';
-        return false;
-      }
-
       await _authService.signInWithOAuth(provider);
       return true;
     } on AuthException catch (error) {
