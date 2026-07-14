@@ -99,7 +99,8 @@ class PlatformService {
       }
 
       if (onlinePlatform) {
-        query = query.isFilter('city', null).isFilter('state', null);
+        // Online platforms are global for Driver. Older catalog entries may
+        // still carry city/state from the user who first registered the logo.
       } else {
         query = query.eq('country', location.country);
         if ((location.state ?? '').trim().isNotEmpty) {
@@ -268,7 +269,7 @@ class PlatformService {
           .ilike('type', type.trim());
 
       if (_isOnlinePlatformType(type)) {
-        query = query.isFilter('city', null).isFilter('state', null);
+        // Online platforms reuse the same logo independently of location.
       } else {
         query = query.eq('country', country);
         query = city == null || city.trim().isEmpty

@@ -1194,10 +1194,13 @@ class _FinishAutomaticJourneyDialogState
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final dialogWidth = screenWidth < 560 ? screenWidth - 32 : 520.0;
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       title: const Text('Encerrar jornada'),
       content: SizedBox(
-        width: 520,
+        width: dialogWidth,
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -1235,70 +1238,7 @@ class _FinishAutomaticJourneyDialogState
                   ],
                 ),
                 ..._platformEntries.asMap().entries.map(
-                  (entry) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            initialValue: entry.value.platformId,
-                            decoration: const InputDecoration(
-                              labelText: 'Plataforma',
-                            ),
-                            items: [
-                              const DropdownMenuItem(
-                                value: '',
-                                child: Text('Selecionar'),
-                              ),
-                              ...widget.platforms.map(
-                                (platform) => DropdownMenuItem(
-                                  value: platform.id,
-                                  child: Text(platform.name),
-                                ),
-                              ),
-                            ],
-                            onChanged: (value) =>
-                                entry.value.platformId = value ?? '',
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 92,
-                          child: TextFormField(
-                            controller: entry.value.incomeController,
-                            decoration: const InputDecoration(
-                              labelText: 'Ganho',
-                            ),
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 92,
-                          child: TextFormField(
-                            controller: entry.value.deliveriesController,
-                            decoration: const InputDecoration(
-                              labelText: 'Entregas',
-                            ),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                        if (_platformEntries.length > 1)
-                          IconButton(
-                            onPressed: () {
-                              final removed = _platformEntries.removeAt(
-                                entry.key,
-                              );
-                              removed.dispose();
-                              setState(() {});
-                            },
-                            icon: const Icon(Icons.delete_outline),
-                          ),
-                      ],
-                    ),
-                  ),
+                  (entry) => _buildPlatformEntry(context, entry.key),
                 ),
                 if (_errorMessage != null)
                   Text(
@@ -1357,6 +1297,106 @@ class _FinishAutomaticJourneyDialogState
         ),
       ],
     );
+  }
+
+  Widget _buildPlatformEntry(BuildContext context, int index) {
+    final entry = _platformEntries[index];
+    final platformName = _platformName(entry.platformId);
+    final canRemove = _platformEntries.length > 1;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: platformName == null
+                    ? DropdownButtonFormField<String>(
+                        initialValue: entry.platformId,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Plataforma',
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: '',
+                            child: Text('Selecionar'),
+                          ),
+                          ...widget.platforms.map(
+                            (platform) => DropdownMenuItem(
+                              value: platform.id,
+                              child: Text(
+                                platform.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                        onChanged: (value) =>
+                            setState(() => entry.platformId = value ?? ''),
+                      )
+                    : Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          platformName,
+                          style: Theme.of(context).textTheme.titleSmall,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                      ),
+              ),
+              if (canRemove)
+                IconButton(
+                  tooltip: 'Remover',
+                  onPressed: () {
+                    final removed = _platformEntries.removeAt(index);
+                    removed.dispose();
+                    setState(() {});
+                  },
+                  icon: const Icon(Icons.delete_outline),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: entry.incomeController,
+                  decoration: const InputDecoration(labelText: 'Ganho'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextFormField(
+                  controller: entry.deliveriesController,
+                  decoration: const InputDecoration(labelText: 'Entregas'),
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String? _platformName(String platformId) {
+    if (platformId.trim().isEmpty) return null;
+    for (final platform in widget.platforms) {
+      if (platform.id == platformId) return platform.name;
+    }
+    return null;
   }
 
   String? _validateDistanceField(String? value) {

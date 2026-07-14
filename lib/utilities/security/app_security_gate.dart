@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/app_profile.dart';
@@ -292,74 +293,189 @@ class _MfaOverlay extends StatelessWidget {
         color: Colors.black.withValues(alpha: 0.94),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 380),
+            constraints: const BoxConstraints(maxWidth: 420),
             child: Card(
+              clipBehavior: Clip.antiAlias,
               child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      alignment: Alignment.center,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF202748), Color(0xFF0000CD)],
+                padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),
+                child: ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: controller,
+                  builder: (context, value, _) {
+                    final currentCode = value.text;
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Center(
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                width: 104,
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: theme.colorScheme.primary
+                                        .withValues(alpha: 0.28),
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.phone_iphone_rounded,
+                                  color: theme.colorScheme.onSurface,
+                                  size: 46,
+                                ),
+                              ),
+                              Positioned(
+                                top: -22,
+                                right: -8,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFDCE6FF),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: const Text(
+                                    '...',
+                                    style: TextStyle(
+                                      color: Color(0xFF0B1020),
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 3,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      child: const Icon(
-                        Icons.verified_user_outlined,
-                        color: Colors.white,
-                        size: 38,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Confirme que e voce',
-                      style: theme.textTheme.titleLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Digite o codigo do seu app autenticador para continuar.',
-                      style: theme.textTheme.bodyMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-                    TextField(
-                      controller: controller,
-                      enabled: !checking && !verifying,
-                      keyboardType: TextInputType.number,
-                      maxLength: 6,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.headlineSmall,
-                      decoration: InputDecoration(
-                        counterText: '',
-                        hintText: '000000',
-                        errorText: errorMessage,
-                      ),
-                      onSubmitted: (_) => onVerify(),
-                    ),
-                    const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: checking || verifying ? null : onVerify,
-                      icon: verifying
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.lock_open_outlined),
-                      label: Text(checking ? 'Verificando...' : 'Continuar'),
-                    ),
-                  ],
+                        const SizedBox(height: 22),
+                        Text(
+                          'Verifique sua identidade',
+                          style: theme.textTheme.titleLarge,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Digite o codigo de 6 digitos do seu app autenticador.',
+                          style: theme.textTheme.bodyMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 22),
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                6,
+                                (index) => _MfaCodeBox(
+                                  value: index < currentCode.length
+                                      ? currentCode[index]
+                                      : '',
+                                  active: index == currentCode.length &&
+                                      currentCode.length < 6,
+                                ),
+                              ),
+                            ),
+                            Opacity(
+                              opacity: 0.01,
+                              child: SizedBox(
+                                width: 320,
+                                height: 56,
+                                child: TextField(
+                                  autofocus: true,
+                                  controller: controller,
+                                  enabled: !checking && !verifying,
+                                  keyboardType: TextInputType.number,
+                                  maxLength: 6,
+                                  textAlign: TextAlign.center,
+                                  cursorColor: Colors.transparent,
+                                  style: const TextStyle(
+                                    color: Colors.transparent,
+                                  ),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                  decoration: const InputDecoration(
+                                    counterText: '',
+                                    border: InputBorder.none,
+                                  ),
+                                  onSubmitted: (_) => onVerify(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (errorMessage != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: theme.colorScheme.error),
+                          ),
+                        ],
+                        const SizedBox(height: 20),
+                        FilledButton(
+                          onPressed: checking || verifying ? null : onVerify,
+                          child: verifying
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(checking ? 'Verificando...' : 'Continuar'),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MfaCodeBox extends StatelessWidget {
+  const _MfaCodeBox({required this.value, required this.active});
+
+  final String value;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 140),
+      width: 42,
+      height: 50,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: active
+            ? theme.colorScheme.primary.withValues(alpha: 0.16)
+            : theme.colorScheme.surface.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: active ? theme.colorScheme.primary : theme.dividerColor,
+          width: active ? 1.6 : 1,
+        ),
+      ),
+      child: Text(
+        value.isEmpty ? '' : '*',
+        style: theme.textTheme.headlineSmall?.copyWith(
+          fontWeight: FontWeight.w900,
         ),
       ),
     );
