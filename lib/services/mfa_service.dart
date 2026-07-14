@@ -14,6 +14,14 @@ class MfaEnrollmentDraft {
   final String secret;
   final String uri;
   final String qrCode;
+
+  String get qrSvg {
+    const prefix = 'data:image/svg+xml;utf-8,';
+    if (qrCode.startsWith(prefix)) {
+      return Uri.decodeFull(qrCode.substring(prefix.length));
+    }
+    return Uri.decodeFull(qrCode);
+  }
 }
 
 class MfaService {

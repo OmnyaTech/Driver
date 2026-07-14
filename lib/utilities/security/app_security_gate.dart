@@ -109,6 +109,19 @@ class _AppSecurityGateState extends State<AppSecurityGate>
       if (!mounted) return;
       setState(() => _checkingMfa = true);
       try {
+        final factors = await _mfaService.listVerifiedTotpFactors();
+        if (factors.isEmpty) {
+          await _mfaService.setTotpMfaEnabled(false);
+          if (!mounted) return;
+          await context.read<AppSession>().refreshProfile();
+          if (!mounted) return;
+          setState(() {
+            _mfaRequired = false;
+            _mfaErrorMessage = null;
+            _mfaCodeController.clear();
+          });
+          return;
+        }
         final required = await _mfaService.requiresTotpChallenge();
         if (!mounted) return;
         setState(() {

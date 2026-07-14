@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/supabase_config.dart';
@@ -118,9 +119,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   FilledButton.icon(
                     onPressed: _loadingMfa || _disablingMfa
                         ? null
-                        : (!hasVerifiedTotp
-                              ? _openMfaSetup
-                              : (mfaActive ? _disableMfa : _enableExistingMfa)),
+                        : (mfaActive ? _disableMfa : _openMfaSetup),
                     icon: _loadingMfa || _disablingMfa
                         ? const SizedBox(
                             width: 18,
@@ -304,6 +303,14 @@ class _SecurityScreenState extends State<SecurityScreen> {
     try {
       final factors = await _mfaService.listVerifiedTotpFactors();
       if (!mounted) return;
+      final hasVerifiedFactor = factors.isNotEmpty;
+      final profile = context.read<AppSession>().profile;
+      if (!hasVerifiedFactor && profile?.totpMfaEnabled == true) {
+        await _mfaService.setTotpMfaEnabled(false);
+        if (mounted) {
+          await context.read<AppSession>().refreshProfile();
+        }
+      }
       setState(() {
         _totpFactorId = factors.isEmpty ? null : factors.first.id;
       });
@@ -349,28 +356,6 @@ class _SecurityScreenState extends State<SecurityScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Nao deu para desativar o 2FA: $error')),
-      );
-    } finally {
-      if (mounted) setState(() => _disablingMfa = false);
-    }
-  }
-
-  Future<void> _enableExistingMfa() async {
-    if (_totpFactorId == null) return;
-
-    setState(() => _disablingMfa = true);
-    try {
-      await _mfaService.setTotpMfaEnabled(true);
-      if (!mounted) return;
-      await context.read<AppSession>().refreshProfile();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppStrings.of(context).twoFactorEnabled)),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Nao deu para ativar o 2FA: $error')),
       );
     } finally {
       if (mounted) setState(() => _disablingMfa = false);
@@ -641,6 +626,22 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
                 if (_loading)
                   const Center(child: CircularProgressIndicator())
                 else if (_draft != null) ...[
+                  Center(
+                    child: Container(
+                      width: 236,
+                      height: 236,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: SvgPicture.string(
+                        _draft!.qrSvg,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
                   Text(
                     strings.pick(
                       pt: 'Chave manual',
