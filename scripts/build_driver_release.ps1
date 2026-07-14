@@ -1,5 +1,5 @@
 param(
-  [string]$ApkName = "driver-v1.0.9.apk"
+  [string]$ApkName = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -32,6 +32,16 @@ foreach ($key in @("SUPABASE_URL", "SUPABASE_ANON_KEY", "TURNSTILE_SITE_KEY")) {
 
 Push-Location $repoRoot
 try {
+  if ([string]::IsNullOrWhiteSpace($ApkName)) {
+    $pubspec = Get-Content -LiteralPath (Join-Path $repoRoot "pubspec.yaml")
+    $versionLine = $pubspec | Where-Object { $_ -match "^version:\s*(.+)$" } | Select-Object -First 1
+    if (-not $versionLine) {
+      throw "Could not find version in pubspec.yaml"
+    }
+    $versionName = (($versionLine -replace "^version:\s*", "") -split "\+")[0]
+    $ApkName = "driver-v$versionName.apk"
+  }
+
   flutter build apk --release `
     --dart-define="SUPABASE_URL=$($values["SUPABASE_URL"])" `
     --dart-define="SUPABASE_ANON_KEY=$($values["SUPABASE_ANON_KEY"])" `

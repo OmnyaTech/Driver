@@ -24,6 +24,18 @@ class DeviceNotificationService {
     const darwin = DarwinInitializationSettings();
     const settings = InitializationSettings(android: android, iOS: darwin);
     await _notifications.initialize(settings);
+    final androidPlugin = _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    await androidPlugin?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        _alertsChannelId,
+        'Avisos do Driver',
+        description: 'Avisos importantes sobre jornadas, metas e reservas.',
+        importance: Importance.high,
+      ),
+    );
     _initialized = true;
   }
 
@@ -83,5 +95,12 @@ class DeviceNotificationService {
     );
 
     await _notifications.show(id, title, body, details);
+  }
+
+  Future<void> cancelAlert(String notificationKey) async {
+    if (kIsWeb) return;
+    await initialize();
+    final id = notificationKey.hashCode & 0x7fffffff;
+    await _notifications.cancel(id);
   }
 }
