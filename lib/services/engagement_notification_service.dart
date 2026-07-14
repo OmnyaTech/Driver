@@ -5,6 +5,7 @@ import 'driver_preference_service.dart';
 import 'gamification_service.dart';
 import 'goal_service.dart';
 import 'journey_service.dart';
+import 'push_notification_service.dart';
 
 class EngagementNotificationService {
   EngagementNotificationService({
@@ -14,6 +15,7 @@ class EngagementNotificationService {
     DashboardMetricsService? dashboardMetricsService,
     GamificationService? gamificationService,
     DriverPreferenceService? driverPreferenceService,
+    PushNotificationService? pushNotificationService,
   }) : _authService = authService ?? const AuthService(),
        _journeyService =
            journeyService ?? JourneyService(authService: authService),
@@ -24,7 +26,10 @@ class EngagementNotificationService {
        _gamificationService =
            gamificationService ?? GamificationService(authService: authService),
        _driverPreferenceService =
-           driverPreferenceService ?? DriverPreferenceService();
+           driverPreferenceService ?? DriverPreferenceService(),
+       _pushNotificationService =
+           pushNotificationService ??
+           PushNotificationService(authService: authService);
 
   final AuthService _authService;
   final JourneyService _journeyService;
@@ -32,6 +37,7 @@ class EngagementNotificationService {
   final DashboardMetricsService _dashboardMetricsService;
   final GamificationService _gamificationService;
   final DriverPreferenceService _driverPreferenceService;
+  final PushNotificationService _pushNotificationService;
 
   Future<void> syncSmartNotifications() async {
     final client = _authService.requireClient();
@@ -161,6 +167,27 @@ class EngagementNotificationService {
         .schema('driver')
         .from('driver_notifications')
         .upsert(notifications, onConflict: 'user_id,notification_key');
+    for (final notification in notifications) {
+      await _enqueueDevicePush(notification);
+    }
+  }
+
+  Future<void> _enqueueDevicePush(Map<String, dynamic> notification) async {
+    try {
+      await _pushNotificationService.enqueuePush(
+        targetUserId: notification['user_id'].toString(),
+        notificationType: notification['kind'].toString(),
+        title: notification['title'].toString(),
+        body: notification['body'].toString(),
+        notificationKey: notification['notification_key'].toString(),
+        data: {
+          'action_type': notification['action_type'],
+          'action_payload': notification['action_payload'],
+        },
+      );
+    } catch (_) {
+      // In-app notices should still exist even if server push is unavailable.
+    }
   }
 
   Future<List<AppDriverNotification>> listNotifications() async {

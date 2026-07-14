@@ -47,8 +47,7 @@ class _AppSecurityGateState extends State<AppSecurityGate>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused) {
       final profile = context.read<AppSession>().profile;
       if (profile?.biometricLockEnabled == true &&
           profile?.reauthOnResume == true) {

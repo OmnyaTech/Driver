@@ -352,19 +352,23 @@ Map<String, List<String>> vehicleModelsByBrandForType(String type) {
 }
 
 List<String> vehicleBrandsForType(String type) {
-  return vehicleModelsByBrandForType(type).keys.toList()..sort();
+  return (vehicleModelsByBrandForType(type).keys.toList()..sort())
+    ..add('Outros');
 }
 
 List<String> vehicleModelsFor({required String type, required String brand}) {
+  if (_normalize(brand) == 'outros') return const ['Outros'];
   final brands = vehicleModelsByBrandForType(type);
   final exact = brands[brand.trim()];
-  if (exact != null) return exact;
-  return brands.entries
+  if (exact != null) return [...exact, 'Outros'];
+  final models = brands.entries
       .firstWhere(
         (entry) => _normalize(entry.key) == _normalize(brand),
         orElse: () => const MapEntry('', <String>[]),
       )
       .value;
+  if (models.isEmpty) return const ['Outros'];
+  return [...models, 'Outros'];
 }
 
 Map<String, List<String>> get vehicleModelsByBrand {

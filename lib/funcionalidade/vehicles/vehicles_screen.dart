@@ -512,7 +512,10 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
                         controller: controller,
                         focusNode: focusNode,
                         decoration: const InputDecoration(labelText: 'Marca'),
-                        onChanged: (value) => _brandController.text = value,
+                        onChanged: (value) {
+                          _brandController.text = value;
+                          setState(() => _modelController.clear());
+                        },
                         validator: _required,
                       );
                     },

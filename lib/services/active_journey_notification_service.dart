@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,6 +14,9 @@ class ActiveJourneyNotificationService {
   static const int _notificationId = 7107;
   static const String _channelId = 'omnya_driver_active_journey';
   static const String _channelName = 'Jornada em andamento';
+  static const _androidChannel = MethodChannel(
+    'br.com.omnyatech.omnyadriver/android',
+  );
   static const String _finishRequestedKey =
       'omnya_driver_finish_active_journey_requested';
 
@@ -49,6 +53,11 @@ class ActiveJourneyNotificationService {
     final body = vehicle == null || vehicle.isEmpty
         ? 'Toque para informar km final, entregas e ganhos antes de encerrar.'
         : '$vehicle em jornada. Toque para informar km final, entregas e ganhos.';
+
+    await _startForegroundJourney(draft, body);
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return;
+    }
 
     final details = NotificationDetails(
       android: AndroidNotificationDetails(
@@ -96,7 +105,33 @@ class ActiveJourneyNotificationService {
   Future<void> cancelActiveJourney() async {
     if (kIsWeb) return;
     await initialize();
+    await _stopForegroundJourney();
     await _notifications.cancel(_notificationId);
+  }
+
+  Future<void> _startForegroundJourney(
+    ActiveJourneyDraft draft,
+    String body,
+  ) async {
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+    try {
+      await _androidChannel.invokeMethod<void>('startActiveJourneyForeground', {
+        'startedAt': draft.startedAt.millisecondsSinceEpoch,
+        'title': 'Jornada em andamento',
+        'body': body,
+      });
+    } catch (_) {
+      // The plugin notification remains as a fallback.
+    }
+  }
+
+  Future<void> _stopForegroundJourney() async {
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+    try {
+      await _androidChannel.invokeMethod<void>('stopActiveJourneyForeground');
+    } catch (_) {
+      // Best effort; the local notification is still cancelled below.
+    }
   }
 
   Future<bool> consumeFinishRequest() async {

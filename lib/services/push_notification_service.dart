@@ -58,6 +58,7 @@ class PushNotificationService {
     required String title,
     required String body,
     Map<String, dynamic> data = const {},
+    String? notificationKey,
     DateTime? scheduledAt,
   }) async {
     final client = _authService.requireClient();
@@ -72,6 +73,7 @@ class PushNotificationService {
             'p_body': body,
             'p_payload': data,
             'p_notification_key':
+                notificationKey ??
                 '$notificationType:${scheduledAt?.toUtc().toIso8601String() ?? DateTime.now().toUtc().toIso8601String()}',
             'p_scheduled_at': scheduledAt?.toUtc().toIso8601String(),
           },

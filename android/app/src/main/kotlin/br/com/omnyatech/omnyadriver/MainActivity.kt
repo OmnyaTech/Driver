@@ -30,6 +30,18 @@ class MainActivity : FlutterFragmentActivity() {
                     "requestIgnoreBatteryOptimizations" -> {
                         result.success(requestIgnoreBatteryOptimizations())
                     }
+                    "startActiveJourneyForeground" -> {
+                        val startedAt = call.argument<Long>("startedAt") ?: System.currentTimeMillis()
+                        val title = call.argument<String>("title") ?: "Jornada em andamento"
+                        val body = call.argument<String>("body")
+                            ?: "Toque para voltar ao Driver e finalizar quando terminar."
+                        ActiveJourneyForegroundService.start(this, startedAt, title, body)
+                        result.success(true)
+                    }
+                    "stopActiveJourneyForeground" -> {
+                        ActiveJourneyForegroundService.stop(this)
+                        result.success(true)
+                    }
                     else -> result.notImplemented()
                 }
             }
