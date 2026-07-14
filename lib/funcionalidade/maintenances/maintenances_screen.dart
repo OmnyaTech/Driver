@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import '../../models/app_maintenance.dart';
 import '../../models/app_vehicle.dart';
 import '../finance/widgets/financial_filter_toolbar.dart';
+import '../finance/widgets/vehicle_filter_pill.dart';
 import '../../services/maintenance_service.dart';
 import '../../services/vehicle_service.dart';
 import '../../utilities/localization/app_format.dart';
 import '../../utilities/localization/app_strings.dart';
 import '../../utilities/ui/omnya_shell.dart';
+import '../../utilities/ui/omnya_visuals.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
 class MaintenancesScreen extends StatefulWidget {
@@ -28,9 +30,12 @@ class MaintenancesScreen extends StatefulWidget {
 
 class _MaintenancesScreenState extends State<MaintenancesScreen> {
   final MaintenanceService _maintenanceService = MaintenanceService();
+  final VehicleService _vehicleService = VehicleService();
   final TextEditingController _searchController = TextEditingController();
   bool _loading = true;
   List<AppMaintenance> _maintenances = const [];
+  List<AppVehicle> _vehicles = const [];
+  String? _vehicleFilterId;
   String? _errorMessage;
   late DateTimeRange _range;
 
@@ -66,8 +71,16 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
 
     try {
       final maintenances = await _maintenanceService.listMaintenances();
+      final vehicles = await _vehicleService.listVehicles();
       if (!mounted) return;
-      setState(() => _maintenances = maintenances);
+      setState(() {
+        _maintenances = maintenances;
+        _vehicles = vehicles;
+        if (_vehicleFilterId != null &&
+            !_vehicles.any((vehicle) => vehicle.id == _vehicleFilterId)) {
+          _vehicleFilterId = null;
+        }
+      });
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -231,135 +244,110 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
             onPickRange: _pickRange,
             onClear: _clearFilters,
           ),
+          if (_vehicles.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            VehicleFilterPill(
+              label: _selectedVehicleFilterLabel(context),
+              active: _vehicleFilterId != null,
+              onTap: _pickVehicleFilter,
+              onClear: _vehicleFilterId == null
+                  ? null
+                  : () => setState(() => _vehicleFilterId = null),
+            ),
+          ],
           const SizedBox(height: 16),
           if (_filteredMaintenances.isNotEmpty)
-            Card(
-              child: ListTile(
-                title: Text(
-                  strings.pick(pt: 'Resumo', en: 'Summary', es: 'Resumen'),
-                ),
-                subtitle: Text(
-                  strings.pick(
-                    pt: '${_filteredMaintenances.length} manutencoes no filtro atual',
-                    en: '${_filteredMaintenances.length} maintenance records in the current filter',
-                    es: '${_filteredMaintenances.length} mantenimientos en el filtro actual',
-                  ),
-                ),
-                trailing: Text(format.currency(_totalAmount)),
-              ),
-            ),
-          if (_errorMessage != null)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
-            ),
-          if (_maintenances.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  strings.pick(
-                    pt: 'Nenhuma manutencao ainda. Cadastre oficina, motivo e valor para cuidar melhor do veiculo.',
-                    en: 'No maintenance yet. Add shop, reason and amount to take better care of your vehicle.',
-                    es: 'Aun no hay mantenimiento. Agrega taller, motivo y valor para cuidar mejor el vehiculo.',
-                  ),
-                ),
-              ),
-            ),
-          if (_maintenances.isNotEmpty && _filteredMaintenances.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  strings.pick(
-                    pt: 'Nenhuma manutencao encontrada para os filtros informados.',
-                    en: 'No maintenance found for these filters.',
-                    es: 'No se encontro mantenimiento para estos filtros.',
-                  ),
-                ),
-              ),
-            ),
-          ..._filteredMaintenances.map(
-            (maintenance) => Card(
-              child: ExpansionTile(
-                title: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        maintenance.vehicleLabel ??
-                            strings.pick(
-                              pt: 'Veiculo',
-                              en: 'Vehicle',
-                              es: 'Vehiculo',
-                            ),
-                      ),
+            OmnyaGlassCard(
+              highlight: true,
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: OmnyaVisualTokens.neonBlue.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(18),
                     ),
-                    PopupMenuButton<String>(
-                      onSelected: (value) async {
-                        if (value == 'edit') {
-                          await _openEditDialog(maintenance);
-                          return;
-                        }
-                        if (value == 'delete') {
-                          await _deleteMaintenance(maintenance);
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        PopupMenuItem(
-                          value: 'edit',
-                          child: Text(
-                            strings.pick(
-                              pt: 'Editar',
-                              en: 'Edit',
-                              es: 'Editar',
-                            ),
+                    child: const Icon(Icons.build_circle_rounded),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strings.pick(
+                            pt: 'Resumo do periodo',
+                            en: 'Period summary',
+                            es: 'Resumen del periodo',
                           ),
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text(
-                            strings.pick(
-                              pt: 'Excluir',
-                              en: 'Delete',
-                              es: 'Eliminar',
-                            ),
+                        const SizedBox(height: 3),
+                        Text(
+                          strings.pick(
+                            pt: '${_filteredMaintenances.length} manutencoes encontradas',
+                            en: '${_filteredMaintenances.length} maintenance records found',
+                            es: '${_filteredMaintenances.length} mantenimientos encontrados',
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-                subtitle: Text(
-                  [
-                    _formatDate(maintenance.maintenanceDate),
-                    if (maintenance.workshop != null) maintenance.workshop!,
-                    if (maintenance.reason != null) maintenance.reason!,
-                    format.currency(maintenance.totalAmount),
-                  ].join(' - '),
-                ),
-                children: [
-                  if (maintenance.description != null &&
-                      maintenance.description!.trim().isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(maintenance.description!),
-                      ),
-                    ),
-                  ...maintenance.items.map(
-                    (item) => ListTile(
-                      title: Text(item.description),
-                      trailing: Text(format.currency(item.amount)),
-                    ),
+                  ),
+                  Text(
+                    format.currency(_totalAmount),
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ],
               ),
+            ),
+          if (_filteredMaintenances.isNotEmpty) const SizedBox(height: 12),
+          if (_errorMessage != null)
+            OmnyaGlassCard(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                _errorMessage!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+          if (_maintenances.isEmpty)
+            OmnyaEmptyState(
+              icon: Icons.build_circle_rounded,
+              title: strings.pick(
+                pt: 'Nenhuma manutencao ainda',
+                en: 'No maintenance yet',
+                es: 'Aun no hay mantenimiento',
+              ),
+              message: strings.pick(
+                pt: 'Cadastre oficina, motivo, valor e itens para cuidar melhor do veiculo.',
+                en: 'Add shop, reason, amount and items to take better care of your vehicle.',
+                es: 'Agrega taller, motivo, valor e items para cuidar mejor el vehiculo.',
+              ),
+            ),
+          if (_maintenances.isNotEmpty && _filteredMaintenances.isEmpty)
+            OmnyaEmptyState(
+              icon: Icons.search_off_rounded,
+              title: strings.pick(
+                pt: 'Nada nesse filtro',
+                en: 'Nothing in this filter',
+                es: 'Nada en este filtro',
+              ),
+              message: strings.pick(
+                pt: 'Ajuste a busca ou o periodo para encontrar manutencoes antigas.',
+                en: 'Adjust search or period to find older maintenance records.',
+                es: 'Ajusta la busqueda o el periodo para encontrar mantenimientos antiguos.',
+              ),
+            ),
+          ..._groupedMaintenances.map(
+            (monthGroup) => _MaintenanceMonthSection(
+              title: monthGroup.label,
+              days: monthGroup.days,
+              format: format,
+              strings: strings,
+              onEdit: _openEditDialog,
+              onDelete: _deleteMaintenance,
+              formatTime: _formatTime,
             ),
           ),
         ],
@@ -388,9 +376,9 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
     );
   }
 
-  String _formatDate(DateTime value) {
+  String _formatTime(DateTime value) {
     final date = value.toLocal();
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   double get _totalAmount => _filteredMaintenances.fold<double>(
@@ -400,8 +388,12 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
 
   List<AppMaintenance> get _filteredMaintenances {
     final query = _searchController.text.trim().toLowerCase();
-    return _maintenances.where((maintenance) {
+    final items = _maintenances.where((maintenance) {
       if (!_isWithinRange(maintenance.maintenanceDate)) return false;
+      if (_vehicleFilterId != null &&
+          maintenance.vehicleId != _vehicleFilterId) {
+        return false;
+      }
       if (query.isEmpty) return true;
       final haystack = [
         maintenance.vehicleLabel,
@@ -412,6 +404,71 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
       ].whereType<String>().join(' ').toLowerCase();
       return haystack.contains(query);
     }).toList();
+
+    items.sort((a, b) => b.maintenanceDate.compareTo(a.maintenanceDate));
+    return items;
+  }
+
+  List<_MaintenanceMonthGroup> get _groupedMaintenances {
+    final monthGroups = <_MaintenanceMonthGroup>[];
+
+    for (final maintenance in _filteredMaintenances) {
+      final local = maintenance.maintenanceDate.toLocal();
+      final monthLabel = _formatMonth(local);
+      final dayKey = DateTime(local.year, local.month, local.day);
+      final dayLabel =
+          '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
+
+      _MaintenanceMonthGroup? monthGroup;
+      for (final group in monthGroups) {
+        if (group.label == monthLabel) {
+          monthGroup = group;
+          break;
+        }
+      }
+      if (monthGroup == null) {
+        monthGroup = _MaintenanceMonthGroup(label: monthLabel, days: []);
+        monthGroups.add(monthGroup);
+      }
+
+      _MaintenanceDayGroup? dayGroup;
+      for (final group in monthGroup.days) {
+        if (group.dayKey == dayKey) {
+          dayGroup = group;
+          break;
+        }
+      }
+      if (dayGroup == null) {
+        dayGroup = _MaintenanceDayGroup(
+          dayKey: dayKey,
+          label: dayLabel,
+          maintenances: [],
+        );
+        monthGroup.days.add(dayGroup);
+      }
+
+      dayGroup.maintenances.add(maintenance);
+    }
+
+    return monthGroups;
+  }
+
+  String _formatMonth(DateTime value) {
+    const monthNames = [
+      'Jan',
+      'Fev',
+      'Mar',
+      'Abr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Set',
+      'Out',
+      'Nov',
+      'Dez',
+    ];
+    return '${monthNames[value.month - 1]}/${value.year}';
   }
 
   bool _isWithinRange(DateTime value) {
@@ -443,16 +500,259 @@ class _MaintenancesScreenState extends State<MaintenancesScreen> {
     setState(() => _range = picked);
   }
 
+  Future<void> _pickVehicleFilter() async {
+    final strings = AppStrings.of(context);
+    final selected = await showModalBottomSheet<String?>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+          children: [
+            ListTile(
+              leading: const Icon(Icons.filter_alt_off_rounded),
+              title: Text(
+                strings.pick(
+                  pt: 'Todos os veiculos',
+                  en: 'All vehicles',
+                  es: 'Todos los vehiculos',
+                ),
+              ),
+              onTap: () => Navigator.of(context).pop(null),
+            ),
+            for (final vehicle in _vehicles)
+              ListTile(
+                leading: Icon(
+                  vehicle.active
+                      ? Icons.two_wheeler_rounded
+                      : Icons.pause_circle_outline_rounded,
+                ),
+                title: Text('${vehicle.brand} ${vehicle.model}'),
+                subtitle: Text(
+                  [
+                    if (vehicle.modelYear != null) vehicle.modelYear.toString(),
+                    if ((vehicle.fuelType ?? '').isNotEmpty) vehicle.fuelType!,
+                    vehicle.active
+                        ? strings.pick(pt: 'Ativo', en: 'Active', es: 'Activo')
+                        : strings.pick(
+                            pt: 'Inativo',
+                            en: 'Inactive',
+                            es: 'Inactivo',
+                          ),
+                  ].join(' • '),
+                ),
+                selected: vehicle.id == _vehicleFilterId,
+                onTap: () => Navigator.of(context).pop(vehicle.id),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    setState(() => _vehicleFilterId = selected);
+  }
+
+  String _selectedVehicleFilterLabel(BuildContext context) {
+    final strings = AppStrings.of(context);
+    if (_vehicleFilterId == null) {
+      return strings.pick(
+        pt: 'Todos os veiculos',
+        en: 'All vehicles',
+        es: 'Todos los vehiculos',
+      );
+    }
+
+    final vehicle = _vehicles.where((item) => item.id == _vehicleFilterId);
+    if (vehicle.isEmpty) {
+      return strings.pick(
+        pt: 'Veiculo filtrado',
+        en: 'Filtered vehicle',
+        es: 'Vehiculo filtrado',
+      );
+    }
+    final selected = vehicle.first;
+    return '${selected.brand} ${selected.model}';
+  }
+
   void _clearFilters() {
     setState(() {
       _searchController.clear();
       _range = _currentMonthRange();
+      _vehicleFilterId = null;
     });
   }
 
   DateTimeRange _currentMonthRange() {
     final now = DateTime.now();
     return DateTimeRange(start: DateTime(now.year, now.month, 1), end: now);
+  }
+}
+
+class _MaintenanceMonthGroup {
+  _MaintenanceMonthGroup({required this.label, required this.days});
+
+  final String label;
+  final List<_MaintenanceDayGroup> days;
+}
+
+class _MaintenanceDayGroup {
+  _MaintenanceDayGroup({
+    required this.dayKey,
+    required this.label,
+    required this.maintenances,
+  });
+
+  final DateTime dayKey;
+  final String label;
+  final List<AppMaintenance> maintenances;
+
+  double get amount =>
+      maintenances.fold<double>(0, (sum, item) => sum + item.totalAmount);
+}
+
+class _MaintenanceMonthSection extends StatelessWidget {
+  const _MaintenanceMonthSection({
+    required this.title,
+    required this.days,
+    required this.format,
+    required this.strings,
+    required this.onEdit,
+    required this.onDelete,
+    required this.formatTime,
+  });
+
+  final String title;
+  final List<_MaintenanceDayGroup> days;
+  final AppFormat format;
+  final AppStrings strings;
+  final ValueChanged<AppMaintenance> onEdit;
+  final ValueChanged<AppMaintenance> onDelete;
+  final String Function(DateTime value) formatTime;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 18, bottom: 10, left: 4),
+          child: Text(title, style: textTheme.titleMedium),
+        ),
+        for (final day in days) ...[
+          OmnyaGlassCard(
+            highlight: true,
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${day.label} - ${day.maintenances.length} '
+                    '${day.maintenances.length == 1 ? strings.pick(pt: 'manutencao', en: 'maintenance', es: 'mantenimiento') : strings.pick(pt: 'manutencoes', en: 'maintenance records', es: 'mantenimientos')} | '
+                    '${format.currency(day.amount)}',
+                    style: textTheme.titleSmall,
+                  ),
+                ),
+                Icon(
+                  Icons.build_circle_rounded,
+                  color: OmnyaVisualTokens.neonBlue.withValues(alpha: 0.9),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final maintenance in day.maintenances) ...[
+            OmnyaGlassCard(
+              padding: EdgeInsets.zero,
+              child: ExpansionTile(
+                tilePadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 4,
+                ),
+                childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+                leading: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: OmnyaVisualTokens.neonBlue.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(Icons.build_circle_rounded),
+                ),
+                title: Text(
+                  maintenance.vehicleLabel ??
+                      strings.pick(
+                        pt: 'Veiculo',
+                        en: 'Vehicle',
+                        es: 'Vehiculo',
+                      ),
+                ),
+                subtitle: Text(
+                  [
+                    formatTime(maintenance.maintenanceDate),
+                    if (maintenance.workshop != null &&
+                        maintenance.workshop!.trim().isNotEmpty)
+                      maintenance.workshop!,
+                    if (maintenance.reason != null &&
+                        maintenance.reason!.trim().isNotEmpty)
+                      maintenance.reason!,
+                    format.currency(maintenance.totalAmount),
+                  ].join(' | '),
+                ),
+                trailing: PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'edit') onEdit(maintenance);
+                    if (value == 'delete') onDelete(maintenance);
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Text(
+                        strings.pick(pt: 'Editar', en: 'Edit', es: 'Editar'),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text(
+                        strings.pick(
+                          pt: 'Excluir',
+                          en: 'Delete',
+                          es: 'Eliminar',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                children: [
+                  if (maintenance.description != null &&
+                      maintenance.description!.trim().isNotEmpty)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(maintenance.description!),
+                      ),
+                    ),
+                  for (final item in maintenance.items)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Expanded(child: Text(item.description)),
+                          Text(format.currency(item.amount)),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ],
+      ],
+    );
   }
 }
 

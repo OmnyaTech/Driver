@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import '../../models/app_fueling.dart';
 import '../../models/app_vehicle.dart';
 import '../finance/widgets/financial_filter_toolbar.dart';
+import '../finance/widgets/vehicle_filter_pill.dart';
 import '../../services/fueling_service.dart';
 import '../../services/journey_service.dart';
 import '../../services/vehicle_service.dart';
 import '../../utilities/localization/app_format.dart';
 import '../../utilities/localization/app_strings.dart';
 import '../../utilities/ui/omnya_shell.dart';
+import '../../utilities/ui/omnya_visuals.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
 class FuelingsScreen extends StatefulWidget {
@@ -29,9 +31,12 @@ class FuelingsScreen extends StatefulWidget {
 
 class _FuelingsScreenState extends State<FuelingsScreen> {
   final FuelingService _fuelingService = FuelingService();
+  final VehicleService _vehicleService = VehicleService();
   final TextEditingController _searchController = TextEditingController();
   bool _loading = true;
   List<AppFueling> _fuelings = const [];
+  List<AppVehicle> _vehicles = const [];
+  String? _vehicleFilterId;
   String? _errorMessage;
   late DateTimeRange _range;
 
@@ -67,8 +72,16 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
 
     try {
       final fuelings = await _fuelingService.listFuelings();
+      final vehicles = await _vehicleService.listVehicles();
       if (!mounted) return;
-      setState(() => _fuelings = fuelings);
+      setState(() {
+        _fuelings = fuelings;
+        _vehicles = vehicles;
+        if (_vehicleFilterId != null &&
+            !_vehicles.any((vehicle) => vehicle.id == _vehicleFilterId)) {
+          _vehicleFilterId = null;
+        }
+      });
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -234,118 +247,112 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
             onPickRange: _pickRange,
             onClear: _clearFilters,
           ),
+          if (_vehicles.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            VehicleFilterPill(
+              label: _selectedVehicleFilterLabel(context),
+              active: _vehicleFilterId != null,
+              onTap: _pickVehicleFilter,
+              onClear: _vehicleFilterId == null
+                  ? null
+                  : () => setState(() => _vehicleFilterId = null),
+            ),
+          ],
           const SizedBox(height: 16),
           if (_filteredFuelings.isNotEmpty)
-            Card(
-              child: ListTile(
-                title: Text(
-                  strings.pick(pt: 'Resumo', en: 'Summary', es: 'Resumen'),
-                ),
-                subtitle: Text(
-                  strings.pick(
-                    pt: '${_filteredFuelings.length} abastecimentos no filtro atual',
-                    en: '${_filteredFuelings.length} fuelings in the current filter',
-                    es: '${_filteredFuelings.length} cargas en el filtro actual',
-                  ),
-                ),
-                trailing: Text(format.currency(_totalAmount)),
-              ),
-            ),
-          if (_errorMessage != null)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
-            ),
-          if (_fuelings.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  strings.pick(
-                    pt: 'Nenhum abastecimento ainda. Cadastre litros, valor e veiculo para acompanhar seus custos.',
-                    en: 'No fuelings yet. Add liters, amount and vehicle to track your costs.',
-                    es: 'Aun no hay cargas. Agrega litros, valor y vehiculo para seguir tus costos.',
-                  ),
-                ),
-              ),
-            ),
-          if (_fuelings.isNotEmpty && _filteredFuelings.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  strings.pick(
-                    pt: 'Nenhum abastecimento encontrado para os filtros informados.',
-                    en: 'No fuelings found for these filters.',
-                    es: 'No se encontraron cargas para estos filtros.',
-                  ),
-                ),
-              ),
-            ),
-          ..._filteredFuelings.map(
-            (fueling) => Card(
-              child: ListTile(
-                title: Text(
-                  fueling.vehicleLabel ??
-                      strings.pick(
-                        pt: 'Veiculo',
-                        en: 'Vehicle',
-                        es: 'Vehiculo',
+            OmnyaGlassCard(
+              highlight: true,
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: OmnyaVisualTokens.neutralData.withValues(
+                        alpha: 0.16,
                       ),
-                ),
-                subtitle: Text(
-                  [
-                    _formatDate(fueling.fueledAt),
-                    if (fueling.stationName != null) fueling.stationName!,
-                    '${fueling.liters.toStringAsFixed(2)} L',
-                    '${format.currency(fueling.pricePerLiter)}/L',
-                  ].join(' - '),
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(format.currency(fueling.totalAmount)),
-                    PopupMenuButton<String>(
-                      onSelected: (value) async {
-                        if (value == 'edit') {
-                          await _openEditDialog(fueling);
-                          return;
-                        }
-                        if (value == 'delete') {
-                          await _deleteFueling(fueling);
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        PopupMenuItem(
-                          value: 'edit',
-                          child: Text(
-                            strings.pick(
-                              pt: 'Editar',
-                              en: 'Edit',
-                              es: 'Editar',
-                            ),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: const Icon(Icons.local_gas_station_rounded),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strings.pick(
+                            pt: 'Resumo do periodo',
+                            en: 'Period summary',
+                            es: 'Resumen del periodo',
                           ),
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text(
-                            strings.pick(
-                              pt: 'Excluir',
-                              en: 'Delete',
-                              es: 'Eliminar',
-                            ),
+                        const SizedBox(height: 3),
+                        Text(
+                          strings.pick(
+                            pt: '${_filteredFuelings.length} abastecimentos encontrados',
+                            en: '${_filteredFuelings.length} fuelings found',
+                            es: '${_filteredFuelings.length} cargas encontradas',
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  Text(
+                    format.currency(_totalAmount),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
               ),
+            ),
+          if (_filteredFuelings.isNotEmpty) const SizedBox(height: 12),
+          if (_errorMessage != null)
+            OmnyaGlassCard(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                _errorMessage!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+          if (_fuelings.isEmpty)
+            OmnyaEmptyState(
+              icon: Icons.local_gas_station_rounded,
+              title: strings.pick(
+                pt: 'Nenhum abastecimento ainda',
+                en: 'No fuelings yet',
+                es: 'Aun no hay cargas',
+              ),
+              message: strings.pick(
+                pt: 'Cadastre litros, valor, posto e veiculo para acompanhar seus custos.',
+                en: 'Add liters, amount, station and vehicle to track your costs.',
+                es: 'Agrega litros, valor, estacion y vehiculo para seguir tus costos.',
+              ),
+            ),
+          if (_fuelings.isNotEmpty && _filteredFuelings.isEmpty)
+            OmnyaEmptyState(
+              icon: Icons.search_off_rounded,
+              title: strings.pick(
+                pt: 'Nada nesse filtro',
+                en: 'Nothing in this filter',
+                es: 'Nada en este filtro',
+              ),
+              message: strings.pick(
+                pt: 'Ajuste a busca ou o periodo para encontrar abastecimentos antigos.',
+                en: 'Adjust search or period to find older fuelings.',
+                es: 'Ajusta la busqueda o el periodo para encontrar cargas antiguas.',
+              ),
+            ),
+          ..._groupedFuelings.map(
+            (monthGroup) => _FuelingMonthSection(
+              title: monthGroup.label,
+              days: monthGroup.days,
+              format: format,
+              strings: strings,
+              onEdit: _openEditDialog,
+              onDelete: _deleteFueling,
+              formatTime: _formatTime,
             ),
           ),
         ],
@@ -370,9 +377,9 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
     );
   }
 
-  String _formatDate(DateTime value) {
+  String _formatTime(DateTime value) {
     final date = value.toLocal();
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   double get _totalAmount =>
@@ -380,8 +387,11 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
 
   List<AppFueling> get _filteredFuelings {
     final query = _searchController.text.trim().toLowerCase();
-    return _fuelings.where((fueling) {
+    final items = _fuelings.where((fueling) {
       if (!_isWithinRange(fueling.fueledAt)) return false;
+      if (_vehicleFilterId != null && fueling.vehicleId != _vehicleFilterId) {
+        return false;
+      }
       if (query.isEmpty) return true;
       final haystack = [
         fueling.vehicleLabel,
@@ -390,6 +400,71 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
       ].whereType<String>().join(' ').toLowerCase();
       return haystack.contains(query);
     }).toList();
+
+    items.sort((a, b) => b.fueledAt.compareTo(a.fueledAt));
+    return items;
+  }
+
+  List<_FuelingMonthGroup> get _groupedFuelings {
+    final monthGroups = <_FuelingMonthGroup>[];
+
+    for (final fueling in _filteredFuelings) {
+      final local = fueling.fueledAt.toLocal();
+      final monthLabel = _formatMonth(local);
+      final dayKey = DateTime(local.year, local.month, local.day);
+      final dayLabel =
+          '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
+
+      _FuelingMonthGroup? monthGroup;
+      for (final group in monthGroups) {
+        if (group.label == monthLabel) {
+          monthGroup = group;
+          break;
+        }
+      }
+      if (monthGroup == null) {
+        monthGroup = _FuelingMonthGroup(label: monthLabel, days: []);
+        monthGroups.add(monthGroup);
+      }
+
+      _FuelingDayGroup? dayGroup;
+      for (final group in monthGroup.days) {
+        if (group.dayKey == dayKey) {
+          dayGroup = group;
+          break;
+        }
+      }
+      if (dayGroup == null) {
+        dayGroup = _FuelingDayGroup(
+          dayKey: dayKey,
+          label: dayLabel,
+          fuelings: [],
+        );
+        monthGroup.days.add(dayGroup);
+      }
+
+      dayGroup.fuelings.add(fueling);
+    }
+
+    return monthGroups;
+  }
+
+  String _formatMonth(DateTime value) {
+    const monthNames = [
+      'Jan',
+      'Fev',
+      'Mar',
+      'Abr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Set',
+      'Out',
+      'Nov',
+      'Dez',
+    ];
+    return '${monthNames[value.month - 1]}/${value.year}';
   }
 
   bool _isWithinRange(DateTime value) {
@@ -421,16 +496,247 @@ class _FuelingsScreenState extends State<FuelingsScreen> {
     setState(() => _range = picked);
   }
 
+  Future<void> _pickVehicleFilter() async {
+    final strings = AppStrings.of(context);
+    final selected = await showModalBottomSheet<String?>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+          children: [
+            ListTile(
+              leading: const Icon(Icons.filter_alt_off_rounded),
+              title: Text(
+                strings.pick(
+                  pt: 'Todos os veiculos',
+                  en: 'All vehicles',
+                  es: 'Todos los vehiculos',
+                ),
+              ),
+              onTap: () => Navigator.of(context).pop(null),
+            ),
+            for (final vehicle in _vehicles)
+              ListTile(
+                leading: Icon(
+                  vehicle.active
+                      ? Icons.two_wheeler_rounded
+                      : Icons.pause_circle_outline_rounded,
+                ),
+                title: Text('${vehicle.brand} ${vehicle.model}'),
+                subtitle: Text(
+                  [
+                    if (vehicle.modelYear != null) vehicle.modelYear.toString(),
+                    if ((vehicle.fuelType ?? '').isNotEmpty) vehicle.fuelType!,
+                    vehicle.active
+                        ? strings.pick(pt: 'Ativo', en: 'Active', es: 'Activo')
+                        : strings.pick(
+                            pt: 'Inativo',
+                            en: 'Inactive',
+                            es: 'Inactivo',
+                          ),
+                  ].join(' • '),
+                ),
+                selected: vehicle.id == _vehicleFilterId,
+                onTap: () => Navigator.of(context).pop(vehicle.id),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    setState(() => _vehicleFilterId = selected);
+  }
+
+  String _selectedVehicleFilterLabel(BuildContext context) {
+    final strings = AppStrings.of(context);
+    if (_vehicleFilterId == null) {
+      return strings.pick(
+        pt: 'Todos os veiculos',
+        en: 'All vehicles',
+        es: 'Todos los vehiculos',
+      );
+    }
+
+    final vehicle = _vehicles.where((item) => item.id == _vehicleFilterId);
+    if (vehicle.isEmpty) {
+      return strings.pick(
+        pt: 'Veiculo filtrado',
+        en: 'Filtered vehicle',
+        es: 'Vehiculo filtrado',
+      );
+    }
+    final selected = vehicle.first;
+    return '${selected.brand} ${selected.model}';
+  }
+
   void _clearFilters() {
     setState(() {
       _searchController.clear();
       _range = _currentMonthRange();
+      _vehicleFilterId = null;
     });
   }
 
   DateTimeRange _currentMonthRange() {
     final now = DateTime.now();
     return DateTimeRange(start: DateTime(now.year, now.month, 1), end: now);
+  }
+}
+
+class _FuelingMonthGroup {
+  _FuelingMonthGroup({required this.label, required this.days});
+
+  final String label;
+  final List<_FuelingDayGroup> days;
+}
+
+class _FuelingDayGroup {
+  _FuelingDayGroup({
+    required this.dayKey,
+    required this.label,
+    required this.fuelings,
+  });
+
+  final DateTime dayKey;
+  final String label;
+  final List<AppFueling> fuelings;
+
+  double get amount =>
+      fuelings.fold<double>(0, (sum, item) => sum + item.totalAmount);
+}
+
+class _FuelingMonthSection extends StatelessWidget {
+  const _FuelingMonthSection({
+    required this.title,
+    required this.days,
+    required this.format,
+    required this.strings,
+    required this.onEdit,
+    required this.onDelete,
+    required this.formatTime,
+  });
+
+  final String title;
+  final List<_FuelingDayGroup> days;
+  final AppFormat format;
+  final AppStrings strings;
+  final ValueChanged<AppFueling> onEdit;
+  final ValueChanged<AppFueling> onDelete;
+  final String Function(DateTime value) formatTime;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 18, bottom: 10, left: 4),
+          child: Text(title, style: textTheme.titleMedium),
+        ),
+        for (final day in days) ...[
+          OmnyaGlassCard(
+            highlight: true,
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${day.label} - ${day.fuelings.length} '
+                    '${day.fuelings.length == 1 ? strings.pick(pt: 'abastecimento', en: 'fueling', es: 'carga') : strings.pick(pt: 'abastecimentos', en: 'fuelings', es: 'cargas')} | '
+                    '${format.currency(day.amount)}',
+                    style: textTheme.titleSmall,
+                  ),
+                ),
+                Icon(
+                  Icons.local_gas_station_rounded,
+                  color: OmnyaVisualTokens.neutralData.withValues(alpha: 0.9),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final fueling in day.fuelings) ...[
+            OmnyaGlassCard(
+              padding: const EdgeInsets.all(14),
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: OmnyaVisualTokens.neutralData.withValues(
+                      alpha: 0.14,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(Icons.local_gas_station_rounded),
+                ),
+                title: Text(
+                  fueling.vehicleLabel ??
+                      strings.pick(
+                        pt: 'Veiculo',
+                        en: 'Vehicle',
+                        es: 'Vehiculo',
+                      ),
+                ),
+                subtitle: Text(
+                  [
+                    formatTime(fueling.fueledAt),
+                    if (fueling.stationName != null &&
+                        fueling.stationName!.trim().isNotEmpty)
+                      fueling.stationName!,
+                    if (fueling.fuelType != null &&
+                        fueling.fuelType!.trim().isNotEmpty)
+                      fueling.fuelType!,
+                    '${fueling.liters.toStringAsFixed(2)} L',
+                    '${format.currency(fueling.pricePerLiter)}/L',
+                  ].join(' | '),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(format.currency(fueling.totalAmount)),
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'edit') onEdit(fueling);
+                        if (value == 'delete') onDelete(fueling);
+                      },
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Text(
+                            strings.pick(
+                              pt: 'Editar',
+                              en: 'Edit',
+                              es: 'Editar',
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text(
+                            strings.pick(
+                              pt: 'Excluir',
+                              en: 'Delete',
+                              es: 'Eliminar',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ],
+      ],
+    );
   }
 }
 

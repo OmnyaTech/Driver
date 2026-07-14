@@ -7,6 +7,7 @@ import '../../services/trip_expense_service.dart';
 import '../../utilities/localization/app_format.dart';
 import '../../utilities/localization/app_strings.dart';
 import '../../utilities/ui/omnya_shell.dart';
+import '../../utilities/ui/omnya_visuals.dart';
 import '../../utilities/ui/screen_action_controller.dart';
 
 class TripExpensesScreen extends StatefulWidget {
@@ -220,110 +221,98 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
           ),
           const SizedBox(height: 16),
           if (_filteredExpenses.isNotEmpty)
-            Card(
-              child: ListTile(
-                title: Text(
-                  strings.pick(pt: 'Resumo', en: 'Summary', es: 'Resumen'),
-                ),
-                subtitle: Text(
-                  strings.pick(
-                    pt: '${_filteredExpenses.length} despesas no filtro atual',
-                    en: '${_filteredExpenses.length} expenses in the current filter',
-                    es: '${_filteredExpenses.length} gastos en el filtro actual',
+            OmnyaGlassCard(
+              highlight: true,
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: OmnyaVisualTokens.expense.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: const Icon(Icons.receipt_long_rounded),
                   ),
-                ),
-                trailing: Text(format.currency(_totalAmount)),
-              ),
-            ),
-          if (_errorMessage != null)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
-            ),
-          if (_expenses.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  strings.pick(
-                    pt: 'Nenhuma despesa registrada ainda. Cadastre pedagio, estacionamento e outros custos de percurso.',
-                    en: 'No expenses yet. Add tolls, parking and other trip costs here.',
-                    es: 'Aun no hay gastos. Agrega peajes, estacionamiento y otros costos del recorrido.',
-                  ),
-                ),
-              ),
-            ),
-          if (_expenses.isNotEmpty && _filteredExpenses.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  strings.pick(
-                    pt: 'Nenhuma despesa encontrada para os filtros informados.',
-                    en: 'No expenses found for these filters.',
-                    es: 'No se encontraron gastos para estos filtros.',
-                  ),
-                ),
-              ),
-            ),
-          ..._filteredExpenses.map(
-            (expense) => Card(
-              child: ListTile(
-                title: Text(_expenseLabel(expense.type)),
-                subtitle: Text(
-                  [
-                    _formatDate(expense.occurredAt),
-                    if (expense.journeyLabel != null) expense.journeyLabel!,
-                    if (expense.description != null &&
-                        expense.description!.trim().isNotEmpty)
-                      expense.description!,
-                  ].join(' - '),
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(format.currency(expense.amount)),
-                    PopupMenuButton<String>(
-                      onSelected: (value) async {
-                        if (value == 'edit') {
-                          await _openEditDialog(expense);
-                          return;
-                        }
-                        if (value == 'delete') {
-                          await _deleteExpense(expense);
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        PopupMenuItem(
-                          value: 'edit',
-                          child: Text(
-                            strings.pick(
-                              pt: 'Editar',
-                              en: 'Edit',
-                              es: 'Editar',
-                            ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strings.pick(
+                            pt: 'Resumo do periodo',
+                            en: 'Period summary',
+                            es: 'Resumen del periodo',
                           ),
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text(
-                            strings.pick(
-                              pt: 'Excluir',
-                              en: 'Delete',
-                              es: 'Eliminar',
-                            ),
+                        const SizedBox(height: 3),
+                        Text(
+                          strings.pick(
+                            pt: '${_filteredExpenses.length} despesas encontradas',
+                            en: '${_filteredExpenses.length} expenses found',
+                            es: '${_filteredExpenses.length} gastos encontrados',
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  Text(
+                    format.currency(_totalAmount),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
               ),
+            ),
+          if (_filteredExpenses.isNotEmpty) const SizedBox(height: 12),
+          if (_errorMessage != null)
+            OmnyaGlassCard(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                _errorMessage!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+          if (_expenses.isEmpty)
+            OmnyaEmptyState(
+              icon: Icons.receipt_long_rounded,
+              title: strings.pick(
+                pt: 'Nenhuma despesa ainda',
+                en: 'No expenses yet',
+                es: 'Aun no hay gastos',
+              ),
+              message: strings.pick(
+                pt: 'Cadastre pedagio, estacionamento e outros custos de percurso quando aparecerem.',
+                en: 'Add tolls, parking and other trip costs when they show up.',
+                es: 'Agrega peajes, estacionamiento y otros costos cuando aparezcan.',
+              ),
+            ),
+          if (_expenses.isNotEmpty && _filteredExpenses.isEmpty)
+            OmnyaEmptyState(
+              icon: Icons.search_off_rounded,
+              title: strings.pick(
+                pt: 'Nada nesse filtro',
+                en: 'Nothing in this filter',
+                es: 'Nada en este filtro',
+              ),
+              message: strings.pick(
+                pt: 'Ajuste a busca ou o periodo para encontrar despesas antigas.',
+                en: 'Adjust search or period to find older expenses.',
+                es: 'Ajusta la busqueda o el periodo para encontrar gastos antiguos.',
+              ),
+            ),
+          ..._groupedExpenses.map(
+            (monthGroup) => _ExpenseMonthSection(
+              title: monthGroup.label,
+              days: monthGroup.days,
+              format: format,
+              strings: strings,
+              onEdit: _openEditDialog,
+              onDelete: _deleteExpense,
+              expenseLabel: _expenseLabel,
+              formatTime: _formatTime,
             ),
           ),
         ],
@@ -348,9 +337,9 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
     );
   }
 
-  String _formatDate(DateTime value) {
+  String _formatTime(DateTime value) {
     final date = value.toLocal();
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   String _expenseLabel(String type) {
@@ -377,7 +366,7 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
 
   List<AppTripExpense> get _filteredExpenses {
     final query = _searchController.text.trim().toLowerCase();
-    return _expenses.where((expense) {
+    final items = _expenses.where((expense) {
       if (!_isWithinRange(expense.occurredAt)) return false;
       if (query.isEmpty) return true;
       final haystack = [
@@ -387,6 +376,71 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
       ].whereType<String>().join(' ').toLowerCase();
       return haystack.contains(query);
     }).toList();
+
+    items.sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
+    return items;
+  }
+
+  List<_ExpenseMonthGroup> get _groupedExpenses {
+    final monthGroups = <_ExpenseMonthGroup>[];
+
+    for (final expense in _filteredExpenses) {
+      final local = expense.occurredAt.toLocal();
+      final monthLabel = _formatMonth(local);
+      final dayKey = DateTime(local.year, local.month, local.day);
+      final dayLabel =
+          '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
+
+      _ExpenseMonthGroup? monthGroup;
+      for (final group in monthGroups) {
+        if (group.label == monthLabel) {
+          monthGroup = group;
+          break;
+        }
+      }
+      if (monthGroup == null) {
+        monthGroup = _ExpenseMonthGroup(label: monthLabel, days: []);
+        monthGroups.add(monthGroup);
+      }
+
+      _ExpenseDayGroup? dayGroup;
+      for (final group in monthGroup.days) {
+        if (group.dayKey == dayKey) {
+          dayGroup = group;
+          break;
+        }
+      }
+      if (dayGroup == null) {
+        dayGroup = _ExpenseDayGroup(
+          dayKey: dayKey,
+          label: dayLabel,
+          expenses: [],
+        );
+        monthGroup.days.add(dayGroup);
+      }
+
+      dayGroup.expenses.add(expense);
+    }
+
+    return monthGroups;
+  }
+
+  String _formatMonth(DateTime value) {
+    const months = [
+      'Jan',
+      'Fev',
+      'Mar',
+      'Abr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Set',
+      'Out',
+      'Nov',
+      'Dez',
+    ];
+    return '${months[value.month - 1]}/${value.year}';
   }
 
   bool _isWithinRange(DateTime value) {
@@ -428,6 +482,133 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
   DateTimeRange _currentMonthRange() {
     final now = DateTime.now();
     return DateTimeRange(start: DateTime(now.year, now.month, 1), end: now);
+  }
+}
+
+class _ExpenseMonthGroup {
+  _ExpenseMonthGroup({required this.label, required this.days});
+
+  final String label;
+  final List<_ExpenseDayGroup> days;
+}
+
+class _ExpenseDayGroup {
+  _ExpenseDayGroup({
+    required this.dayKey,
+    required this.label,
+    required this.expenses,
+  });
+
+  final DateTime dayKey;
+  final String label;
+  final List<AppTripExpense> expenses;
+
+  double get amount =>
+      expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
+}
+
+class _ExpenseMonthSection extends StatelessWidget {
+  const _ExpenseMonthSection({
+    required this.title,
+    required this.days,
+    required this.format,
+    required this.strings,
+    required this.onEdit,
+    required this.onDelete,
+    required this.expenseLabel,
+    required this.formatTime,
+  });
+
+  final String title;
+  final List<_ExpenseDayGroup> days;
+  final AppFormat format;
+  final AppStrings strings;
+  final ValueChanged<AppTripExpense> onEdit;
+  final ValueChanged<AppTripExpense> onDelete;
+  final String Function(String type) expenseLabel;
+  final String Function(DateTime value) formatTime;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 18, bottom: 10, left: 4),
+          child: Text(title, style: textTheme.titleMedium),
+        ),
+        for (final day in days) ...[
+          OmnyaGlassCard(
+            highlight: true,
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${day.label} - ${day.expenses.length} '
+                    '${day.expenses.length == 1 ? strings.pick(pt: 'despesa', en: 'expense', es: 'gasto') : strings.pick(pt: 'despesas', en: 'expenses', es: 'gastos')} | '
+                    '${format.currency(day.amount)}',
+                    style: textTheme.titleSmall,
+                  ),
+                ),
+                Icon(
+                  Icons.receipt_long_rounded,
+                  color: OmnyaVisualTokens.expense.withValues(alpha: 0.9),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final expense in day.expenses) ...[
+            OmnyaGlassCard(
+              padding: const EdgeInsets.all(14),
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  '${expenseLabel(expense.type)} | ${format.currency(expense.amount)}',
+                ),
+                subtitle: Text(
+                  [
+                    formatTime(expense.occurredAt),
+                    if (expense.journeyLabel != null) expense.journeyLabel!,
+                    if (expense.description != null &&
+                        expense.description!.trim().isNotEmpty)
+                      expense.description!,
+                  ].join(' | '),
+                ),
+                trailing: PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'edit') onEdit(expense);
+                    if (value == 'delete') onDelete(expense);
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Text(
+                        strings.pick(pt: 'Editar', en: 'Edit', es: 'Editar'),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text(
+                        strings.pick(
+                          pt: 'Excluir',
+                          en: 'Delete',
+                          es: 'Eliminar',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ],
+      ],
+    );
   }
 }
 

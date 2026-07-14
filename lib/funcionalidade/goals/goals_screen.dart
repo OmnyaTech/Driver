@@ -714,14 +714,23 @@ class _GoalSuggestionsCard extends StatelessWidget {
                     style: theme.textTheme.titleMedium,
                   ),
                 ),
-                IconButton(
-                  tooltip: strings.pick(
-                    pt: 'Fechar sugestoes',
-                    en: 'Hide ideas',
-                    es: 'Cerrar ideas',
+                Container(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.34),
+                    ),
                   ),
-                  onPressed: onDismiss,
-                  icon: const Icon(Icons.close_rounded),
+                  child: IconButton(
+                    tooltip: strings.pick(
+                      pt: 'Fechar sugestoes',
+                      en: 'Hide ideas',
+                      es: 'Cerrar ideas',
+                    ),
+                    onPressed: onDismiss,
+                    icon: const Icon(Icons.close_rounded),
+                  ),
                 ),
               ],
             ),
