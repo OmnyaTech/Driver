@@ -52,6 +52,10 @@ class MainActivity : FlutterFragmentActivity() {
                         val title = call.argument<String>("title") ?: "Jornada em andamento"
                         val body = call.argument<String>("body")
                             ?: "Toque para voltar ao Driver e finalizar quando terminar."
+                        if (!areNotificationsEnabled()) {
+                            result.success(false)
+                            return@setMethodCallHandler
+                        }
                         try {
                             ActiveJourneyForegroundService.start(this, startedAt, title, body)
                             result.success(true)
