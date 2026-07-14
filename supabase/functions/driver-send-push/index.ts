@@ -91,45 +91,6 @@ const markJob = async (
     .eq("id", jobId);
 };
 
-const findNotificationState = async (
-  admin: ReturnType<typeof createClient>,
-  userId: string,
-  notificationKey: string | null | undefined,
-) => {
-  const key = String(notificationKey ?? "").trim();
-  if (!key) return null;
-
-  const { data } = await admin
-    .schema("driver")
-    .from("driver_notifications")
-    .select("read_at, delivered_at")
-    .eq("user_id", userId)
-    .eq("notification_key", key)
-    .maybeSingle();
-  return data as { read_at?: string | null; delivered_at?: string | null } | null;
-};
-
-const markNotificationDelivered = async (
-  admin: ReturnType<typeof createClient>,
-  userId: string,
-  notificationKey: string | null | undefined,
-) => {
-  const key = String(notificationKey ?? "").trim();
-  if (!key) return;
-
-  await admin
-    .schema("driver")
-    .from("driver_notifications")
-    .update({
-      delivered_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("user_id", userId)
-    .eq("notification_key", key)
-    .is("read_at", null)
-    .is("delivered_at", null);
-};
-
 const sendToUser = async ({
   admin,
   serverKey,
@@ -331,7 +292,6 @@ Deno.serve(async (req) => {
   let message = (body.body ?? "").trim();
   let payloadData = stringifyData(body.data);
   const jobId = (body.jobId ?? "").trim();
-  let jobNotificationKey: string | null = null;
 
   if (!jobId && serviceCall && !targetUserId && !title && !message) {
     const limit = Math.min(Math.max(Number(body.limit ?? 25), 1), 100);
@@ -343,7 +303,7 @@ Deno.serve(async (req) => {
     const { data: jobs, error: jobsError } = await admin
       .schema("driver")
       .from("driver_push_jobs")
-      .select("id, user_id, notification_key, title, body, payload")
+      .select("id, user_id, title, body, payload")
       .eq("status", "queued")
       .lte("scheduled_at", new Date().toISOString())
       .order("scheduled_at", { ascending: true })
@@ -355,24 +315,6 @@ Deno.serve(async (req) => {
 
     const results = [];
     for (const job of jobs ?? []) {
-      const notificationKey = String(job.notification_key ?? "");
-      const notificationState = await findNotificationState(
-        admin,
-        String(job.user_id),
-        notificationKey,
-      );
-      if (notificationState?.read_at || notificationState?.delivered_at) {
-        await markJob(admin, String(job.id), "sent");
-        results.push({
-          jobId: job.id,
-          delivered: 0,
-          failed: 0,
-          ok: true,
-          skipped: "notification_already_handled",
-        });
-        continue;
-      }
-
       const result = await sendToUser({
         admin,
         serverKey,
@@ -390,13 +332,6 @@ Deno.serve(async (req) => {
         result.ok ? "sent" : "failed",
         result.ok ? null : result.message,
       );
-      if (result.ok && result.delivered > 0) {
-        await markNotificationDelivered(
-          admin,
-          String(job.user_id),
-          notificationKey,
-        );
-      }
 
       results.push({
         jobId: job.id,
@@ -421,7 +356,7 @@ Deno.serve(async (req) => {
     const { data: job, error: jobError } = await admin
       .schema("driver")
       .from("driver_push_jobs")
-      .select("id, user_id, notification_key, title, body, payload, status")
+      .select("id, user_id, title, body, payload, status")
       .eq("id", jobId)
       .maybeSingle();
 
@@ -437,20 +372,6 @@ Deno.serve(async (req) => {
     title = String(job.title ?? "").trim();
     message = String(job.body ?? "").trim();
     payloadData = stringifyData(job.payload as Record<string, unknown> | null);
-    jobNotificationKey = String(job.notification_key ?? "");
-    const notificationState = await findNotificationState(
-      admin,
-      targetUserId,
-      jobNotificationKey,
-    );
-    if (notificationState?.read_at || notificationState?.delivered_at) {
-      await markJob(admin, jobId, "sent");
-      return json({
-        success: true,
-        delivered: 0,
-        message: "Aviso ja lido ou entregue.",
-      });
-    }
   }
 
   if (!title || !message) {
@@ -513,9 +434,6 @@ Deno.serve(async (req) => {
 
   if (jobId) {
     await markJob(admin, jobId, "sent");
-    if (result.delivered > 0) {
-      await markNotificationDelivered(admin, targetUserId, jobNotificationKey);
-    }
   }
 
   return json({
