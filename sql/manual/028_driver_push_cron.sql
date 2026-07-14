@@ -4,7 +4,6 @@
 -- Execute manually in Supabase SQL Editor after replacing the placeholders below.
 --
 -- Required replacements before running:
---   <SUPABASE_SERVICE_ROLE_KEY> with the service role key from Supabase.
 --   <DRIVER_PUSH_SERVICE_SECRET> with the same value configured as DRIVER_PUSH_SECRET.
 --
 -- This intentionally does not store real secrets in git.
@@ -28,7 +27,6 @@ select cron.schedule(
     select net.http_post(
       url := 'https://cattokugqanpagleawpw.supabase.co/functions/v1/driver-send-push',
       headers := jsonb_build_object(
-        'Authorization', 'Bearer <SUPABASE_SERVICE_ROLE_KEY>',
         'Content-Type', 'application/json',
         'x-driver-push-secret', '<DRIVER_PUSH_SERVICE_SECRET>'
       ),
