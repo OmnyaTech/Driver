@@ -15,6 +15,7 @@ import '../services/avatar_service.dart';
 import '../services/driver_preference_service.dart';
 import '../services/profile_service.dart';
 import '../services/public_profile_service.dart';
+import '../utilities/forms/driver_form_catalogs.dart';
 import '../utilities/guards/developer_guard.dart';
 import '../utilities/localization/app_format.dart';
 import '../utilities/localization/app_strings.dart';
@@ -37,117 +38,6 @@ const List<String> _publicBannerPalette = [
   '#16A34A',
   '#F59E0B',
 ];
-
-const List<String> _driverCountryOptions = [
-  'Brasil',
-  'Estados Unidos',
-  'Portugal',
-  'Espanha',
-  'Outro',
-];
-
-const Map<String, List<String>> _driverStatesByCountry = {
-  'Brasil': [
-    'Acre',
-    'Alagoas',
-    'Amapa',
-    'Amazonas',
-    'Bahia',
-    'Ceara',
-    'Distrito Federal',
-    'Espirito Santo',
-    'Goias',
-    'Maranhao',
-    'Mato Grosso',
-    'Mato Grosso do Sul',
-    'Minas Gerais',
-    'Para',
-    'Paraiba',
-    'Parana',
-    'Pernambuco',
-    'Piaui',
-    'Rio de Janeiro',
-    'Rio Grande do Norte',
-    'Rio Grande do Sul',
-    'Rondonia',
-    'Roraima',
-    'Santa Catarina',
-    'Sao Paulo',
-    'Sergipe',
-    'Tocantins',
-    'Outro',
-  ],
-  'Estados Unidos': ['California', 'Florida', 'New York', 'Texas', 'Outro'],
-  'Portugal': ['Lisboa', 'Porto', 'Braga', 'Coimbra', 'Outro'],
-  'Espanha': ['Madrid', 'Catalunha', 'Andaluzia', 'Valencia', 'Outro'],
-  'Outro': ['Outro'],
-};
-
-const Map<String, List<String>> _driverCitiesByState = {
-  'Goias': [
-    'Catalao',
-    'Goiania',
-    'Aparecida de Goiania',
-    'Anapolis',
-    'Rio Verde',
-    'Itumbiara',
-    'Jatai',
-    'Caldas Novas',
-    'Formosa',
-    'Outro',
-  ],
-  'Sao Paulo': [
-    'Sao Paulo',
-    'Campinas',
-    'Santos',
-    'Ribeirao Preto',
-    'Sao Jose dos Campos',
-    'Sorocaba',
-    'Outro',
-  ],
-  'Minas Gerais': [
-    'Belo Horizonte',
-    'Uberlandia',
-    'Contagem',
-    'Juiz de Fora',
-    'Betim',
-    'Montes Claros',
-    'Outro',
-  ],
-  'Rio de Janeiro': [
-    'Rio de Janeiro',
-    'Niteroi',
-    'Duque de Caxias',
-    'Nova Iguacu',
-    'Sao Goncalo',
-    'Outro',
-  ],
-  'Parana': ['Curitiba', 'Londrina', 'Maringa', 'Ponta Grossa', 'Outro'],
-  'Santa Catarina': [
-    'Florianopolis',
-    'Joinville',
-    'Blumenau',
-    'Chapeco',
-    'Outro',
-  ],
-  'Rio Grande do Sul': [
-    'Porto Alegre',
-    'Caxias do Sul',
-    'Pelotas',
-    'Canoas',
-    'Outro',
-  ],
-  'Distrito Federal': ['Brasilia', 'Outro'],
-  'California': ['Los Angeles', 'San Francisco', 'San Diego', 'Outro'],
-  'Florida': ['Miami', 'Orlando', 'Tampa', 'Outro'],
-  'New York': ['New York', 'Buffalo', 'Rochester', 'Outro'],
-  'Texas': ['Austin', 'Dallas', 'Houston', 'San Antonio', 'Outro'],
-  'Lisboa': ['Lisboa', 'Sintra', 'Cascais', 'Outro'],
-  'Porto': ['Porto', 'Vila Nova de Gaia', 'Matosinhos', 'Outro'],
-  'Madrid': ['Madrid', 'Alcala de Henares', 'Getafe', 'Outro'],
-  'Catalunha': ['Barcelona', 'Girona', 'Tarragona', 'Outro'],
-  'Outro': ['Outro'],
-};
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -925,14 +815,15 @@ class _ProfileSheetState extends State<_ProfileSheet> {
       text: profile?.displayName ?? '',
     );
     _fullNameController = TextEditingController(text: profile?.fullName ?? '');
-    _phoneController = TextEditingController(text: profile?.phone ?? '');
+    final country = profile?.country?.trim().isNotEmpty == true
+        ? profile!.country!
+        : 'Brasil';
+    _phoneController = TextEditingController(
+      text: formatPhoneForDisplay(profile?.phone ?? '', country),
+    );
     _cityController = TextEditingController(text: profile?.city ?? '');
     _stateController = TextEditingController(text: profile?.state ?? '');
-    _countryController = TextEditingController(
-      text: profile?.country?.trim().isNotEmpty == true
-          ? profile!.country!
-          : 'Brasil',
-    );
+    _countryController = TextEditingController(text: country);
   }
 
   @override
@@ -1086,7 +977,15 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                         en: 'Phone',
                         es: 'Telefono',
                       ),
+                      helperText:
+                          'Formato: ${phoneFormatForCountry(_countryController.text).example}',
                     ),
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: [
+                      CountryPhoneTextInputFormatter(
+                        () => _countryController.text,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -1102,19 +1001,31 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                     builder: (context, constraints) {
                       final compact = constraints.maxWidth < 620;
                       final countryOptions = _withCurrentOption(
-                        _driverCountryOptions,
+                        driverPhoneFormats
+                            .map((format) => format.country)
+                            .toList(),
                         _countryController.text,
                       );
-                      final stateOptions = _withCurrentOption(
-                        _driverStatesByCountry[_countryController.text] ??
-                            const ['Outro'],
-                        _stateController.text,
+                      final stateOptions = _countryController.text == 'Brasil'
+                          ? _withCurrentOption(
+                              brazilStates,
+                              _stateController.text,
+                            )
+                          : _withCurrentOption(const [
+                              'Outro',
+                            ], _stateController.text);
+                      final regionCities = citiesForRegion(
+                        country: _countryController.text,
+                        state: _stateController.text,
                       );
-                      final cityOptions = _withCurrentOption(
-                        _driverCitiesByState[_stateController.text] ??
-                            const ['Outro'],
-                        _cityController.text,
-                      );
+                      final cityOptions = regionCities.isEmpty
+                          ? _withCurrentOption(const [
+                              'Outro',
+                            ], _cityController.text)
+                          : _withCurrentOption(
+                              regionCities,
+                              _cityController.text,
+                            );
                       final fields = [
                         DropdownButtonFormField<String>(
                           initialValue: _optionValue(
@@ -1140,13 +1051,17 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                             if (value == null) return;
                             setState(() {
                               _countryController.text = value;
-                              final nextStates =
-                                  _driverStatesByCountry[value] ??
-                                  const ['Outro'];
+                              final nextStates = value == 'Brasil'
+                                  ? brazilStates
+                                  : const ['Outro'];
                               if (!nextStates.contains(_stateController.text)) {
                                 _stateController.clear();
                                 _cityController.clear();
                               }
+                              _phoneController.text = formatPhoneForDisplay(
+                                _phoneController.text,
+                                value,
+                              );
                             });
                           },
                         ),
@@ -1174,9 +1089,10 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                             if (value == null) return;
                             setState(() {
                               _stateController.text = value;
-                              final nextCities =
-                                  _driverCitiesByState[value] ??
-                                  const ['Outro'];
+                              final nextCities = citiesForRegion(
+                                country: _countryController.text,
+                                state: value,
+                              );
                               if (!nextCities.contains(_cityController.text)) {
                                 _cityController.clear();
                               }
@@ -1297,7 +1213,10 @@ class _ProfileSheetState extends State<_ProfileSheet> {
       await _profileService.updateProfile(
         displayName: _displayNameController.text,
         fullName: _fullNameController.text,
-        phone: _phoneController.text,
+        phone: normalizePhoneForStorage(
+          _phoneController.text,
+          _countryController.text,
+        ),
         city: _cityController.text,
         state: _stateController.text,
         country: _countryController.text,
