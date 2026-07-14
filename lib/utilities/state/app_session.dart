@@ -275,7 +275,6 @@ class AppSession extends ChangeNotifier {
       ),
       reauthOnResume: data['reauth_on_resume'] as bool? ?? true,
       totpMfaEnabled: data['totp_mfa_enabled'] as bool? ?? false,
-      totpMfaFactorId: data['totp_mfa_factor_id'] as String?,
       reservePreference: DriverReservePreference(
         mode: _parseReserveMode(
           (data['reserve_mode'] ?? 'daily_percent').toString(),
@@ -343,7 +342,6 @@ class AppSession extends ChangeNotifier {
       inactivityLockMinutes: 15,
       reauthOnResume: true,
       totpMfaEnabled: false,
-      totpMfaFactorId: null,
       reservePreference: const DriverReservePreference(
         mode: DriverReserveMode.dailyPercent,
         dailyPercentage: 30,

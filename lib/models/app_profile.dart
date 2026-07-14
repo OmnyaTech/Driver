@@ -23,7 +23,6 @@ class AppProfile {
     required this.inactivityLockMinutes,
     required this.reauthOnResume,
     required this.totpMfaEnabled,
-    required this.totpMfaFactorId,
   });
 
   final String id;
@@ -45,7 +44,6 @@ class AppProfile {
   final int inactivityLockMinutes;
   final bool reauthOnResume;
   final bool totpMfaEnabled;
-  final String? totpMfaFactorId;
 
   bool get needsOnboarding => onboardingCompletedAt == null;
 

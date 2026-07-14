@@ -43,18 +43,14 @@ class MfaService {
     return response.totp;
   }
 
-  Future<String?> getLinkedTotpFactorId() async {
-    final client = _authService.requireClient();
-    final user = client.auth.currentUser;
-    if (user == null) return null;
-
-    final response = await client
+  Future<int> resetOwnTotpFactors() async {
+    final response = await _authService
+        .requireClient()
         .schema('driver')
-        .from('profiles')
-        .select('totp_mfa_factor_id')
-        .eq('id', user.id)
-        .maybeSingle();
-    return response?['totp_mfa_factor_id'] as String?;
+        .rpc('reset_own_totp_mfa_factors');
+    if (response is int) return response;
+    if (response is num) return response.toInt();
+    return int.tryParse(response?.toString() ?? '') ?? 0;
   }
 
   Future<List<Factor>> listVerifiedTotpFactors() async {
@@ -64,38 +60,8 @@ class MfaService {
         .toList();
   }
 
-  Future<List<Factor>> listDriverVerifiedTotpFactors() async {
-    final factors = await listVerifiedTotpFactors();
-    final linkedFactorId = await getLinkedTotpFactorId();
-    if (linkedFactorId?.trim().isNotEmpty == true) {
-      return factors.where((factor) => factor.id == linkedFactorId).toList();
-    }
-
-    return factors.where(_isDriverOwnedFactor).toList();
-  }
-
-  bool _isDriverOwnedFactor(Factor factor) {
-    final friendlyName = _readFactorString(factor, 'friendlyName');
-    final issuer = _readFactorString(factor, 'issuer');
-    return friendlyName == 'Driver' || issuer == 'Driver';
-  }
-
-  String? _readFactorString(Factor factor, String property) {
-    try {
-      final dynamic value = factor;
-      final result = switch (property) {
-        'friendlyName' => value.friendlyName,
-        'issuer' => value.issuer,
-        _ => null,
-      };
-      return result?.toString();
-    } catch (_) {
-      return null;
-    }
-  }
-
   Future<bool> requiresTotpChallenge() async {
-    final factors = await listDriverVerifiedTotpFactors();
+    final factors = await listVerifiedTotpFactors();
     if (factors.isEmpty) return false;
 
     final assurance = _authService
@@ -149,7 +115,7 @@ class MfaService {
   }
 
   Future<void> verifyFirstTotpChallenge(String code) async {
-    final factors = await listDriverVerifiedTotpFactors();
+    final factors = await listVerifiedTotpFactors();
     if (factors.isEmpty) {
       throw StateError('Nenhum autenticador ativo foi encontrado.');
     }
@@ -169,7 +135,7 @@ class MfaService {
     await _authService.requireClient().auth.mfa.unenroll(factorId);
   }
 
-  Future<void> setTotpMfaEnabled(bool enabled, {String? factorId}) async {
+  Future<void> setTotpMfaEnabled(bool enabled) async {
     final client = _authService.requireClient();
     final user = client.auth.currentUser;
     if (user == null) {
@@ -181,7 +147,6 @@ class MfaService {
         .from('profiles')
         .update({
           'totp_mfa_enabled': enabled,
-          'totp_mfa_factor_id': enabled ? factorId : null,
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('id', user.id);

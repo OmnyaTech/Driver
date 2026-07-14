@@ -109,7 +109,7 @@ class _AppSecurityGateState extends State<AppSecurityGate>
       if (!mounted) return;
       setState(() => _checkingMfa = true);
       try {
-        final factors = await _mfaService.listDriverVerifiedTotpFactors();
+        final factors = await _mfaService.listVerifiedTotpFactors();
         if (factors.isEmpty) {
           await _mfaService.setTotpMfaEnabled(false);
           if (!mounted) return;
