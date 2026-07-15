@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../models/app_public_driver.dart';
 import '../../services/public_profile_service.dart';
@@ -155,19 +155,22 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
                   onPressed: () async {
-                    await Clipboard.setData(
-                      ClipboardData(
+                    await SharePlus.instance.share(
+                      ShareParams(
+                        subject: 'Convite para o Driver',
                         text:
-                            'Me encontre no Driver: @${profile.publicSlug}\n${PublicProfileService.buildInviteUrl(profile.publicSlug)}',
+                            'Organize suas entregas comigo no Driver. Entre pelo convite @${profile.publicSlug}:\n${PublicProfileService.buildInviteUrl(profile.publicSlug)}',
                       ),
                     );
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Link copiado.')),
+                      const SnackBar(
+                        content: Text('Convite pronto para compartilhar.'),
+                      ),
                     );
                   },
                   icon: const Icon(Icons.share_outlined),
-                  label: const Text('Copiar link'),
+                  label: const Text('Compartilhar convite'),
                 ),
               ],
             ),

@@ -1,5 +1,6 @@
 param(
-  [string]$ApkName = ""
+  [string]$ApkName = "",
+  [switch]$SplitPerAbi
 )
 
 $ErrorActionPreference = "Stop"
@@ -42,15 +43,44 @@ try {
     $ApkName = "driver-v$versionName.apk"
   }
 
-  flutter build apk --release `
-    --dart-define="SUPABASE_URL=$($values["SUPABASE_URL"])" `
-    --dart-define="SUPABASE_ANON_KEY=$($values["SUPABASE_ANON_KEY"])" `
-    --dart-define="TURNSTILE_SITE_KEY=$($values["TURNSTILE_SITE_KEY"])"
+  $buildArgs = @(
+    "build",
+    "apk",
+    "--release",
+    "--dart-define=SUPABASE_URL=$($values["SUPABASE_URL"])",
+    "--dart-define=SUPABASE_ANON_KEY=$($values["SUPABASE_ANON_KEY"])",
+    "--dart-define=TURNSTILE_SITE_KEY=$($values["TURNSTILE_SITE_KEY"])"
+  )
 
-  $source = Join-Path $repoRoot "build/app/outputs/flutter-apk/app-release.apk"
-  $target = Join-Path $repoRoot "build/app/outputs/flutter-apk/$ApkName"
-  Copy-Item -LiteralPath $source -Destination $target -Force
-  Get-Item -LiteralPath $target | Select-Object FullName, Length, LastWriteTime
+  if ($values.ContainsKey("DRIVER_APK_URL") -and -not [string]::IsNullOrWhiteSpace($values["DRIVER_APK_URL"])) {
+    $buildArgs += "--dart-define=DRIVER_APK_URL=$($values["DRIVER_APK_URL"])"
+  }
+  if ($SplitPerAbi) {
+    $buildArgs += "--split-per-abi"
+  }
+
+  & flutter @buildArgs
+
+  if ($SplitPerAbi) {
+    $outputDir = Join-Path $repoRoot "build/app/outputs/flutter-apk"
+    $versionBase = [System.IO.Path]::GetFileNameWithoutExtension($ApkName)
+    $targets = @(
+      @{ Source = "app-armeabi-v7a-release.apk"; Suffix = "armeabi-v7a" },
+      @{ Source = "app-arm64-v8a-release.apk"; Suffix = "arm64-v8a" },
+      @{ Source = "app-x86_64-release.apk"; Suffix = "x86_64" }
+    )
+    foreach ($item in $targets) {
+      $source = Join-Path $outputDir $item.Source
+      $target = Join-Path $outputDir "$versionBase-$($item.Suffix).apk"
+      Copy-Item -LiteralPath $source -Destination $target -Force
+      Get-Item -LiteralPath $target | Select-Object FullName, Length, LastWriteTime
+    }
+  } else {
+    $source = Join-Path $repoRoot "build/app/outputs/flutter-apk/app-release.apk"
+    $target = Join-Path $repoRoot "build/app/outputs/flutter-apk/$ApkName"
+    Copy-Item -LiteralPath $source -Destination $target -Force
+    Get-Item -LiteralPath $target | Select-Object FullName, Length, LastWriteTime
+  }
 } finally {
   Pop-Location
 }

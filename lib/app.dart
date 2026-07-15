@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'config/app_theme.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'funcionalidade/onboarding/onboarding_screen.dart';
+import 'landing/driver_landing_screen.dart';
 import 'login/login_screen.dart';
 import 'settings/settings_screen.dart';
 import 'utilities/platform/android_permission_bootstrap.dart';
@@ -49,6 +50,14 @@ class OmnyaDriverApp extends StatelessWidget {
   }
 
   Widget _resolveHome(AppSession session) {
+    if (shouldShowPublicLanding()) {
+      final inviteSlug = inviteSlugFromCurrentUri();
+      if (Uri.base.path == '/download' || Uri.base.path == '/cadastro') {
+        return DriverDownloadGateScreen(inviteSlug: inviteSlug);
+      }
+      return DriverLandingScreen(inviteSlug: inviteSlug);
+    }
+
     if (!session.isReady) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }

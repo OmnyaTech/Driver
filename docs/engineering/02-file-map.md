@@ -45,6 +45,9 @@ Atualizado em 2026-07-15.
 - `lib/funcionalidade/gamification/gamification_screen.dart`
   Nivel, XP, proximos passos e vitrine de conquistas.
 
+- `lib/landing/driver_landing_screen.dart`
+  Landing publica, tela de cadastro/download e visual animado para o site.
+
 - `lib/funcionalidade/developer/developer_access_screen.dart`
   Area administrativa para developer com auditoria.
 
@@ -146,6 +149,9 @@ Atualizado em 2026-07-15.
 
 - `lib/services/driver_preference_service.dart`
   Preferencias do motorista, calculo e textos de reserva automatica.
+
+- `lib/services/referral_service.dart`
+  Captura slug de convite por URL/deep link e resgata indicacao apos login.
 
 - `lib/services/developer_access_service.dart`
   Regras de abertura da area developer.

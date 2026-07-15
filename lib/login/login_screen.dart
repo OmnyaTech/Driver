@@ -16,7 +16,9 @@ const _microsoftIconAsset = 'src/icons/microsoft.png';
 enum _LoginPanelMode { signIn, signUp, recover }
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.startInSignUp = false});
+
+  final bool startInSignUp;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -28,13 +30,21 @@ class _LoginScreenState extends State<LoginScreen> {
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  _LoginPanelMode _mode = _LoginPanelMode.signIn;
+  late _LoginPanelMode _mode;
   String? _feedbackMessage;
   bool _feedbackIsError = false;
   bool _obscurePassword = true;
 
   bool get _isRegister => _mode == _LoginPanelMode.signUp;
   bool get _isRecovering => _mode == _LoginPanelMode.recover;
+
+  @override
+  void initState() {
+    super.initState();
+    _mode = widget.startInSignUp
+        ? _LoginPanelMode.signUp
+        : _LoginPanelMode.signIn;
+  }
 
   @override
   void dispose() {

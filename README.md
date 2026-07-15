@@ -18,6 +18,8 @@ trabalhar, quando revisar o veiculo e como acompanhar seu progresso.
 - Controle de despesas, abastecimentos e manutencoes.
 - Metas financeiras com aporte, retirada, saque e historico de movimentacoes.
 - Reserva automatica configuravel por entrega, dia, semana ou mes.
+- Landing publica em `driver.omnyatech.com.br` com convite, cadastro e download
+  oficial do APK.
 - Dashboard com indicadores operacionais e financeiros.
 - Relatorios, ranking, conquistas, vitrine publica opcional e area de
   seguranca.
@@ -62,6 +64,10 @@ powershell -ExecutionPolicy Bypass -File scripts\build_driver_release.ps1
 
 O script le as configuracoes locais, injeta os `dart-define` necessarios e copia
 o APK final para `build/app/outputs/flutter-apk/`.
+
+Para o site publico, a URL do APK pode ser definida com `DRIVER_APK_URL`. Sem
+essa variavel, a landing usa o bucket publico `driver-mobile-releases` do
+Supabase, arquivo `driver-latest.apk`.
 
 ## Cuidados
 

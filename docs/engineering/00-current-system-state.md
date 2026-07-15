@@ -65,6 +65,12 @@ O Driver, produto da OmnyaTech, ja opera com:
 - reserva automatica suporta sem reserva, percentual por entrega, valor por
   entrega, percentual por dia, por semana e por mes.
 - vitrine de conquistas exibe contador junto ao titulo.
+- landing publica web em `driver.omnyatech.com.br`, com rota de convite,
+  cadastro antes do download e URL de APK configuravel por `DRIVER_APK_URL`.
+- convites usam a folha nativa de compartilhamento do celular em vez de apenas
+  copiar para a area de transferencia.
+- bucket publico `driver-mobile-releases` reservado para APKs oficiais do
+  Driver.
 
 ## SQL manual disponivel
 
@@ -98,6 +104,9 @@ O Driver, produto da OmnyaTech, ja opera com:
 - `sql/manual/042_driver_goal_cash_out_transactions.sql`
   Adiciona tipo/observacao em movimentacoes de objetivos e atualiza a RPC para
   registrar saques.
+
+- `sql/manual/043_driver_mobile_releases_storage.sql`
+  Cria bucket publico `driver-mobile-releases` para APKs oficiais do Driver.
 
 ## Documentacao operacional adicional
 

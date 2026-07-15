@@ -192,12 +192,45 @@ ilimitadas e recursos avancados.
 Pagamentos e confirmacoes de assinatura sao integrados por provider externo e
 sincronizados com o perfil do usuario.
 
+Quando um usuario entra por convite, o cadastro fica vinculado ao entregador que
+enviou o link. Esse vinculo alimenta progresso, missoes e recompensas de
+indicacao. Quando o indicado evolui para assinatura premium, esse historico
+continua disponivel para contabilizar as missoes relacionadas ao convite.
+
 ### Comunidade, Ranking E Perfil Publico
 
 O app possui recursos sociais opcionais. O entregador pode usar perfil publico,
 ranking e gamificacao sem expor dados financeiros sensiveis.
 
 Esses recursos destacam nivel, titulo, conquistas e indicadores nao sensiveis.
+
+O convite publico aponta para `https://driver.omnyatech.com.br/convite/{slug}`.
+Esse link abre a landing page publica do Driver, preserva o slug do entregador
+que convidou e encaminha o novo usuario para cadastro antes do download do APK.
+
+No aplicativo, o botao de convite abre a folha nativa de compartilhamento do
+celular. Assim o usuario escolhe WhatsApp, Gmail, Outlook, Messenger, Facebook,
+Instagram, copiar link ou qualquer app instalado que aceite texto.
+
+## Landing Page E Download Do APK
+
+Enquanto o Driver nao esta publicado na Play Store, o dominio
+`driver.omnyatech.com.br` funciona como porta de entrada publica.
+
+O fluxo esperado e:
+
+1. O usuario recebe um link de convite.
+2. O link abre a landing page publica com explicacao do sistema, recursos e
+   planos.
+3. O usuario toca em `Download`.
+4. O site abre a tela de cadastro/login preservando o slug do convite.
+5. Depois que o cadastro/login esta valido, o botao de download do APK aparece.
+6. O usuario baixa o arquivo oficial do dominio configurado.
+
+A URL do APK e configurada por `DRIVER_APK_URL`. Quando essa variavel nao e
+informada no build, o app usa o bucket publico `driver-mobile-releases` no
+Supabase, arquivo `driver-latest.apk`. O arquivo APK deve ser publicado fora do
+Git, no ambiente de hospedagem ou storage escolhido.
 
 ### Gamificacao E Conquistas
 

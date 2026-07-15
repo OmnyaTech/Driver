@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../models/app_public_driver.dart';
 import '../../models/app_referral_reward.dart';
@@ -142,14 +142,10 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
               children: [
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: () => _copyInvite(profile?.displayName),
+                    onPressed: () => _shareInvite(profile?.displayName),
                     icon: const Icon(Icons.share_outlined),
                     label: Text(
-                      strings.pick(
-                        pt: 'Copiar meu link',
-                        en: 'Copy my link',
-                        es: 'Copiar mi link',
-                      ),
+                      strings.pick(pt: 'Convidar', en: 'Invite', es: 'Invitar'),
                     ),
                   ),
                 ),
@@ -255,7 +251,7 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
     );
   }
 
-  Future<void> _copyInvite(String? displayName) async {
+  Future<void> _shareInvite(String? displayName) async {
     final strings = AppStrings.of(context);
     try {
       final slug = await _service.ensureInviteSlug(
@@ -263,12 +259,17 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
         displayName: displayName,
       );
       final url = PublicProfileService.buildInviteUrl(slug);
-      await Clipboard.setData(
-        ClipboardData(
+      await SharePlus.instance.share(
+        ShareParams(
+          subject: strings.pick(
+            pt: 'Convite para o Driver',
+            en: 'Driver invite',
+            es: 'Invitacion a Driver',
+          ),
           text: strings.pick(
-            pt: 'Me encontre no Driver: @$slug\n$url',
-            en: 'Find me on Driver: @$slug\n$url',
-            es: 'Encuentrame en Driver: @$slug\n$url',
+            pt: 'Organize suas entregas comigo no Driver. Entre pelo meu convite @$slug:\n$url',
+            en: 'Organize your deliveries with me on Driver. Join through my invite @$slug:\n$url',
+            es: 'Organiza tus entregas conmigo en Driver. Entra por mi invitacion @$slug:\n$url',
           ),
         ),
       );
@@ -279,9 +280,9 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
         SnackBar(
           content: Text(
             strings.pick(
-              pt: 'Link @$slug copiado.',
-              en: 'Link @$slug copied.',
-              es: 'Link @$slug copiado.',
+              pt: 'Convite @$slug pronto para compartilhar.',
+              en: 'Invite @$slug ready to share.',
+              es: 'Invitacion @$slug lista para compartir.',
             ),
           ),
         ),
@@ -293,8 +294,8 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
           content: Text(
             strings.pick(
               pt: 'Nao consegui copiar o link agora. Tente de novo.',
-              en: 'Could not copy the link right now. Try again.',
-              es: 'No pude copiar el link ahora. Intentalo otra vez.',
+              en: 'Could not share the link right now. Try again.',
+              es: 'No pude compartir el link ahora. Intentalo otra vez.',
             ),
           ),
         ),
