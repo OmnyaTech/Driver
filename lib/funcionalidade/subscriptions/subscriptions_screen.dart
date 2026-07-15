@@ -516,9 +516,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
           caption: strings.pick(pt: 'sem custo', en: 'free', es: 'sin costo'),
           features: [
             strings.pick(
-              pt: '1 plataforma ativa por conta',
-              en: '1 active platform per account',
-              es: '1 plataforma activa por cuenta',
+              pt: '3 plataformas ativas por conta',
+              en: '3 active platforms per account',
+              es: '3 plataformas activas por cuenta',
             ),
             strings.pick(
               pt: 'Historico operacional inicial',
@@ -611,9 +611,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
         caption: strings.pick(pt: 'sem custo', en: 'free', es: 'sin costo'),
         features: [
           strings.pick(
-            pt: '1 plataforma ativa por conta',
-            en: '1 active platform per account',
-            es: '1 plataforma activa por cuenta',
+            pt: '3 plataformas ativas por conta',
+            en: '3 active platforms per account',
+            es: '3 plataformas activas por cuenta',
           ),
           strings.pick(
             pt: 'Cadastro de jornadas, despesas e objetivos',

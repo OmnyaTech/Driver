@@ -2,6 +2,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'auth_service.dart';
 
+const _driverMfaFactorNamePrefix = 'Driver';
+
 class MfaEnrollmentDraft {
   const MfaEnrollmentDraft({
     required this.factorId,
@@ -38,10 +40,25 @@ class MfaService {
 
   final AuthService _authService;
 
-  Future<List<Factor>> listTotpFactors() async {
+  Future<List<Factor>> listAllTotpFactors() async {
     final response = await _authService.requireClient().auth.mfa.listFactors();
     return response.totp;
   }
+
+  Future<List<Factor>> listAllVerifiedTotpFactors() async {
+    final factors = await listAllTotpFactors();
+    return factors
+        .where((factor) => factor.status == FactorStatus.verified)
+        .toList();
+  }
+
+  Future<List<Factor>> listTotpFactors() async {
+    final factors = await listAllTotpFactors();
+    return factors.where(_isDriverTotpFactor).toList();
+  }
+
+  bool _isDriverTotpFactor(Factor factor) =>
+      (factor.friendlyName ?? '').trim().startsWith(_driverMfaFactorNamePrefix);
 
   Future<List<Factor>> listVerifiedTotpFactors() async {
     final factors = await listTotpFactors();
@@ -106,6 +123,18 @@ class MfaService {
 
   Future<void> verifyFirstTotpChallenge(String code) async {
     final factors = await listVerifiedTotpFactors();
+    await _verifyFirstFactorChallenge(factors, code);
+  }
+
+  Future<void> verifyFirstAvailableTotpChallenge(String code) async {
+    final factors = await listAllVerifiedTotpFactors();
+    await _verifyFirstFactorChallenge(factors, code);
+  }
+
+  Future<void> _verifyFirstFactorChallenge(
+    List<Factor> factors,
+    String code,
+  ) async {
     if (factors.isEmpty) {
       throw StateError('Nenhum autenticador ativo foi encontrado.');
     }

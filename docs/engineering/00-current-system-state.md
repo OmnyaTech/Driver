@@ -104,6 +104,9 @@ O Driver, produto da OmnyaTech, ja opera com:
 - `docs/supabase_auth_email_templates_omnyatech.md`
   Assuntos e HTML para padronizar e-mails Supabase Auth como OmnyaTech.
 
+- `docs/omnya_driver_system_overview.md`
+  Visao funcional detalhada do sistema, telas, finalidade e funcionamento.
+
 ## Edge Functions disponiveis
 
 - `supabase/functions/driver-verify-turnstile`

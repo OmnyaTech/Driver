@@ -310,6 +310,11 @@ class _SecurityScreenState extends State<SecurityScreen> {
         if (mounted) {
           await context.read<AppSession>().refreshProfile();
         }
+      } else if (hasVerifiedFactor && profile?.totpMfaEnabled != true) {
+        await _mfaService.setTotpMfaEnabled(true);
+        if (mounted) {
+          await context.read<AppSession>().refreshProfile();
+        }
       }
       setState(() {
         _totpFactorId = factors.isEmpty ? null : factors.first.id;
@@ -927,7 +932,7 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
     });
 
     try {
-      await _service.verifyFirstTotpChallenge(code);
+      await _service.verifyFirstAvailableTotpChallenge(code);
       if (!mounted) return;
       _currentFactorCodeController.clear();
       await _start();

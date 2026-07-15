@@ -54,6 +54,11 @@ Atualizado em 2026-07-15.
 - `lib/funcionalidade/subscriptions/subscriptions_screen.dart`
   Tela de planos, checkout e historico de billing.
 
+## Documentacao funcional
+
+- `docs/omnya_driver_system_overview.md`
+  Visao geral do produto, finalidade, telas, funcionamento, planos e modulos.
+
 ## Models
 
 - `lib/models/app_profile.dart`

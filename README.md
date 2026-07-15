@@ -1,76 +1,74 @@
-# Driver
+# Omnya Driver
 
-Aplicativo Flutter da OmnyaTech para controle de jornadas, ganhos, despesas,
-veiculos, objetivos e evolucao de entregadores e motofretistas.
+O Omnya Driver e um app Flutter da OmnyaTech feito para entregadores
+acompanharem a rotina sem depender de planilhas. Ele ajuda a registrar jornadas,
+ganhos, despesas, abastecimentos, manutencoes, metas financeiras e evolucao do
+perfil em um so lugar.
 
-## Publicacao segura
+O foco do produto e simples: transformar o dinheiro e o tempo da rua em numeros
+faceis de entender, para o entregador decidir melhor quanto guardar, onde
+trabalhar, quando revisar o veiculo e como acompanhar seu progresso.
 
-Este repositorio foi preparado para ficar publico. Nenhum secret operacional,
-token privado, chave administrativa ou configuracao de release deve ser
-versionado aqui.
+## O Que Ja Funciona
 
-Configuracoes de ambiente devem ser passadas em tempo de build, usando
-`--dart-define`.
-
-Exemplo:
-
-```powershell
-flutter run -d chrome --web-port 5173 `
-  --dart-define=SUPABASE_URL=https://SEU-PROJETO.supabase.co `
-  --dart-define=SUPABASE_ANON_KEY=SUA_PUBLISHABLE_KEY `
-  --dart-define=TURNSTILE_SITE_KEY=SUA_TURNSTILE_SITE_KEY
-```
-
-Para builds Android:
-
-```powershell
-flutter build apk `
-  --dart-define=SUPABASE_URL=https://SEU-PROJETO.supabase.co `
-  --dart-define=SUPABASE_ANON_KEY=SUA_PUBLISHABLE_KEY `
-  --dart-define=TURNSTILE_SITE_KEY=SUA_TURNSTILE_SITE_KEY
-```
-
-## Estado atual
-
-- App Flutter instalavel chamado **Driver**, produto da OmnyaTech.
-- Supabase Auth compartilhado, com dados do app isolados no schema `driver`.
-- Login por e-mail, Google e Microsoft com Turnstile; no APK, o captcha roda
-  internamente/invisivel, mantendo a exigencia ativa para a web.
-- Onboarding com telefone formatado por pais, regiao selecionavel para Brasil
-  e cidades de Goias, reserva automatica flexivel, primeiro veiculo e primeira
+- Login por e-mail, Google e Microsoft.
+- Onboarding com perfil, regiao, preferencias, primeiro veiculo e primeira
   plataforma.
-- Veiculos com tipo selecionavel, marca/modelo digitaveis com sugestoes,
-  combustivel multi-selecao e fallback para dados legados.
-- Dashboard, jornadas, despesas, abastecimentos, manutencoes, objetivos,
-  relatorios, assinaturas, comunidade, seguranca e area developer em operacao.
-- Objetivos financeiros com aporte, retirada, saque com observacao opcional e
-  historico de movimentacoes.
-- Plano free com ate 3 plataformas ativas; premium e acessos expandidos com
+- Cadastro de jornadas, ganhos por plataforma, entregas, distancia e horarios.
+- Controle de despesas, abastecimentos e manutencoes.
+- Metas financeiras com aporte, retirada, saque e historico de movimentacoes.
+- Reserva automatica configuravel por entrega, dia, semana ou mes.
+- Dashboard com indicadores operacionais e financeiros.
+- Relatorios, ranking, conquistas, vitrine publica opcional e area de
+  seguranca.
+- Plano gratuito com ate 3 plataformas ativas; planos expandidos com
   plataformas ilimitadas.
-- SQLs manuais versionados em `sql/manual`, incluindo o `042` para saques em
-  objetivos e historico tipado de movimentacoes.
-- Templates de e-mail Supabase Auth padronizados em
-  `docs/supabase_auth_email_templates_omnyatech.md`.
+- Area administrativa para acesso developer e operacoes de suporte.
 
-## Pastas principais
+## Documentacao
 
-- `lib/`: app Flutter.
-- `docs/engineering/`: mapeamento tecnico vivo do sistema.
-- `sql/manual/`: scripts SQL para execucao manual.
-- `Planejamento/`: documentacao funcional e de produto.
-- `src/`: referencias visuais e branding.
+A documentacao funcional principal esta em:
 
-## Diretriz arquitetural
+- `docs/omnya_driver_system_overview.md`
 
-- Nao alterar tabelas, funcoes ou policies do OmnyaFinance.
-- Todo objeto novo do banco pertence ao schema `driver`.
-- Auth continua compartilhado por `auth.users`.
-- Fluxos administrativos, presentes e assinaturas devem seguir a mesma logica
-  madura do OmnyaFinance, mas isolados para o Omnya Driver.
+Documentos tecnicos vivos ficam em:
 
-## Configuracao de billing
+- `docs/engineering/`
 
-As integracoes de billing do Asaas usam Edge Functions e secrets do Supabase.
-Os nomes esperados dos secrets estao documentados em:
+Scripts SQL manuais ficam em:
 
-- `docs/engineering/04-manual-setup-checklist.md`
+- `sql/manual/`
+
+## Estrutura
+
+- `lib/`: codigo Flutter do app.
+- `supabase/functions/`: Edge Functions usadas pelo backend.
+- `sql/manual/`: scripts SQL versionados para aplicar no Supabase.
+- `docs/`: documentacao funcional, tecnica e operacional.
+- `Planejamento/`: material de produto e planejamento.
+- `src/`: referencias visuais e assets de apoio.
+
+## Configuracao Local
+
+Crie um arquivo `.env` local com as variaveis necessarias para o ambiente de
+desenvolvimento. Esse arquivo nao deve ser versionado.
+
+Para rodar o app, use os comandos Flutter normais do projeto. Para gerar APK de
+release, use o script:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\build_driver_release.ps1
+```
+
+O script le as configuracoes locais, injeta os `dart-define` necessarios e copia
+o APK final para `build/app/outputs/flutter-apk/`.
+
+## Cuidados
+
+Nao coloque chaves, tokens, URLs privadas de ambiente, certificados ou segredos
+no repositorio. Configuracoes sensiveis devem ficar no ambiente local, no
+Supabase ou no provedor de CI/CD.
+
+O schema de banco usado pelo app e isolado para o Driver. Mudancas de banco
+devem ser feitas por SQL versionado em `sql/manual/` e aplicadas manualmente no
+ambiente correto.
