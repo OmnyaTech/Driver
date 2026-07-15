@@ -232,6 +232,12 @@ informada no build, o app usa o bucket publico `driver-mobile-releases` no
 Supabase, arquivo `driver-latest.apk`. O arquivo APK deve ser publicado fora do
 Git, no ambiente de hospedagem ou storage escolhido.
 
+O formato recomendado para distribuicao direta e um APK unico universal,
+versionado como `driver-vX.Y.Z.apk`, com uma copia ou alias publico
+`driver-latest.apk`. O bucket pode ser publico para download por caminho
+conhecido, mas nao deve manter policy ampla de listagem em `storage.objects`.
+As policies de escrita permanecem restritas a usuarios `developer`.
+
 ### Gamificacao E Conquistas
 
 A gamificacao transforma progresso em XP, nivel, medalhas e conquistas. A tela

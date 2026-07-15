@@ -32,6 +32,7 @@ trabalhar, quando revisar o veiculo e como acompanhar seu progresso.
 A documentacao funcional principal esta em:
 
 - `docs/omnya_driver_system_overview.md`
+- `docs/downloads.md`
 
 Documentos tecnicos vivos ficam em:
 
@@ -67,7 +68,8 @@ o APK final para `build/app/outputs/flutter-apk/`.
 
 Para o site publico, a URL do APK pode ser definida com `DRIVER_APK_URL`. Sem
 essa variavel, a landing usa o bucket publico `driver-mobile-releases` do
-Supabase, arquivo `driver-latest.apk`.
+Supabase, arquivo `driver-latest.apk`. O formato recomendado de distribuicao e
+um APK unico universal, publicado fora do Git.
 
 ## Cuidados
 
