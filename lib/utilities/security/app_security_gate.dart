@@ -285,6 +285,16 @@ class _MfaOverlay extends StatelessWidget {
   final String? errorMessage;
   final VoidCallback onVerify;
 
+  Future<void> _pasteCode() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final digits = data?.text?.replaceAll(RegExp(r'\D'), '') ?? '';
+    if (digits.isEmpty) return;
+    controller.text = digits.length > 6 ? digits.substring(0, 6) : digits;
+    controller.selection = TextSelection.collapsed(
+      offset: controller.text.length,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -320,8 +330,9 @@ class _MfaOverlay extends StatelessWidget {
                                   ),
                                   borderRadius: BorderRadius.circular(18),
                                   border: Border.all(
-                                    color: theme.colorScheme.primary
-                                        .withValues(alpha: 0.28),
+                                    color: theme.colorScheme.primary.withValues(
+                                      alpha: 0.28,
+                                    ),
                                   ),
                                 ),
                                 child: Icon(
@@ -379,7 +390,8 @@ class _MfaOverlay extends StatelessWidget {
                                   value: index < currentCode.length
                                       ? currentCode[index]
                                       : '',
-                                  active: index == currentCode.length &&
+                                  active:
+                                      index == currentCode.length &&
                                       currentCode.length < 6,
                                 ),
                               ),
@@ -412,6 +424,19 @@ class _MfaOverlay extends StatelessWidget {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 8),
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: checking || verifying
+                                ? null
+                                : _pasteCode,
+                            icon: const Icon(Icons.content_paste, size: 16),
+                            label: const Text('Colar'),
+                            style: TextButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
                         ),
                         if (errorMessage != null) ...[
                           const SizedBox(height: 12),
@@ -473,7 +498,7 @@ class _MfaCodeBox extends StatelessWidget {
         ),
       ),
       child: Text(
-        value.isEmpty ? '' : '*',
+        value,
         style: theme.textTheme.headlineSmall?.copyWith(
           fontWeight: FontWeight.w900,
         ),

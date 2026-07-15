@@ -80,7 +80,16 @@ class DriverPreferenceService {
   }) {
     return switch (preference.mode) {
       DriverReserveMode.none => 0,
+      DriverReserveMode.perDeliveryPercent =>
+        ((netResult > 0 ? netResult : 0) * (preference.dailyPercentage / 100))
+            .toDouble(),
       DriverReserveMode.dailyPercent =>
+        ((netResult > 0 ? netResult : 0) * (preference.dailyPercentage / 100))
+            .toDouble(),
+      DriverReserveMode.weeklyPercent =>
+        ((netResult > 0 ? netResult : 0) * (preference.dailyPercentage / 100))
+            .toDouble(),
+      DriverReserveMode.monthlyPercent =>
         ((netResult > 0 ? netResult : 0) * (preference.dailyPercentage / 100))
             .toDouble(),
       DriverReserveMode.perDeliveryFixed =>
@@ -97,8 +106,14 @@ class DriverPreferenceService {
       return switch (preference.mode) {
         DriverReserveMode.none =>
           'Voce deixou a reserva desligada por enquanto.',
+        DriverReserveMode.perDeliveryPercent =>
+          'Ainda nao houve lucro positivo nesse periodo para separar por entrega.',
         DriverReserveMode.dailyPercent =>
           'Ainda nao houve lucro positivo nesse periodo para separar.',
+        DriverReserveMode.weeklyPercent =>
+          'Ainda nao houve lucro positivo nessa semana para separar.',
+        DriverReserveMode.monthlyPercent =>
+          'Ainda nao houve lucro positivo nesse mes para separar.',
         DriverReserveMode.perDeliveryFixed =>
           'Ainda nao tem entregas suficientes nesse periodo para sugerir reserva.',
       };
@@ -106,8 +121,14 @@ class DriverPreferenceService {
 
     return switch (preference.mode) {
       DriverReserveMode.none => 'Voce deixou a reserva desligada por enquanto.',
+      DriverReserveMode.perDeliveryPercent =>
+        'Esse valor em $periodLabel segue sua regra de guardar ${_percentageLabel(preference.dailyPercentage)}% por entrega.',
       DriverReserveMode.dailyPercent =>
-        'Esse valor em $periodLabel segue sua regra de guardar ${preference.dailyPercentage.toStringAsFixed(preference.dailyPercentage.truncateToDouble() == preference.dailyPercentage ? 0 : 1)}% do lucro.',
+        'Esse valor em $periodLabel segue sua regra de guardar ${_percentageLabel(preference.dailyPercentage)}% por dia.',
+      DriverReserveMode.weeklyPercent =>
+        'Esse valor em $periodLabel segue sua regra de guardar ${_percentageLabel(preference.dailyPercentage)}% por semana.',
+      DriverReserveMode.monthlyPercent =>
+        'Esse valor em $periodLabel segue sua regra de guardar ${_percentageLabel(preference.dailyPercentage)}% por mes.',
       DriverReserveMode.perDeliveryFixed =>
         'Esse valor em $periodLabel segue sua regra por entrega concluida.',
     };
@@ -124,7 +145,10 @@ class DriverPreferenceService {
   DriverReserveMode _modeFromDb(String? value) {
     return switch (value) {
       'none' => DriverReserveMode.none,
+      'per_delivery_percent' => DriverReserveMode.perDeliveryPercent,
       'per_delivery_fixed' => DriverReserveMode.perDeliveryFixed,
+      'weekly_percent' => DriverReserveMode.weeklyPercent,
+      'monthly_percent' => DriverReserveMode.monthlyPercent,
       _ => DriverReserveMode.dailyPercent,
     };
   }
@@ -132,9 +156,16 @@ class DriverPreferenceService {
   String _modeToDb(DriverReserveMode mode) {
     return switch (mode) {
       DriverReserveMode.none => 'none',
+      DriverReserveMode.perDeliveryPercent => 'per_delivery_percent',
       DriverReserveMode.dailyPercent => 'daily_percent',
+      DriverReserveMode.weeklyPercent => 'weekly_percent',
+      DriverReserveMode.monthlyPercent => 'monthly_percent',
       DriverReserveMode.perDeliveryFixed => 'per_delivery_fixed',
     };
+  }
+
+  String _percentageLabel(double value) {
+    return value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
   }
 
   double _parseDouble(Object? value, {required double fallback}) {

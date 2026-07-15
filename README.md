@@ -37,14 +37,18 @@ flutter build apk `
 - Login por e-mail, Google e Microsoft com Turnstile; no APK, o captcha roda
   internamente/invisivel, mantendo a exigencia ativa para a web.
 - Onboarding com telefone formatado por pais, regiao selecionavel para Brasil
-  e cidades de Goias, reserva automatica com copy baseada em lucro, primeiro
-  veiculo e primeira plataforma.
+  e cidades de Goias, reserva automatica flexivel, primeiro veiculo e primeira
+  plataforma.
 - Veiculos com tipo selecionavel, marca/modelo digitaveis com sugestoes,
   combustivel multi-selecao e fallback para dados legados.
 - Dashboard, jornadas, despesas, abastecimentos, manutencoes, objetivos,
   relatorios, assinaturas, comunidade, seguranca e area developer em operacao.
-- SQLs manuais versionados em `sql/manual`, incluindo o `037` para refinamentos
-  de onboarding/veiculos e metricas pagas de developer.
+- Objetivos financeiros com aporte, retirada, saque com observacao opcional e
+  historico de movimentacoes.
+- Plano free com ate 3 plataformas ativas; premium e acessos expandidos com
+  plataformas ilimitadas.
+- SQLs manuais versionados em `sql/manual`, incluindo o `042` para saques em
+  objetivos e historico tipado de movimentacoes.
 - Templates de e-mail Supabase Auth padronizados em
   `docs/supabase_auth_email_templates_omnyatech.md`.
 

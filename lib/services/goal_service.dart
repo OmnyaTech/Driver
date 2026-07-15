@@ -67,12 +67,32 @@ class GoalService {
 
     final goalTitles = {for (final goal in goals) goal.id: goal.title};
     final goalIds = goals.map((item) => item.id).toList();
-    final rows = await client
-        .schema('driver')
-        .from('goal_transactions')
-        .select('id, goal_id, journey_id, amount, created_at')
-        .filter('goal_id', 'in', '(${goalIds.map((id) => '"$id"').join(',')})')
-        .order('created_at', ascending: false);
+    List<dynamic> rows;
+    try {
+      rows = await client
+          .schema('driver')
+          .from('goal_transactions')
+          .select(
+            'id, goal_id, journey_id, amount, movement_type, note, created_at',
+          )
+          .filter(
+            'goal_id',
+            'in',
+            '(${goalIds.map((id) => '"$id"').join(',')})',
+          )
+          .order('created_at', ascending: false);
+    } catch (_) {
+      rows = await client
+          .schema('driver')
+          .from('goal_transactions')
+          .select('id, goal_id, journey_id, amount, created_at')
+          .filter(
+            'goal_id',
+            'in',
+            '(${goalIds.map((id) => '"$id"').join(',')})',
+          )
+          .order('created_at', ascending: false);
+    }
 
     final journeyLabels = await _loadJourneyLabels();
 
@@ -83,6 +103,11 @@ class GoalService {
             goalId: row['goal_id'].toString(),
             goalTitle: goalTitles[row['goal_id'].toString()] ?? 'Objetivo',
             amount: _toDouble(row['amount']),
+            movementType: _movementTypeFromDb(
+              row['movement_type']?.toString(),
+              _toDouble(row['amount']),
+            ),
+            note: _normalizeString(row['note']?.toString()),
             createdAt: DateTime.parse(row['created_at'].toString()),
             journeyId: row['journey_id']?.toString(),
             journeyLabel: row['journey_id'] == null
@@ -238,6 +263,9 @@ class GoalService {
     required String goalId,
     required String amount,
     String? journeyId,
+    GoalTransactionMovementType movementType =
+        GoalTransactionMovementType.contribution,
+    String? note,
   }) async {
     final value = _stringToDouble(amount);
     if (value == null || value == 0) {
@@ -245,6 +273,7 @@ class GoalService {
     }
 
     final normalizedJourneyId = _normalizeString(journeyId);
+    final normalizedNote = _normalizeString(note);
     final client = _authService.requireClient();
 
     try {
@@ -256,6 +285,8 @@ class GoalService {
               'p_goal_id': goalId,
               'p_amount': value,
               'p_journey_id': normalizedJourneyId,
+              'p_movement_type': _movementTypeToDb(movementType),
+              'p_note': normalizedNote,
             },
           );
       return;
@@ -264,6 +295,8 @@ class GoalService {
         goalId: goalId,
         amount: value,
         journeyId: normalizedJourneyId,
+        movementType: movementType,
+        note: normalizedNote,
       );
     }
   }
@@ -372,6 +405,8 @@ class GoalService {
     required String goalId,
     required double amount,
     required String? journeyId,
+    required GoalTransactionMovementType movementType,
+    required String? note,
   }) async {
     final client = _authService.requireClient();
     final goals = await listGoals();
@@ -409,11 +444,21 @@ class GoalService {
         })
         .eq('id', goalId);
 
-    await client.schema('driver').from('goal_transactions').insert({
-      'goal_id': goalId,
-      'journey_id': journeyId,
-      'amount': amount,
-    });
+    try {
+      await client.schema('driver').from('goal_transactions').insert({
+        'goal_id': goalId,
+        'journey_id': journeyId,
+        'amount': amount,
+        'movement_type': _movementTypeToDb(movementType),
+        'note': note,
+      });
+    } catch (_) {
+      await client.schema('driver').from('goal_transactions').insert({
+        'goal_id': goalId,
+        'journey_id': journeyId,
+        'amount': amount,
+      });
+    }
   }
 
   Future<Map<String, String>> _loadJourneyLabels() async {
@@ -424,6 +469,29 @@ class GoalService {
   String? _normalizeString(String? value) {
     final normalized = value?.trim();
     return (normalized == null || normalized.isEmpty) ? null : normalized;
+  }
+
+  GoalTransactionMovementType _movementTypeFromDb(
+    String? value,
+    double amount,
+  ) {
+    return switch (value) {
+      'cash_out' => GoalTransactionMovementType.cashOut,
+      'withdrawal' => GoalTransactionMovementType.withdrawal,
+      'contribution' => GoalTransactionMovementType.contribution,
+      _ =>
+        amount >= 0
+            ? GoalTransactionMovementType.contribution
+            : GoalTransactionMovementType.withdrawal,
+    };
+  }
+
+  String _movementTypeToDb(GoalTransactionMovementType type) {
+    return switch (type) {
+      GoalTransactionMovementType.contribution => 'contribution',
+      GoalTransactionMovementType.withdrawal => 'withdrawal',
+      GoalTransactionMovementType.cashOut => 'cash_out',
+    };
   }
 
   DateTime? _tryParseDate(Object? value) {

@@ -11,6 +11,16 @@ class PlanAccessService {
     return _hasExpandedAccess(planType);
   }
 
+  int? activePlatformLimit(PlanType planType) {
+    return switch (planType) {
+      PlanType.free => 3,
+      PlanType.premium ||
+      PlanType.gift ||
+      PlanType.lifetime ||
+      PlanType.developer => null,
+    };
+  }
+
   bool canAccessAdvancedOperations(PlanType planType) {
     return _hasExpandedAccess(planType);
   }

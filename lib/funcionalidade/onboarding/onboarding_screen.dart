@@ -314,16 +314,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                     items: const [
                       DropdownMenuItem(
-                        value: DriverReserveMode.dailyPercent,
-                        child: Text('% do lucro do dia'),
+                        value: DriverReserveMode.none,
+                        child: Text('Sem reserva'),
+                      ),
+                      DropdownMenuItem(
+                        value: DriverReserveMode.perDeliveryPercent,
+                        child: Text('% por entrega'),
                       ),
                       DropdownMenuItem(
                         value: DriverReserveMode.perDeliveryFixed,
                         child: Text('Valor por entrega'),
                       ),
                       DropdownMenuItem(
-                        value: DriverReserveMode.none,
-                        child: Text('Sem reserva'),
+                        value: DriverReserveMode.dailyPercent,
+                        child: Text('% por dia'),
+                      ),
+                      DropdownMenuItem(
+                        value: DriverReserveMode.weeklyPercent,
+                        child: Text('% por semana'),
+                      ),
+                      DropdownMenuItem(
+                        value: DriverReserveMode.monthlyPercent,
+                        child: Text('% por mes'),
                       ),
                     ],
                     onChanged: (value) => setState(
@@ -331,11 +343,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           value ?? DriverReserveMode.dailyPercent,
                     ),
                   ),
-                  if (_reserveMode == DriverReserveMode.dailyPercent)
+                  if (_usesReservePercentage(_reserveMode))
                     TextFormField(
                       controller: _reservePercentageController,
                       decoration: const InputDecoration(
-                        labelText: 'Percentual do lucro do dia',
+                        labelText: 'Percentual da reserva',
                         suffixText: '%',
                       ),
                       keyboardType: const TextInputType.numberWithOptions(
@@ -674,5 +686,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   double _parseDouble(String? value, {required double fallback}) {
     if (value == null) return fallback;
     return double.tryParse(value.trim().replaceAll(',', '.')) ?? fallback;
+  }
+
+  bool _usesReservePercentage(DriverReserveMode mode) {
+    return switch (mode) {
+      DriverReserveMode.perDeliveryPercent ||
+      DriverReserveMode.dailyPercent ||
+      DriverReserveMode.weeklyPercent ||
+      DriverReserveMode.monthlyPercent => true,
+      DriverReserveMode.none || DriverReserveMode.perDeliveryFixed => false,
+    };
   }
 }

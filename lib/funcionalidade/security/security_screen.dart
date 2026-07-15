@@ -648,6 +648,7 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
                     controller: _currentFactorCodeController,
                     keyboardType: TextInputType.number,
                     maxLength: 6,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: InputDecoration(
                       labelText: strings.pick(
                         pt: 'Codigo do autenticador atual',
@@ -655,6 +656,17 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
                         es: 'Codigo del autenticador actual',
                       ),
                       counterText: '',
+                      suffixIcon: IconButton(
+                        tooltip: strings.pick(
+                          pt: 'Colar',
+                          en: 'Paste',
+                          es: 'Pegar',
+                        ),
+                        onPressed: _loading || _verifying
+                            ? null
+                            : () => _pasteDigits(_currentFactorCodeController),
+                        icon: const Icon(Icons.content_paste, size: 18),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -727,6 +739,7 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
                     controller: _codeController,
                     keyboardType: TextInputType.number,
                     maxLength: 6,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: InputDecoration(
                       labelText: strings.pick(
                         pt: 'Codigo do autenticador',
@@ -734,6 +747,17 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
                         es: 'Codigo del autenticador',
                       ),
                       counterText: '',
+                      suffixIcon: IconButton(
+                        tooltip: strings.pick(
+                          pt: 'Colar',
+                          en: 'Paste',
+                          es: 'Pegar',
+                        ),
+                        onPressed: _loading || _verifying
+                            ? null
+                            : () => _pasteDigits(_codeController),
+                        icon: const Icon(Icons.content_paste, size: 18),
+                      ),
                     ),
                   ),
                 ],
@@ -822,6 +846,16 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
           ).pick(pt: 'Copiado.', en: 'Copied.', es: 'Copiado.'),
         ),
       ),
+    );
+  }
+
+  Future<void> _pasteDigits(TextEditingController controller) async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final digits = data?.text?.replaceAll(RegExp(r'\D'), '') ?? '';
+    if (digits.isEmpty) return;
+    controller.text = digits.length > 6 ? digits.substring(0, 6) : digits;
+    controller.selection = TextSelection.collapsed(
+      offset: controller.text.length,
     );
   }
 

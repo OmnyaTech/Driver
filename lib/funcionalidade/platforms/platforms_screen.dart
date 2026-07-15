@@ -85,18 +85,21 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
     final profile = session.profile;
     final activePlatforms = _platforms.where((item) => item.active).length;
     final editingActivePlatform = initialPlatform?.active == true ? 1 : 0;
-    final canUseMultiple = profile != null
-        ? _planAccessService.canUseMultiplePlatforms(profile.planType)
-        : false;
+    final platformLimit = profile == null
+        ? 3
+        : _planAccessService.activePlatformLimit(profile.planType);
+    final canUseUnlimited = platformLimit == null;
 
-    if (initialPlatform == null && activePlatforms >= 1 && !canUseMultiple) {
+    if (initialPlatform == null &&
+        platformLimit != null &&
+        activePlatforms >= platformLimit) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             strings.pick(
-              pt: 'No plano free, voce usa uma plataforma ativa por vez. Premium libera mais fontes.',
-              en: 'On the free plan, you can use one active platform at a time. Premium unlocks more sources.',
-              es: 'En el plan gratis, usas una plataforma activa por vez. Premium libera mas fuentes.',
+              pt: 'No plano free, voce usa ate 3 plataformas ativas. Premium libera plataformas ilimitadas.',
+              en: 'On the free plan, you can use up to 3 active platforms. Premium unlocks unlimited platforms.',
+              es: 'En el plan gratis, usas hasta 3 plataformas activas. Premium libera plataformas ilimitadas.',
             ),
           ),
         ),
@@ -109,7 +112,9 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
       builder: (_) => _PlatformFormDialog(
         initialPlatform: initialPlatform,
         canEditActiveState:
-            canUseMultiple || activePlatforms <= editingActivePlatform,
+            canUseUnlimited ||
+            activePlatforms < platformLimit ||
+            initialPlatform?.active == true,
         onSubmit:
             ({
               required name,
@@ -118,17 +123,17 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
               required averageDeliveries,
               required active,
             }) async {
-              if (active && !canUseMultiple) {
+              if (active && platformLimit != null) {
                 final wouldHaveActive =
                     _platforms.where((item) => item.active).length -
                     editingActivePlatform +
                     1;
-                if (wouldHaveActive > 1) {
+                if (wouldHaveActive > platformLimit) {
                   throw StateError(
                     strings.pick(
-                      pt: 'Seu plano atual permite apenas uma plataforma ativa.',
-                      en: 'Your current plan allows only one active platform.',
-                      es: 'Tu plan actual permite solo una plataforma activa.',
+                      pt: 'Seu plano atual permite ate 3 plataformas ativas.',
+                      en: 'Your current plan allows up to 3 active platforms.',
+                      es: 'Tu plan actual permite hasta 3 plataformas activas.',
                     ),
                   );
                 }
@@ -282,9 +287,9 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
     final format = AppFormat.of(context);
     final session = context.watch<AppSession>();
     final activePlatforms = _platforms.where((item) => item.active).length;
-    final canUseMultiple = session.profile == null
-        ? false
-        : _planAccessService.canUseMultiplePlatforms(session.profile!.planType);
+    final platformLimit = session.profile == null
+        ? 3
+        : _planAccessService.activePlatformLimit(session.profile!.planType);
 
     if (_loading) {
       const loading = Center(child: CircularProgressIndicator());
@@ -318,15 +323,15 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
             ),
             const SizedBox(height: 16),
           ],
-          if (!canUseMultiple && activePlatforms >= 1)
+          if (platformLimit != null && activePlatforms >= platformLimit)
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   strings.pick(
-                    pt: 'Plano free: uma plataforma ativa por vez. Premium, presente ou developer liberam mais fontes.',
-                    en: 'Free plan: one active platform at a time. Premium, gift or developer access unlocks more sources.',
-                    es: 'Plan gratis: una plataforma activa por vez. Premium, regalo o developer liberan mas fuentes.',
+                    pt: 'Plano free: ate 3 plataformas ativas. Premium, presente ou developer liberam plataformas ilimitadas.',
+                    en: 'Free plan: up to 3 active platforms. Premium, gift or developer access unlocks unlimited platforms.',
+                    es: 'Plan gratis: hasta 3 plataformas activas. Premium, regalo o developer liberan plataformas ilimitadas.',
                   ),
                 ),
               ),

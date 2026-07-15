@@ -219,9 +219,16 @@ class _GamificationScreenState extends State<GamificationScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Vitrine de conquistas',
-                    style: Theme.of(context).textTheme.titleMedium,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Vitrine de conquistas',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                      _ProgressPill(label: '${summary.medalsCount}'),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   if (summary.medals.isEmpty)

@@ -2035,14 +2035,14 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                     ChoiceChip(
                       label: Text(
                         strings.pick(
-                          pt: '% do lucro do dia',
-                          en: '% of daily profit',
-                          es: '% de la ganancia diaria',
+                          pt: '% por entrega',
+                          en: '% per delivery',
+                          es: '% por entrega',
                         ),
                       ),
-                      selected: _mode == DriverReserveMode.dailyPercent,
+                      selected: _mode == DriverReserveMode.perDeliveryPercent,
                       onSelected: (_) => setState(
-                        () => _mode = DriverReserveMode.dailyPercent,
+                        () => _mode = DriverReserveMode.perDeliveryPercent,
                       ),
                     ),
                     ChoiceChip(
@@ -2058,10 +2058,49 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                         () => _mode = DriverReserveMode.perDeliveryFixed,
                       ),
                     ),
+                    ChoiceChip(
+                      label: Text(
+                        strings.pick(
+                          pt: '% por dia',
+                          en: '% per day',
+                          es: '% por dia',
+                        ),
+                      ),
+                      selected: _mode == DriverReserveMode.dailyPercent,
+                      onSelected: (_) => setState(
+                        () => _mode = DriverReserveMode.dailyPercent,
+                      ),
+                    ),
+                    ChoiceChip(
+                      label: Text(
+                        strings.pick(
+                          pt: '% por semana',
+                          en: '% per week',
+                          es: '% por semana',
+                        ),
+                      ),
+                      selected: _mode == DriverReserveMode.weeklyPercent,
+                      onSelected: (_) => setState(
+                        () => _mode = DriverReserveMode.weeklyPercent,
+                      ),
+                    ),
+                    ChoiceChip(
+                      label: Text(
+                        strings.pick(
+                          pt: '% por mes',
+                          en: '% per month',
+                          es: '% por mes',
+                        ),
+                      ),
+                      selected: _mode == DriverReserveMode.monthlyPercent,
+                      onSelected: (_) => setState(
+                        () => _mode = DriverReserveMode.monthlyPercent,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 18),
-                if (_mode == DriverReserveMode.dailyPercent) ...[
+                if (_usesPercentage(_mode)) ...[
                   TextFormField(
                     controller: _percentageController,
                     keyboardType: const TextInputType.numberWithOptions(
@@ -2069,9 +2108,9 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                     ),
                     decoration: const InputDecoration(suffixText: '%').copyWith(
                       labelText: strings.pick(
-                        pt: 'Percentual do lucro',
-                        en: 'Profit percentage',
-                        es: 'Porcentaje de ganancia',
+                        pt: 'Percentual da reserva',
+                        en: 'Reserve percentage',
+                        es: 'Porcentaje de reserva',
                       ),
                       hintText: strings.pick(
                         pt: 'Ex: 30',
@@ -2083,9 +2122,9 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
                   const SizedBox(height: 10),
                   Text(
                     strings.pick(
-                      pt: 'A sugestao usa o lucro do periodo atual.',
-                      en: 'The suggestion uses the profit from the current period.',
-                      es: 'La sugerencia usa la ganancia del periodo actual.',
+                      pt: 'A sugestao usa o lucro do periodo correspondente a regra escolhida.',
+                      en: 'The suggestion uses the profit from the period that matches the selected rule.',
+                      es: 'La sugerencia usa la ganancia del periodo correspondiente a la regla elegida.',
                     ),
                     style: theme.textTheme.bodySmall,
                   ),
@@ -2188,7 +2227,7 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
       _perDeliveryController.text.replaceAll(',', '.'),
     );
 
-    if (_mode == DriverReserveMode.dailyPercent &&
+    if (_usesPercentage(_mode) &&
         (percentage == null || percentage < 0 || percentage > 100)) {
       setState(() {
         _errorMessage = AppStrings.of(context).pick(
@@ -2247,5 +2286,15 @@ class _ReservePreferenceSheetState extends State<_ReservePreferenceSheet> {
         setState(() => _saving = false);
       }
     }
+  }
+
+  bool _usesPercentage(DriverReserveMode mode) {
+    return switch (mode) {
+      DriverReserveMode.perDeliveryPercent ||
+      DriverReserveMode.dailyPercent ||
+      DriverReserveMode.weeklyPercent ||
+      DriverReserveMode.monthlyPercent => true,
+      DriverReserveMode.none || DriverReserveMode.perDeliveryFixed => false,
+    };
   }
 }

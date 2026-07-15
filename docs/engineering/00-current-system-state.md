@@ -1,6 +1,6 @@
 # Estado Atual do Sistema
 
-Atualizado em 2026-07-14.
+Atualizado em 2026-07-15.
 
 ## Visao geral
 
@@ -40,11 +40,13 @@ O Driver, produto da OmnyaTech, ja opera com:
   - exclusao;
   - aporte;
   - retirada;
+  - saque com observacao opcional;
   - historico de movimentacoes;
   - saldo disponivel baseado no resultado operacional;
 - criacao e listagem de veiculos com tipo, marca/modelo sugeridos e
   combustivel multi-selecao;
-- criacao e listagem de plataformas;
+- criacao e listagem de plataformas, com 3 plataformas ativas no free e
+  plataformas ilimitadas nos planos expandidos;
 - jornadas com detalhamento por plataforma e validacoes melhores;
 - dashboard com metricas consolidadas em cima dos dados reais;
 - dashboard com filtro por periodo;
@@ -56,8 +58,13 @@ O Driver, produto da OmnyaTech, ja opera com:
   - aplicar plano/papel manualmente;
   - visualizar historico da conta atual;
   - visualizar auditoria administrativa;
-- regras basicas de plano para limitar multiplos veiculos/plataformas no free.
+- regras basicas de plano para limitar multiplos veiculos e liberar ate 3
+  plataformas ativas no free.
 - metricas developer de assinantes pagantes excluem gift e developer.
+- MFA/TOTP exibe os digitos digitados e permite colar codigo numerico.
+- reserva automatica suporta sem reserva, percentual por entrega, valor por
+  entrega, percentual por dia, por semana e por mes.
+- vitrine de conquistas exibe contador junto ao titulo.
 
 ## SQL manual disponivel
 
@@ -87,6 +94,10 @@ O Driver, produto da OmnyaTech, ja opera com:
 
 - `sql/manual/037_driver_onboarding_vehicle_metrics_refinements.sql`
   Adiciona `vehicle_type`, `fuel_types` e corrige metricas de assinantes pagos.
+
+- `sql/manual/042_driver_goal_cash_out_transactions.sql`
+  Adiciona tipo/observacao em movimentacoes de objetivos e atualiza a RPC para
+  registrar saques.
 
 ## Documentacao operacional adicional
 

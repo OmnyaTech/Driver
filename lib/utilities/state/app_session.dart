@@ -353,7 +353,10 @@ class AppSession extends ChangeNotifier {
   DriverReserveMode _parseReserveMode(String raw) {
     return switch (raw) {
       'none' => DriverReserveMode.none,
+      'per_delivery_percent' => DriverReserveMode.perDeliveryPercent,
       'per_delivery_fixed' => DriverReserveMode.perDeliveryFixed,
+      'weekly_percent' => DriverReserveMode.weeklyPercent,
+      'monthly_percent' => DriverReserveMode.monthlyPercent,
       _ => DriverReserveMode.dailyPercent,
     };
   }

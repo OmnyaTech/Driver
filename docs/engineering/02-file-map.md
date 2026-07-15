@@ -1,6 +1,6 @@
 # Mapa de Arquivos
 
-Atualizado em 2026-07-10.
+Atualizado em 2026-07-15.
 
 ## Flutter app
 
@@ -20,7 +20,8 @@ Atualizado em 2026-07-10.
   Jornadas com formulario real e breakdown por plataforma.
 
 - `lib/funcionalidade/goals/goals_screen.dart`
-  Objetivos financeiros com saldo disponivel, CRUD e movimentacoes.
+  Objetivos financeiros com saldo disponivel, CRUD, aporte, retirada, saque e
+  historico de movimentacoes.
 
 - `lib/funcionalidade/expenses/trip_expenses_screen.dart`
   Despesas operacionais com vinculacao opcional de jornada.
@@ -35,7 +36,14 @@ Atualizado em 2026-07-10.
   Gestao de veiculos com limite de plano.
 
 - `lib/funcionalidade/platforms/platforms_screen.dart`
-  Gestao de plataformas com limite de plano.
+  Gestao de plataformas com limite de 3 ativas no free e ilimitadas nos planos
+  expandidos.
+
+- `lib/funcionalidade/security/security_screen.dart`
+  Preferencias de seguranca, biometria e configuracao de TOTP/MFA.
+
+- `lib/funcionalidade/gamification/gamification_screen.dart`
+  Nivel, XP, proximos passos e vitrine de conquistas.
 
 - `lib/funcionalidade/developer/developer_access_screen.dart`
   Area administrativa para developer com auditoria.
@@ -67,7 +75,10 @@ Atualizado em 2026-07-10.
   Agregados operacionais do dashboard.
 
 - `lib/models/app_goal.dart`
-  Objetivos, transacoes e resumo financeiro disponivel.
+  Objetivos, transacoes tipadas e resumo financeiro disponivel.
+
+- `lib/models/driver_reserve_preference.dart`
+  Modos de reserva automatica e labels de exibicao.
 
 - `lib/models/app_subscription.dart`
   Historico de assinatura e consulta administrativa.
@@ -111,7 +122,7 @@ Atualizado em 2026-07-10.
   Carrega metricas do dashboard via RPC no Supabase com fallback local.
 
 - `lib/services/goal_service.dart`
-  CRUD de objetivos, movimentacoes e saldo disponivel.
+  CRUD de objetivos, movimentacoes tipadas, saque e saldo disponivel.
 
 - `lib/services/subscription_service.dart`
   Le historico de assinaturas do usuario atual.
@@ -126,7 +137,10 @@ Atualizado em 2026-07-10.
   Consome RPCs administrativas do schema `driver`, incluindo auditoria.
 
 - `lib/services/plan_access_service.dart`
-  Regras simples de acesso por plano.
+  Regras simples de acesso por plano, incluindo limite de plataformas.
+
+- `lib/services/driver_preference_service.dart`
+  Preferencias do motorista, calculo e textos de reserva automatica.
 
 - `lib/services/developer_access_service.dart`
   Regras de abertura da area developer.

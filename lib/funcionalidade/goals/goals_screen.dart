@@ -183,11 +183,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
                   children: [
                     _GoalSummaryTile(
                       title: strings.pick(
-                        pt: 'Sobrou',
-                        en: 'Left over',
-                        es: 'Sobro',
+                        pt: 'Disponivel',
+                        en: 'Available',
+                        es: 'Disponible',
                       ),
-                      value: _currency(summary.netOperationalResult),
+                      value: _currency(summary.availableBalance),
                       emphasized: true,
                     ),
                     _GoalSummaryTile(
@@ -197,10 +197,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
                         es: 'Guardado',
                       ),
                       value: _currency(summary.allocatedToGoals),
-                    ),
-                    _GoalSummaryTile(
-                      title: strings.pick(pt: 'Livre', en: 'Free', es: 'Libre'),
-                      value: _currency(summary.availableBalance),
                     ),
                   ],
                 ),
@@ -360,6 +356,22 @@ class _GoalsScreenState extends State<GoalsScreen> {
                             ),
                           ),
                         ),
+                        OutlinedButton.icon(
+                          onPressed: goal.currentAmount <= 0
+                              ? null
+                              : () => _openTransactionDialog(
+                                  goal: goal,
+                                  mode: GoalTransactionMode.cashOut,
+                                ),
+                          icon: const Icon(Icons.payments_outlined),
+                          label: Text(
+                            strings.pick(
+                              pt: 'Saque',
+                              en: 'Cash out',
+                              es: 'Sacar',
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -397,10 +409,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
                       title: Text(transaction.goalTitle),
                       subtitle: Text(
                         [
-                          transaction.isContribution ? 'Aporte' : 'Retirada',
+                          _transactionLabel(transaction),
                           _formatDateTime(transaction.createdAt),
                           if (transaction.journeyLabel != null)
                             transaction.journeyLabel!,
+                          if (transaction.note != null) transaction.note!,
                         ].join(' - '),
                       ),
                       trailing: Text(
@@ -593,13 +606,24 @@ class _GoalsScreenState extends State<GoalsScreen> {
         mode: mode,
         journeyOptions: _journeyOptions,
         availableBalance: _summary?.availableBalance ?? 0,
-        onSubmit: ({required amount, required journeyId}) async {
+        onSubmit: ({required amount, required journeyId, required note}) async {
           await _goalService.applyTransaction(
             goalId: goal.id,
             amount: mode == GoalTransactionMode.withdrawal
                 ? '-$amount'
+                : mode == GoalTransactionMode.cashOut
+                ? '-$amount'
                 : amount,
             journeyId: journeyId,
+            movementType: switch (mode) {
+              GoalTransactionMode.contribution =>
+                GoalTransactionMovementType.contribution,
+              GoalTransactionMode.withdrawal =>
+                GoalTransactionMovementType.withdrawal,
+              GoalTransactionMode.cashOut =>
+                GoalTransactionMovementType.cashOut,
+            },
+            note: note,
           );
         },
       ),
@@ -620,6 +644,27 @@ class _GoalsScreenState extends State<GoalsScreen> {
   String _formatDateTime(DateTime value) {
     final local = value.toLocal();
     return '${_formatDate(local)} ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _transactionLabel(AppGoalTransaction transaction) {
+    final strings = AppStrings.of(context);
+    return switch (transaction.movementType) {
+      GoalTransactionMovementType.contribution => strings.pick(
+        pt: 'Aporte',
+        en: 'Contribution',
+        es: 'Aporte',
+      ),
+      GoalTransactionMovementType.withdrawal => strings.pick(
+        pt: 'Retirada',
+        en: 'Withdrawal',
+        es: 'Retirada',
+      ),
+      GoalTransactionMovementType.cashOut => strings.pick(
+        pt: 'Saque',
+        en: 'Cash out',
+        es: 'Saque',
+      ),
+    };
   }
 }
 
@@ -1075,7 +1120,7 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
   }
 }
 
-enum GoalTransactionMode { contribution, withdrawal }
+enum GoalTransactionMode { contribution, withdrawal, cashOut }
 
 class _GoalTransactionDialog extends StatefulWidget {
   const _GoalTransactionDialog({
@@ -1093,6 +1138,7 @@ class _GoalTransactionDialog extends StatefulWidget {
   final Future<void> Function({
     required String amount,
     required String? journeyId,
+    required String? note,
   })
   onSubmit;
 
@@ -1103,6 +1149,7 @@ class _GoalTransactionDialog extends StatefulWidget {
 class _GoalTransactionDialogState extends State<_GoalTransactionDialog> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
+  final _noteController = TextEditingController();
   String? _journeyId;
   bool _saving = false;
   String? _submitError;
@@ -1110,15 +1157,21 @@ class _GoalTransactionDialogState extends State<_GoalTransactionDialog> {
   @override
   void dispose() {
     _amountController.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final isContribution = widget.mode == GoalTransactionMode.contribution;
+    final isCashOut = widget.mode == GoalTransactionMode.cashOut;
     return AlertDialog(
       title: Text(
-        isContribution ? 'Aportar no objetivo' : 'Retirar do objetivo',
+        isContribution
+            ? 'Aportar no objetivo'
+            : isCashOut
+            ? 'Saque da meta'
+            : 'Retirar do objetivo',
       ),
       content: SizedBox(
         width: 460,
@@ -1136,12 +1189,27 @@ class _GoalTransactionDialogState extends State<_GoalTransactionDialog> {
                       ? 'Saldo disponivel: ${AppFormat.of(context).currency(widget.availableBalance)}'
                       : 'Saldo atual do objetivo: ${AppFormat.of(context).currency(widget.goal.currentAmount)}',
                 ),
+                if (isCashOut) ...[
+                  const SizedBox(height: 8),
+                  Card(
+                    margin: EdgeInsets.zero,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(
+                        'Opcional: conte o motivo desse saque para lembrar depois no historico.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _amountController,
                   decoration: InputDecoration(
                     labelText: isContribution
                         ? 'Valor do aporte'
+                        : isCashOut
+                        ? 'Valor do saque'
                         : 'Valor da retirada',
                   ),
                   keyboardType: const TextInputType.numberWithOptions(
@@ -1160,6 +1228,16 @@ class _GoalTransactionDialogState extends State<_GoalTransactionDialog> {
                     return null;
                   },
                 ),
+                if (isCashOut)
+                  TextFormField(
+                    controller: _noteController,
+                    minLines: 2,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      labelText: 'Observacao opcional',
+                      hintText: 'Ex: usei para mercado, manutencao, conta...',
+                    ),
+                  ),
                 DropdownButtonFormField<String?>(
                   initialValue: _journeyId,
                   decoration: const InputDecoration(
@@ -1213,6 +1291,7 @@ class _GoalTransactionDialogState extends State<_GoalTransactionDialog> {
                     await widget.onSubmit(
                       amount: _amountController.text,
                       journeyId: _journeyId,
+                      note: isCashOut ? _noteController.text : null,
                     );
                     if (!mounted) return;
                     navigator.pop(true);
@@ -1227,7 +1306,13 @@ class _GoalTransactionDialogState extends State<_GoalTransactionDialog> {
                     }
                   }
                 },
-          child: Text(isContribution ? 'Aportar' : 'Retirar'),
+          child: Text(
+            isContribution
+                ? 'Aportar'
+                : isCashOut
+                ? 'Registrar saque'
+                : 'Retirar',
+          ),
         ),
       ],
     );

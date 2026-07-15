@@ -39,6 +39,8 @@ class AppGoalTransaction {
     required this.goalId,
     required this.goalTitle,
     required this.amount,
+    required this.movementType,
+    required this.note,
     required this.createdAt,
     required this.journeyId,
     required this.journeyLabel,
@@ -48,12 +50,18 @@ class AppGoalTransaction {
   final String goalId;
   final String goalTitle;
   final double amount;
+  final GoalTransactionMovementType movementType;
+  final String? note;
   final DateTime createdAt;
   final String? journeyId;
   final String? journeyLabel;
 
-  bool get isContribution => amount >= 0;
+  bool get isContribution =>
+      movementType == GoalTransactionMovementType.contribution;
+  bool get isCashOut => movementType == GoalTransactionMovementType.cashOut;
 }
+
+enum GoalTransactionMovementType { contribution, withdrawal, cashOut }
 
 class GoalBalanceSummary {
   const GoalBalanceSummary({

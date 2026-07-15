@@ -322,15 +322,30 @@ class AppStrings {
         en: 'Reserve off',
         es: 'Reserva apagada',
       ),
-      DriverReserveMode.dailyPercent => pick(
-        pt: '${_percentText(preference.dailyPercentage)}% do lucro do dia',
-        en: '${_percentText(preference.dailyPercentage)}% of daily profit',
-        es: '${_percentText(preference.dailyPercentage)}% de la ganancia diaria',
+      DriverReserveMode.perDeliveryPercent => pick(
+        pt: '${_percentText(preference.dailyPercentage)}% por entrega',
+        en: '${_percentText(preference.dailyPercentage)}% per delivery',
+        es: '${_percentText(preference.dailyPercentage)}% por entrega',
       ),
       DriverReserveMode.perDeliveryFixed => pick(
         pt: '${currency(preference.amountPerDelivery)} por entrega',
         en: '${currency(preference.amountPerDelivery)} per delivery',
         es: '${currency(preference.amountPerDelivery)} por entrega',
+      ),
+      DriverReserveMode.dailyPercent => pick(
+        pt: '${_percentText(preference.dailyPercentage)}% por dia',
+        en: '${_percentText(preference.dailyPercentage)}% per day',
+        es: '${_percentText(preference.dailyPercentage)}% por dia',
+      ),
+      DriverReserveMode.weeklyPercent => pick(
+        pt: '${_percentText(preference.dailyPercentage)}% por semana',
+        en: '${_percentText(preference.dailyPercentage)}% per week',
+        es: '${_percentText(preference.dailyPercentage)}% por semana',
+      ),
+      DriverReserveMode.monthlyPercent => pick(
+        pt: '${_percentText(preference.dailyPercentage)}% por mes',
+        en: '${_percentText(preference.dailyPercentage)}% per month',
+        es: '${_percentText(preference.dailyPercentage)}% por mes',
       ),
     };
   }
