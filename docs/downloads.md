@@ -6,10 +6,12 @@ O Omnya Driver usa APK unico universal para distribuicao fora da Play Store.
 Esse e o formato esperado para publicacao manual no site ou no storage:
 
 - APK versionado: `build/app/outputs/flutter-apk/driver-v1.0.17.apk`
-- Alias publico recomendado: `driver-latest.apk`
+- Alias publico recomendado: `build/app/outputs/flutter-apk/driver-latest.apk`
 - Bucket Supabase: `driver-mobile-releases`
 - URL padrao da landing:
   `https://cattokugqanpagleawpw.supabase.co/storage/v1/object/public/driver-mobile-releases/driver-latest.apk`
+- Link alternativo MediaFire:
+  `https://www.mediafire.com/file/cehfkctgxvhcqlu/driver-v1.0.17.apk/file`
 
 O APK nao deve ser versionado no Git. Depois de gerar a release, publique o
 arquivo no storage ou no provedor de download escolhido.
@@ -25,6 +27,13 @@ A URL real do APK pode ser alterada no build web por `DRIVER_APK_URL`. Sem essa
 variavel, a landing usa o bucket publico `driver-mobile-releases` e o arquivo
 `driver-latest.apk`.
 
+A tela de download tambem busca links dinamicos na Edge Function
+`driver-download-links`. O link do MediaFire deve ficar na secret
+`DRIVER_MEDIAFIRE_APK_URL`; assim, quando o arquivo mudar, basta atualizar a
+secret e redeployar/reiniciar a funcao se necessario, sem alterar o codigo do
+Flutter. Opcionalmente, a URL oficial do APK tambem pode ser sobrescrita pela
+secret `DRIVER_OFFICIAL_APK_URL`.
+
 ## Storage E Policies
 
 O bucket `driver-mobile-releases` fica publico para permitir download por
@@ -39,8 +48,10 @@ autenticados com papel `developer` no schema `driver`.
 
 O APK universal pode passar de 50 MB. Se o upload automatico pelo Supabase CLI
 ou painel falhar por limite do ambiente, suba manualmente o arquivo
-`driver-v1.0.17.apk` e mantenha uma copia ou alias com o nome
-`driver-latest.apk`.
+`driver-latest.apk`. Esse arquivo deve ser uma copia do APK universal versionado
+mais recente. Se o bucket ainda mostrar um `driver-latest.apk` com tamanho
+proximo de 25 MB, ele ainda e o split arm64 e deve ser substituido pelo APK
+universal de aproximadamente 67 MB.
 
 Uma alternativa futura, seguindo o modelo do OmnyaFinance, e usar uma camada de
 download/proxy em um Worker. Nesse modelo, o frontend chama uma URL propria do

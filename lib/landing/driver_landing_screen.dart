@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../config/supabase_config.dart';
 import '../login/login_screen.dart';
+import '../services/download_links_service.dart';
 import '../services/referral_service.dart';
 import '../utilities/state/app_session.dart';
 import '../utilities/ui/omnya_visuals.dart';
@@ -116,12 +116,16 @@ class DriverDownloadGateScreen extends StatefulWidget {
 }
 
 class _DriverDownloadGateScreenState extends State<DriverDownloadGateScreen> {
+  final _downloadLinksService = const DownloadLinksService();
+
   bool _captured = false;
+  late Future<DriverDownloadLinks> _downloadLinksFuture;
   String? _downloadError;
 
   @override
   void initState() {
     super.initState();
+    _downloadLinksFuture = _downloadLinksService.fetchLinks();
     _captureReferral();
   }
 
@@ -233,13 +237,51 @@ class _DriverDownloadGateScreenState extends State<DriverDownloadGateScreen> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 22),
-                      FilledButton.icon(
-                        onPressed: _downloadApk,
-                        icon: const Icon(Icons.download_rounded),
-                        label: const Text('Baixar APK do Driver'),
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size.fromHeight(54),
-                        ),
+                      FutureBuilder<DriverDownloadLinks>(
+                        future: _downloadLinksFuture,
+                        builder: (context, snapshot) {
+                          final links = snapshot.data;
+                          final loading =
+                              snapshot.connectionState ==
+                              ConnectionState.waiting;
+                          final mediafireUrl = links?.mediafireApkUrl;
+
+                          return Column(
+                            children: [
+                              FilledButton.icon(
+                                onPressed: loading || links == null
+                                    ? null
+                                    : () => _downloadApk(links.officialApkUrl),
+                                icon: const Icon(Icons.download_rounded),
+                                label: Text(
+                                  loading
+                                      ? 'Preparando download'
+                                      : 'Baixar APK do Driver',
+                                ),
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(54),
+                                ),
+                              ),
+                              if (mediafireUrl != null) ...[
+                                const SizedBox(height: 10),
+                                OutlinedButton.icon(
+                                  onPressed: () => _downloadApk(mediafireUrl),
+                                  icon: const Icon(Icons.download_rounded),
+                                  label: const Text('Mediafire'),
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(46),
+                                    foregroundColor: Colors.white,
+                                    side: BorderSide(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.32,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -268,10 +310,9 @@ class _DriverDownloadGateScreenState extends State<DriverDownloadGateScreen> {
     );
   }
 
-  Future<void> _downloadApk() async {
+  Future<void> _downloadApk(String rawUrl) async {
     setState(() => _downloadError = null);
-    final raw = SupabaseRuntimeConfig.driverApkUrl;
-    final uri = Uri.parse(raw);
+    final uri = Uri.parse(rawUrl);
     final resolved = uri.hasScheme ? uri : Uri.base.resolveUri(uri);
     final opened = await launchUrl(
       resolved,
