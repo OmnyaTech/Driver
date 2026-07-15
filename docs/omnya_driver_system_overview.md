@@ -56,8 +56,9 @@ O fluxo basico do sistema e:
 6. Cria metas financeiras e movimenta dinheiro entre saldo disponivel e cofres.
 7. Usa relatorios, conquistas e historico para acompanhar a evolucao.
 
-O plano gratuito permite ate 3 plataformas ativas. Planos premium, gift,
-lifetime e developer liberam plataformas ilimitadas e recursos expandidos.
+O plano gratuito permite plataformas ilimitadas e 1 veiculo ativo. Planos
+premium, gift, lifetime e developer liberam multiplos veiculos e recursos
+expandidos.
 
 ## Principais Modulos
 
@@ -116,8 +117,8 @@ A tela de plataformas cadastra as fontes de entrega, como apps, restaurantes,
 lojas ou clientes diretos. Cada plataforma pode ter status ativo ou arquivado e
 informacoes medias de renda e entregas.
 
-No plano gratuito, o usuario pode manter ate 3 plataformas ativas. Nos planos
-expandidos, o cadastro de plataformas ativas e ilimitado.
+No plano gratuito, o usuario pode manter plataformas ativas ilimitadas. O
+limite do Free fica no cadastro de veiculo: 1 veiculo ativo por conta.
 
 ### Veiculos
 
@@ -185,9 +186,9 @@ mais.
 ### Assinaturas
 
 A tela de assinaturas apresenta os planos disponiveis, beneficios e historico
-de eventos. O plano gratuito e suficiente para comecar e permite ate 3
-plataformas ativas. O Premium libera acesso expandido, como plataformas
-ilimitadas e recursos avancados.
+de eventos. O plano gratuito e suficiente para comecar, permite plataformas
+ilimitadas e 1 veiculo ativo. O Premium libera acesso expandido, como multiplos
+veiculos e recursos avancados.
 
 Pagamentos e confirmacoes de assinatura sao integrados por provider externo e
 sincronizados com o perfil do usuario.
@@ -283,8 +284,8 @@ O Omnya Driver organiza:
 
 ### Gratuito
 
-Indicado para comecar a organizar a rotina. Inclui recursos essenciais e ate 3
-plataformas ativas.
+Indicado para comecar a organizar a rotina. Inclui recursos essenciais,
+plataformas ilimitadas e 1 veiculo ativo.
 
 ### Premium E Acessos Expandidos
 

@@ -8,17 +8,11 @@ class PlanAccessService {
   }
 
   bool canUseMultiplePlatforms(PlanType planType) {
-    return _hasExpandedAccess(planType);
+    return true;
   }
 
   int? activePlatformLimit(PlanType planType) {
-    return switch (planType) {
-      PlanType.free => 3,
-      PlanType.premium ||
-      PlanType.gift ||
-      PlanType.lifetime ||
-      PlanType.developer => null,
-    };
+    return null;
   }
 
   bool canAccessAdvancedOperations(PlanType planType) {

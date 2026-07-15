@@ -45,8 +45,7 @@ O Driver, produto da OmnyaTech, ja opera com:
   - saldo disponivel baseado no resultado operacional;
 - criacao e listagem de veiculos com tipo, marca/modelo sugeridos e
   combustivel multi-selecao;
-- criacao e listagem de plataformas, com 3 plataformas ativas no free e
-  plataformas ilimitadas nos planos expandidos;
+- criacao e listagem de plataformas ilimitadas tambem no free;
 - jornadas com detalhamento por plataforma e validacoes melhores;
 - dashboard com metricas consolidadas em cima dos dados reais;
 - dashboard com filtro por periodo;
@@ -58,8 +57,8 @@ O Driver, produto da OmnyaTech, ja opera com:
   - aplicar plano/papel manualmente;
   - visualizar historico da conta atual;
   - visualizar auditoria administrativa;
-- regras basicas de plano para limitar multiplos veiculos e liberar ate 3
-  plataformas ativas no free.
+- regras basicas de plano para limitar o free a 1 veiculo ativo e liberar
+  multiplos veiculos nos planos expandidos.
 - metricas developer de assinantes pagantes excluem gift e developer.
 - MFA/TOTP exibe os digitos digitados e permite colar codigo numerico.
 - reserva automatica suporta sem reserva, percentual por entrega, valor por

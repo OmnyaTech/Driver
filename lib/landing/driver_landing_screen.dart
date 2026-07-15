@@ -165,41 +165,6 @@ class _DriverDownloadGateScreenState extends State<DriverDownloadGateScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    OmnyaGlassCard(
-                      highlight: true,
-                      borderRadius: 18,
-                      padding: const EdgeInsets.all(18),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.mark_email_read_outlined,
-                            color: OmnyaVisualTokens.cyan,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Cadastre-se para liberar o APK',
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(color: Colors.white),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Depois de criar a conta, confirme o e-mail se o Driver solicitar. Em seguida, volte para esta tela ou entre no site para baixar o APK oficial.',
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.76),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
                     SizedBox(
                       height: math
                           .max(720, MediaQuery.sizeOf(context).height - 120)
@@ -458,7 +423,7 @@ class _HeroSection extends StatelessWidget {
   }
 }
 
-class _LandingTicker extends StatelessWidget {
+class _LandingTicker extends StatefulWidget {
   const _LandingTicker();
 
   static const _items = [
@@ -469,6 +434,29 @@ class _LandingTicker extends StatelessWidget {
     'Metas com aporte e retirada',
     'Missoes semanais com XP',
   ];
+
+  @override
+  State<_LandingTicker> createState() => _LandingTickerState();
+}
+
+class _LandingTickerState extends State<_LandingTicker>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 24),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -484,27 +472,178 @@ class _LandingTicker extends StatelessWidget {
         ),
         color: Colors.black.withValues(alpha: 0.22),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const NeverScrollableScrollPhysics(),
+      clipBehavior: Clip.hardEdge,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return FractionalTranslation(
+            translation: Offset(-_controller.value * 0.5, 0),
+            child: child,
+          );
+        },
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            for (var round = 0; round < 2; round++)
-              for (final item in _items)
+            for (var round = 0; round < 4; round++)
+              for (final item in _LandingTicker._items)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    item,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.74),
-                      fontWeight: FontWeight.w800,
-                    ),
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Row(
+                    children: [
+                      Text(
+                        item,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.76),
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(width: 18),
+                      const Text(
+                        '-',
+                        style: TextStyle(color: OmnyaVisualTokens.cyan),
+                      ),
+                    ],
                   ),
                 ),
           ],
         ),
       ),
     );
+  }
+}
+
+class _DriverHologram extends StatefulWidget {
+  const _DriverHologram();
+
+  @override
+  State<_DriverHologram> createState() => _DriverHologramState();
+}
+
+class _DriverHologramState extends State<_DriverHologram>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3600),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 1.15,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          final value = _controller.value;
+          final bob = math.sin(value * math.pi * 2) * 8;
+          final glow = 0.22 + math.sin(value * math.pi * 2).abs() * 0.16;
+          return Transform.translate(
+            offset: Offset(0, bob),
+            child: Container(
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(34),
+                color: const Color(0xFF07111F).withValues(alpha: 0.72),
+                border: Border.all(
+                  color: OmnyaVisualTokens.cyan.withValues(alpha: 0.28),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: OmnyaVisualTokens.cyan.withValues(alpha: glow),
+                    blurRadius: 42,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: _HologramScanPainter(progress: value),
+                    ),
+                  ),
+                  Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity()
+                      ..setEntry(3, 2, 0.0014)
+                      ..rotateX(-0.12)
+                      ..rotateY(math.sin(value * math.pi * 2) * 0.18),
+                    child: Image.asset(
+                      _driverLogoAsset,
+                      width: 210,
+                      height: 210,
+                      filterQuality: FilterQuality.high,
+                    ),
+                  ),
+                  Positioned(
+                    left: 14,
+                    right: 14,
+                    bottom: 10,
+                    child: Container(
+                      height: 3,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            OmnyaVisualTokens.cyan.withValues(alpha: 0.86),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _HologramScanPainter extends CustomPainter {
+  const _HologramScanPainter({required this.progress});
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = OmnyaVisualTokens.electricBlue.withValues(alpha: 0.12)
+      ..strokeWidth = 1;
+    for (var i = 0; i < 8; i++) {
+      final y = size.height * (i / 7);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+    final scanY = (size.height + 80) * progress - 40;
+    final scanPaint = Paint()
+      ..shader = LinearGradient(
+        colors: [
+          Colors.transparent,
+          OmnyaVisualTokens.cyan.withValues(alpha: 0.42),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromLTWH(0, scanY - 18, size.width, 36));
+    canvas.drawRect(Rect.fromLTWH(0, scanY - 18, size.width, 36), scanPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _HologramScanPainter oldDelegate) {
+    return oldDelegate.progress != progress;
   }
 }
 
@@ -602,9 +741,9 @@ class _FeatureSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionTitle(
-          title: 'Um painel para decidir melhor',
+          title: 'Recursos principais',
           text:
-              'O Driver organiza os numeros que normalmente ficam espalhados entre apps, recibos, conversas e memoria.',
+              'Tudo que o entregador precisa para registrar, comparar e evoluir sem depender de planilha.',
         ),
         const SizedBox(height: 20),
         GridView.count(
@@ -635,9 +774,9 @@ class _PlanSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _SectionTitle(
-          title: 'Comece sem Play Store',
+          title: 'Planos para sua rotina',
           text:
-              'Enquanto o app nao esta publicado na loja, o download oficial fica disponivel pelo cadastro no site.',
+              'Comece gratis com a base completa e evolua para relatorios, exportacoes e multiplos veiculos quando precisar.',
         ),
         const SizedBox(height: 20),
         Wrap(
@@ -648,7 +787,7 @@ class _PlanSection extends StatelessWidget {
               title: 'Gratuito',
               price: 'R\$ 0',
               items: const [
-                '3 plataformas ativas',
+                'Plataformas ilimitadas',
                 'Jornadas, despesas e metas',
                 'Reserva automatica',
                 'Conquistas e perfil publico opcional',
@@ -660,10 +799,10 @@ class _PlanSection extends StatelessWidget {
               title: 'Premium',
               price: 'Opcional',
               items: const [
-                'Plataformas ilimitadas',
-                'Historico e relatorios expandidos',
-                'Controles avancados',
-                'Mais progresso em missoes',
+                'Multiplos veiculos',
+                'Comparativos semanais, mensais e anuais',
+                'Exportacao PDF e Excel',
+                'Insights e relatorios completos',
               ],
               highlighted: true,
               width: compact ? double.infinity : 360,
@@ -760,7 +899,7 @@ class _FaqSectionState extends State<_FaqSection> {
     ),
     (
       'O app cobra alguma coisa pra usar?',
-      'Nao. O plano gratuito cobre jornadas, despesas, metas e 3 plataformas ativas. Premium e opcional.',
+      'Nao. O plano gratuito cobre jornadas, despesas, metas, plataformas ilimitadas e 1 veiculo ativo. Premium e opcional.',
     ),
     (
       'Meus ganhos ficam visiveis pra outros entregadores?',
@@ -927,72 +1066,6 @@ class _SectionTitle extends StatelessWidget {
           style: TextStyle(color: Colors.white.withValues(alpha: 0.72)),
         ),
       ],
-    );
-  }
-}
-
-class _DriverHologram extends StatelessWidget {
-  const _DriverHologram();
-
-  @override
-  Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 1,
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0, end: 1),
-        duration: const Duration(milliseconds: 3600),
-        curve: Curves.easeInOut,
-        builder: (context, value, _) {
-          final bob = math.sin(value * math.pi * 2) * 10;
-          return Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.0016)
-              ..rotateX(-0.18)
-              ..rotateY(math.sin(value * math.pi * 2) * 0.12)
-              ..translateByDouble(0, bob, 0, 1),
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: OmnyaVisualTokens.cyan.withValues(alpha: 0.42),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: OmnyaVisualTokens.electricBlue.withValues(
-                      alpha: 0.36,
-                    ),
-                    blurRadius: 80,
-                    spreadRadius: 8,
-                  ),
-                ],
-                gradient: RadialGradient(
-                  colors: [
-                    OmnyaVisualTokens.cyan.withValues(alpha: 0.32),
-                    OmnyaVisualTokens.electricBlue.withValues(alpha: 0.10),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-              child: Center(
-                child: Container(
-                  width: 170,
-                  height: 170,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(44),
-                    color: const Color(0xFF061226).withValues(alpha: 0.82),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.22),
-                    ),
-                  ),
-                  child: Image.asset(_driverLogoAsset),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
     );
   }
 }

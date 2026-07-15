@@ -23,8 +23,8 @@ trabalhar, quando revisar o veiculo e como acompanhar seu progresso.
 - Dashboard com indicadores operacionais e financeiros.
 - Relatorios, ranking, conquistas, vitrine publica opcional e area de
   seguranca.
-- Plano gratuito com ate 3 plataformas ativas; planos expandidos com
-  plataformas ilimitadas.
+- Plano gratuito com plataformas ilimitadas e 1 veiculo ativo; Premium libera
+  multiplos veiculos e recursos avancados.
 - Area administrativa para acesso developer e operacoes de suporte.
 
 ## Documentacao

@@ -86,7 +86,7 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
     final activePlatforms = _platforms.where((item) => item.active).length;
     final editingActivePlatform = initialPlatform?.active == true ? 1 : 0;
     final platformLimit = profile == null
-        ? 3
+        ? null
         : _planAccessService.activePlatformLimit(profile.planType);
     final canUseUnlimited = platformLimit == null;
 
@@ -97,9 +97,9 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
         SnackBar(
           content: Text(
             strings.pick(
-              pt: 'No plano free, voce usa ate 3 plataformas ativas. Premium libera plataformas ilimitadas.',
-              en: 'On the free plan, you can use up to 3 active platforms. Premium unlocks unlimited platforms.',
-              es: 'En el plan gratis, usas hasta 3 plataformas activas. Premium libera plataformas ilimitadas.',
+              pt: 'Seu plano atual nao limita plataformas. Se viu esta mensagem, atualize a tela e tente novamente.',
+              en: 'Your current plan does not limit platforms. Refresh and try again.',
+              es: 'Tu plan actual no limita plataformas. Actualiza e intenta de nuevo.',
             ),
           ),
         ),
@@ -131,9 +131,9 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
                 if (wouldHaveActive > platformLimit) {
                   throw StateError(
                     strings.pick(
-                      pt: 'Seu plano atual permite ate 3 plataformas ativas.',
-                      en: 'Your current plan allows up to 3 active platforms.',
-                      es: 'Tu plan actual permite hasta 3 plataformas activas.',
+                      pt: 'Seu plano atual nao limita plataformas ativas.',
+                      en: 'Your current plan does not limit active platforms.',
+                      es: 'Tu plan actual no limita plataformas activas.',
                     ),
                   );
                 }
@@ -288,7 +288,7 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
     final session = context.watch<AppSession>();
     final activePlatforms = _platforms.where((item) => item.active).length;
     final platformLimit = session.profile == null
-        ? 3
+        ? null
         : _planAccessService.activePlatformLimit(session.profile!.planType);
 
     if (_loading) {
@@ -329,9 +329,9 @@ class _PlatformsScreenState extends State<PlatformsScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   strings.pick(
-                    pt: 'Plano free: ate 3 plataformas ativas. Premium, presente ou developer liberam plataformas ilimitadas.',
-                    en: 'Free plan: up to 3 active platforms. Premium, gift or developer access unlocks unlimited platforms.',
-                    es: 'Plan gratis: hasta 3 plataformas activas. Premium, regalo o developer liberan plataformas ilimitadas.',
+                    pt: 'Plano free: plataformas ilimitadas. Premium, presente ou developer liberam recursos avancados.',
+                    en: 'Free plan: unlimited platforms. Premium, gift or developer access unlock advanced features.',
+                    es: 'Plan gratis: plataformas ilimitadas. Premium, regalo o developer liberan funciones avanzadas.',
                   ),
                 ),
               ),

@@ -68,4 +68,5 @@ android/app/google-services.json
 Planejamento/Historico_Chat_Levantamento_ChatGPT.md
 Planejamento/Modelos/
 Planejamento/Supabase/*.png
+src/model_3d/*.glb
 supabase/.temp/

@@ -130,9 +130,9 @@ class AppStrings {
   );
 
   String get moneyFlow => pick(
-    pt: 'Como o dinheiro entrou',
-    en: 'How money came in',
-    es: 'Como entro el dinero',
+    pt: 'Receita no periodo',
+    en: 'Income in period',
+    es: 'Ingresos del periodo',
   );
 
   String get periodComparison => pick(

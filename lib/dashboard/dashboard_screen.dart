@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -10,8 +12,10 @@ import '../funcionalidade/platforms/platforms_screen.dart';
 import '../funcionalidade/vehicles/vehicles_screen.dart';
 import '../models/app_dashboard_metrics.dart';
 import '../models/app_operational_intelligence.dart';
+import '../models/app_operational_report.dart';
 import '../services/engagement_notification_service.dart';
 import '../services/operational_intelligence_service.dart';
+import '../services/reporting_service.dart';
 import '../settings/settings_screen.dart';
 import '../utilities/localization/app_format.dart';
 import '../utilities/localization/app_strings.dart';
@@ -505,8 +509,10 @@ class _OverviewTab extends StatefulWidget {
 class _OverviewTabState extends State<_OverviewTab> {
   final OperationalIntelligenceService _intelligenceService =
       OperationalIntelligenceService();
+  final ReportingService _reportingService = ReportingService();
   bool _loading = true;
   AppOperationalIntelligence? _intelligence;
+  AppOperationalReport? _report;
   String? _errorMessage;
   OperationalRangePreset _preset = OperationalRangePreset.today;
   DateTimeRange? _range;
@@ -528,9 +534,19 @@ class _OverviewTabState extends State<_OverviewTab> {
         preset: _preset,
         customRange: _range,
       );
+      AppOperationalReport? report;
+      try {
+        report = await _reportingService.loadOperationalReport(
+          startAt: intelligence.periodStart,
+          endAt: intelligence.periodEnd,
+        );
+      } catch (_) {
+        report = null;
+      }
       if (!mounted) return;
       setState(() {
         _intelligence = intelligence;
+        _report = report;
       });
       await widget.onNotificationsChanged();
     } catch (_) {
@@ -601,6 +617,7 @@ class _OverviewTabState extends State<_OverviewTab> {
           suggestedReserveLabel: '',
         );
     final metrics = intelligence.currentMetrics;
+    final report = _report;
 
     return RefreshIndicator(
       onRefresh: _loadMetrics,
@@ -724,7 +741,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                       ),
                       Tooltip(
                         message:
-                            'Mostra a receita registrada nas jornadas do periodo selecionado. Use os filtros para comparar dia, semana ou mes.',
+                            'Mostra a receita por dia no periodo selecionado. A legenda indica datas resumidas para caber melhor no celular.',
                         child: Icon(
                           Icons.info_outline,
                           size: 18,
@@ -739,8 +756,31 @@ class _OverviewTabState extends State<_OverviewTab> {
                     ],
                   ),
                   const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: [
+                      _ChartLegendDot(
+                        color: const Color(0xFF4E63FF),
+                        label: strings.pick(
+                          pt: 'Receita por dia',
+                          en: 'Daily income',
+                          es: 'Ingresos por dia',
+                        ),
+                      ),
+                      Text(
+                        strings.pick(
+                          pt: 'Periodo: $_periodDisplayLabel',
+                          en: 'Period: $_periodDisplayLabel',
+                          es: 'Periodo: $_periodDisplayLabel',
+                        ),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
                   SizedBox(
-                    height: 96,
+                    height: 132,
                     child: _SparklineChart(points: intelligence.trend),
                   ),
                 ],
@@ -753,6 +793,10 @@ class _OverviewTabState extends State<_OverviewTab> {
             previous: intelligence.previousMetrics,
           ),
           const SizedBox(height: 18),
+          if (report != null) ...[
+            _HomeReportCards(report: report, currency: _currency),
+            const SizedBox(height: 18),
+          ],
           _MetricGrid(
             metrics: [
               _MetricData(
@@ -1237,30 +1281,48 @@ class _SparklineChart extends StatelessWidget {
       return Center(child: Text(AppStrings.of(context).notEnoughHistory));
     }
 
-    return CustomPaint(
-      painter: _SparklinePainter(
-        values: points.map((item) => item.value).toList(),
-        color: const Color(0xFF4E63FF),
-        gridColor: Theme.of(context).dividerColor,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: points
-            .map(
-              (point) => Expanded(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxLabels = constraints.maxWidth < 420 ? 5 : 8;
+        final step = (points.length / maxLabels).ceil().clamp(1, points.length);
+        return CustomPaint(
+          painter: _SparklinePainter(
+            values: points.map((item) => item.value).toList(),
+            color: const Color(0xFF4E63FF),
+            gridColor: Theme.of(context).dividerColor,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: points.asMap().entries.map((entry) {
+              final index = entry.key;
+              final point = entry.value;
+              final showLabel =
+                  index == 0 || index == points.length - 1 || index % step == 0;
+              return Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 72),
+                  padding: const EdgeInsets.only(top: 98),
                   child: Text(
-                    point.label,
+                    showLabel ? _compactTrendLabel(point.label) : '',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.labelSmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.visible,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(fontSize: 10),
                   ),
                 ),
-              ),
-            )
-            .toList(),
-      ),
+              );
+            }).toList(),
+          ),
+        );
+      },
     );
+  }
+
+  String _compactTrendLabel(String label) {
+    final parts = label.split('/');
+    if (parts.length >= 2) return '${parts[0]}/${parts[1]}';
+    return label.length > 5 ? label.substring(0, 5) : label;
   }
 }
 
@@ -1285,15 +1347,6 @@ class _ComparisonBoard extends StatelessWidget {
         newMovementLabel: strings.newMovement,
       ),
       _ComparisonItem(
-        label: strings.leftOver,
-        current: current.netResult,
-        previous: previous.netResult,
-        valueLabel: format.currency(current.netResult),
-        previousLabel: format.currency(previous.netResult),
-        noMovementLabel: strings.noMovement,
-        newMovementLabel: strings.newMovement,
-      ),
-      _ComparisonItem(
         label: strings.deliveries,
         current: current.totalDeliveries.toDouble(),
         previous: previous.totalDeliveries.toDouble(),
@@ -1314,6 +1367,339 @@ class _ComparisonBoard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           ...items.map((item) => _ComparisonRow(item: item)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChartLegendDot extends StatelessWidget {
+  const _ChartLegendDot({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+      ],
+    );
+  }
+}
+
+class _HomeReportCards extends StatelessWidget {
+  const _HomeReportCards({required this.report, required this.currency});
+
+  final AppOperationalReport report;
+  final String Function(double value) currency;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _FinancialPulseCard(report: report, currency: currency),
+        const SizedBox(height: 18),
+        _PlatformRankingCard(items: report.topPlatforms, currency: currency),
+        const SizedBox(height: 18),
+        _CostMapCard(items: report.expenseBreakdown, currency: currency),
+      ],
+    );
+  }
+}
+
+class _FinancialPulseCard extends StatelessWidget {
+  const _FinancialPulseCard({required this.report, required this.currency});
+
+  final AppOperationalReport report;
+  final String Function(double value) currency;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final maxValue = [
+      report.totalIncome.abs(),
+      report.totalOperationalCosts.abs(),
+      1.0,
+    ].reduce(math.max);
+    final items = [
+      _DashboardBarData(
+        strings.income,
+        report.totalIncome,
+        const Color(0xFF39E58C),
+      ),
+      _DashboardBarData(
+        strings.costs,
+        report.totalOperationalCosts,
+        const Color(0xFFFF6F6F),
+      ),
+    ];
+
+    return OmnyaGlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            strings.pick(
+              pt: 'Pulso financeiro',
+              en: 'Financial pulse',
+              es: 'Pulso financiero',
+            ),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            strings.pick(
+              pt: 'Receita e despesas gerais do periodo para acompanhar a evolucao anual.',
+              en: 'Income and expenses for the period to follow yearly movement.',
+              es: 'Ingresos y gastos del periodo para seguir el movimiento anual.',
+            ),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 150,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: items
+                  .map(
+                    (item) => Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              currency(item.value),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.labelLarge,
+                            ),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.bottomCenter,
+                                child: TweenAnimationBuilder<double>(
+                                  tween: Tween(
+                                    begin: 0,
+                                    end: (item.value.abs() / maxValue).clamp(
+                                      0.08,
+                                      1.0,
+                                    ),
+                                  ),
+                                  duration: const Duration(milliseconds: 650),
+                                  curve: Curves.easeOutCubic,
+                                  builder: (context, heightFactor, child) {
+                                    return FractionallySizedBox(
+                                      heightFactor: heightFactor,
+                                      child: child,
+                                    );
+                                  },
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          item.color.withValues(alpha: 0.35),
+                                          item.color,
+                                        ],
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                      ),
+                                    ),
+                                    child: const SizedBox(width: 44),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(item.label),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlatformRankingCard extends StatelessWidget {
+  const _PlatformRankingCard({required this.items, required this.currency});
+
+  final List<PlatformPerformance> items;
+  final String Function(double value) currency;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final maxIncome = items.isEmpty
+        ? 1.0
+        : items
+              .map((item) => item.income)
+              .reduce(math.max)
+              .clamp(1.0, double.infinity);
+
+    return OmnyaGlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Plataformas', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            strings.pick(
+              pt: 'Ranking por valor recebido e quantidade de entregas no periodo.',
+              en: 'Ranking by amount received and deliveries in the period.',
+              es: 'Ranking por valor recibido y entregas en el periodo.',
+            ),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 14),
+          if (items.isEmpty)
+            Text(
+              strings.pick(
+                pt: 'Nenhuma plataforma com movimento neste periodo.',
+                en: 'No platform movement in this period.',
+                es: 'Sin movimiento de plataformas en este periodo.',
+              ),
+            ),
+          ...items.asMap().entries.map((entry) {
+            final item = entry.value;
+            return _DashboardProgressRow(
+              label: '#${entry.key + 1} ${item.platformName}',
+              detail: strings.deliveriesCount(item.deliveries),
+              value: currency(item.income),
+              factor: (item.income / maxIncome).clamp(0.04, 1.0),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _CostMapCard extends StatelessWidget {
+  const _CostMapCard({required this.items, required this.currency});
+
+  final List<ExpenseBreakdownItem> items;
+  final String Function(double value) currency;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final total = items
+        .fold<double>(0, (sum, item) => sum + item.amount)
+        .clamp(1.0, double.infinity);
+
+    return OmnyaGlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Mapa de custos',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            strings.pick(
+              pt: 'Compare onde o dinheiro saiu: despesas de jornada, abastecimento ou manutencao.',
+              en: 'Compare where money went: trip expenses, fuel or maintenance.',
+              es: 'Compara donde salio el dinero: gastos, combustible o mantenimiento.',
+            ),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 14),
+          if (items.isEmpty)
+            Text(
+              strings.pick(
+                pt: 'Nenhum custo registrado neste periodo.',
+                en: 'No costs recorded in this period.',
+                es: 'Sin costos registrados en este periodo.',
+              ),
+            ),
+          ...items.map((item) {
+            final pct = ((item.amount / total) * 100).toStringAsFixed(0);
+            return _DashboardProgressRow(
+              label: item.label,
+              detail: '$pct% dos custos',
+              value: currency(item.amount),
+              factor: (item.amount / total).clamp(0.04, 1.0),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardBarData {
+  const _DashboardBarData(this.label, this.value, this.color);
+
+  final String label;
+  final double value;
+  final Color color;
+}
+
+class _DashboardProgressRow extends StatelessWidget {
+  const _DashboardProgressRow({
+    required this.label,
+    required this.detail,
+    required this.value,
+    required this.factor,
+  });
+
+  final String label;
+  final String detail;
+  final String value;
+  final double factor;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              Text(value, style: Theme.of(context).textTheme.labelLarge),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: factor,
+              minHeight: 8,
+              backgroundColor: Theme.of(
+                context,
+              ).dividerColor.withValues(alpha: 0.28),
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(detail, style: Theme.of(context).textTheme.bodySmall),
+          ),
         ],
       ),
     );

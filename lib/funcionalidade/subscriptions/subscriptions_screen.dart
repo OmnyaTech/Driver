@@ -516,9 +516,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
           caption: strings.pick(pt: 'sem custo', en: 'free', es: 'sin costo'),
           features: [
             strings.pick(
-              pt: '3 plataformas ativas por conta',
-              en: '3 active platforms per account',
-              es: '3 plataformas activas por cuenta',
+              pt: 'Plataformas ilimitadas',
+              en: 'Unlimited platforms',
+              es: 'Plataformas ilimitadas',
             ),
             strings.pick(
               pt: 'Historico operacional inicial',
@@ -562,19 +562,19 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
           ),
           features: [
             strings.pick(
-              pt: 'Multiplas plataformas e veiculos',
-              en: 'Multiple platforms and vehicles',
-              es: 'Multiples plataformas y vehiculos',
+              pt: 'Multiplos veiculos',
+              en: 'Multiple vehicles',
+              es: 'Multiples vehiculos',
             ),
             strings.pick(
-              pt: 'Historico e uso expandido',
-              en: 'Expanded history and usage',
-              es: 'Historial y uso ampliado',
+              pt: 'Comparativos semanais, mensais e anuais',
+              en: 'Weekly, monthly and yearly comparisons',
+              es: 'Comparativos semanales, mensuales y anuales',
             ),
             strings.pick(
-              pt: 'Gestao completa com menor custo mensal',
-              en: 'Full management with lower monthly cost',
-              es: 'Gestion completa con menor costo mensual',
+              pt: 'Exportacao PDF, Excel e insights',
+              en: 'PDF, Excel exports and insights',
+              es: 'Exportacion PDF, Excel e insights',
             ),
             strings.pick(
               pt: 'Checkout anual no Asaas',
@@ -611,9 +611,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
         caption: strings.pick(pt: 'sem custo', en: 'free', es: 'sin costo'),
         features: [
           strings.pick(
-            pt: '3 plataformas ativas por conta',
-            en: '3 active platforms per account',
-            es: '3 plataformas activas por cuenta',
+            pt: 'Plataformas ilimitadas',
+            en: 'Unlimited platforms',
+            es: 'Plataformas ilimitadas',
           ),
           strings.pick(
             pt: 'Cadastro de jornadas, despesas e objetivos',
@@ -657,9 +657,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
         ),
         features: [
           strings.pick(
-            pt: 'Multiplas plataformas ativas',
-            en: 'Multiple active platforms',
-            es: 'Multiples plataformas activas',
+            pt: 'Multiplos veiculos',
+            en: 'Multiple vehicles',
+            es: 'Multiples vehiculos',
           ),
           strings.pick(
             pt: 'Mais veiculos e operacao expandida',
@@ -667,9 +667,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
             es: 'Mas vehiculos y operacion ampliada',
           ),
           strings.pick(
-            pt: 'Historico ampliado de uso',
-            en: 'Expanded usage history',
-            es: 'Historial de uso ampliado',
+            pt: 'Relatorios completos e insights',
+            en: 'Complete reports and insights',
+            es: 'Reportes completos e insights',
           ),
           strings.pick(
             pt: 'Checkout e cobranca recorrente',
