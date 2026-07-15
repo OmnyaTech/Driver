@@ -66,7 +66,8 @@ O Driver, produto da OmnyaTech, ja opera com:
   entrega, percentual por dia, por semana e por mes.
 - vitrine de conquistas exibe contador junto ao titulo.
 - landing publica web em `driver.omnyatech.com.br`, com rota de convite,
-  cadastro antes do download e URL de APK configuravel por `DRIVER_APK_URL`.
+  cadastro antes do download e link MediaFire configuravel pela secret
+  `DRIVER_MEDIAFIRE_APK_URL`.
 - convites usam a folha nativa de compartilhamento do celular em vez de apenas
   copiar para a area de transferencia.
 - bucket publico `driver-mobile-releases` reservado para APKs oficiais do

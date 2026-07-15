@@ -157,6 +157,24 @@ class AppSession extends ChangeNotifier {
     }
   }
 
+  Future<bool> resendSignupConfirmation({required String email}) async {
+    _setBusy(true);
+    _errorMessage = null;
+
+    try {
+      await _authService.resendSignupConfirmation(email: email);
+      return true;
+    } on AuthException catch (error) {
+      _errorMessage = error.message;
+      return false;
+    } catch (_) {
+      _errorMessage = 'Nao foi possivel reenviar a confirmacao agora.';
+      return false;
+    } finally {
+      _setBusy(false);
+    }
+  }
+
   Future<bool> signInWithOAuth(
     OauthProviderOption provider, {
     required String verificationToken,

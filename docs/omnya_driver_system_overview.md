@@ -227,16 +227,15 @@ O fluxo esperado e:
 5. Depois que o cadastro/login esta valido, o botao de download do APK aparece.
 6. O usuario baixa o arquivo oficial do dominio configurado.
 
-A URL do APK e configurada por `DRIVER_APK_URL`. Quando essa variavel nao e
-informada no build, o app usa o bucket publico `driver-mobile-releases` no
-Supabase, arquivo `driver-latest.apk`. O arquivo APK deve ser publicado fora do
-Git, no ambiente de hospedagem ou storage escolhido.
+A URL do APK e retornada pela Edge Function `driver-download-links`, usando a
+secret `DRIVER_MEDIAFIRE_APK_URL`. Como o APK universal passa de 50 MB, o
+MediaFire e o canal publico de download enquanto o app nao esta na Play Store.
 
 O formato recomendado para distribuicao direta e um APK unico universal,
-versionado como `driver-vX.Y.Z.apk`, com uma copia ou alias publico
-`driver-latest.apk`. O bucket pode ser publico para download por caminho
-conhecido, mas nao deve manter policy ampla de listagem em `storage.objects`.
-As policies de escrita permanecem restritas a usuarios `developer`.
+versionado como `driver-vX.Y.Z.apk`. O bucket `driver-mobile-releases` pode
+continuar existindo para historico ou arquivos menores, mas nao deve manter
+policy ampla de listagem em `storage.objects`. As policies de escrita
+permanecem restritas a usuarios `developer`.
 
 ### Gamificacao E Conquistas
 

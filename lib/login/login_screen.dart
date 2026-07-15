@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -16,9 +18,14 @@ const _microsoftIconAsset = 'src/icons/microsoft.png';
 enum _LoginPanelMode { signIn, signUp, recover }
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key, this.startInSignUp = false});
+  const LoginScreen({
+    super.key,
+    this.startInSignUp = false,
+    this.downloadMode = false,
+  });
 
   final bool startInSignUp;
+  final bool downloadMode;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -32,8 +39,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   late _LoginPanelMode _mode;
   String? _feedbackMessage;
+  String? _pendingConfirmationEmail;
   bool _feedbackIsError = false;
   bool _obscurePassword = true;
+  int _resendCooldown = 0;
+  Timer? _resendTimer;
 
   bool get _isRegister => _mode == _LoginPanelMode.signUp;
   bool get _isRecovering => _mode == _LoginPanelMode.recover;
@@ -51,6 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _resendTimer?.cancel();
     super.dispose();
   }
 
@@ -86,8 +97,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         onModeChanged: _setMode,
                         onSubmit: _submit,
                         onOAuth: _signInWithOAuth,
+                        onResendConfirmation: _resendConfirmationEmail,
                         feedbackMessage: _feedbackMessage,
+                        pendingConfirmationEmail: _pendingConfirmationEmail,
                         feedbackIsError: _feedbackIsError,
+                        resendCooldown: _resendCooldown,
+                        downloadMode: widget.downloadMode,
                         obscurePassword: _obscurePassword,
                         onTogglePasswordVisibility: _togglePasswordVisibility,
                       )
@@ -109,8 +124,13 @@ class _LoginScreenState extends State<LoginScreen> {
                               onModeChanged: _setMode,
                               onSubmit: _submit,
                               onOAuth: _signInWithOAuth,
+                              onResendConfirmation: _resendConfirmationEmail,
                               feedbackMessage: _feedbackMessage,
+                              pendingConfirmationEmail:
+                                  _pendingConfirmationEmail,
                               feedbackIsError: _feedbackIsError,
+                              resendCooldown: _resendCooldown,
+                              downloadMode: widget.downloadMode,
                               obscurePassword: _obscurePassword,
                               onTogglePasswordVisibility:
                                   _togglePasswordVisibility,
@@ -130,6 +150,9 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _mode = mode;
       _feedbackMessage = null;
+      if (mode != _LoginPanelMode.signUp) {
+        _pendingConfirmationEmail = null;
+      }
       _feedbackIsError = false;
     });
   }
@@ -197,14 +220,16 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Conta criada. Se chegar um e-mail de confirmacao, toque no link para liberar o acesso.',
+            'Enviamos um e-mail de confirmacao. Abra o link para liberar o acesso.',
           ),
         ),
       );
       _setFeedback(
-        'Conta criada. Confira seu e-mail para confirmar o acesso.',
+        'Confira seu e-mail para confirmar o acesso.',
         isError: false,
       );
+      setState(() => _pendingConfirmationEmail = _emailController.text.trim());
+      _startResendCooldown();
       return;
     }
 
@@ -278,12 +303,47 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     if (normalized.contains('email not confirmed') ||
         normalized.contains('not confirmed')) {
-      return 'Seu e-mail ainda nao foi confirmado. Abra o link enviado por e-mail para liberar o acesso.';
+      return "Seu e-mail ainda nao foi confirmado. Verifique sua caixa de entrada ou toque em 'Reenviar confirmacao' abaixo.";
     }
     if (normalized.contains('captcha') || normalized.contains('challenge')) {
       return 'A verificacao de seguranca falhou. Tente novamente.';
     }
     return message;
+  }
+
+  Future<void> _resendConfirmationEmail() async {
+    final email = (_pendingConfirmationEmail ?? _emailController.text).trim();
+    if (email.isEmpty || _resendCooldown > 0) return;
+    final sent = await context.read<AppSession>().resendSignupConfirmation(
+      email: email,
+    );
+    if (!mounted) return;
+    if (sent) {
+      _setFeedback(
+        'Reenviamos a confirmacao. Verifique inbox e spam.',
+        isError: false,
+      );
+      _startResendCooldown();
+      return;
+    }
+    _showAuthError(context.read<AppSession>().errorMessage);
+  }
+
+  void _startResendCooldown() {
+    _resendTimer?.cancel();
+    setState(() => _resendCooldown = 60);
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_resendCooldown <= 1) {
+        timer.cancel();
+        setState(() => _resendCooldown = 0);
+        return;
+      }
+      setState(() => _resendCooldown--);
+    });
   }
 }
 
@@ -453,8 +513,12 @@ class _AccessCard extends StatelessWidget {
     required this.onModeChanged,
     required this.onSubmit,
     required this.onOAuth,
+    required this.onResendConfirmation,
     this.feedbackMessage,
+    this.pendingConfirmationEmail,
     this.feedbackIsError = false,
+    this.resendCooldown = 0,
+    this.downloadMode = false,
     required this.obscurePassword,
     required this.onTogglePasswordVisibility,
   });
@@ -471,8 +535,12 @@ class _AccessCard extends StatelessWidget {
   final ValueChanged<_LoginPanelMode> onModeChanged;
   final VoidCallback onSubmit;
   final ValueChanged<OauthProviderOption> onOAuth;
+  final VoidCallback onResendConfirmation;
   final String? feedbackMessage;
+  final String? pendingConfirmationEmail;
   final bool feedbackIsError;
+  final int resendCooldown;
+  final bool downloadMode;
   final bool obscurePassword;
   final VoidCallback onTogglePasswordVisibility;
 
@@ -562,6 +630,14 @@ class _AccessCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
+            if (downloadMode && isRegister) ...[
+              _DownloadEmailNotice(
+                pendingEmail: pendingConfirmationEmail,
+                resendCooldown: resendCooldown,
+                onResend: isBusy ? null : onResendConfirmation,
+              ),
+              const SizedBox(height: 16),
+            ],
             if (!isRecovering) ...[
               _ModeTabs(mode: mode, onChanged: isBusy ? null : onModeChanged),
               const SizedBox(height: 20),
@@ -687,6 +763,14 @@ class _AccessCard extends StatelessWidget {
             ),
             if (!isRecovering) ...[
               const SizedBox(height: 18),
+              if (isRegister) ...[
+                Text(
+                  'Ao continuar, voce concorda com os Termos de Uso e a Politica de Privacidade. Se o cadastro for por e-mail, enviaremos um link de confirmacao; verifique tambem a caixa de spam.',
+                  style: theme.textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+              ],
               Row(
                 children: [
                   Expanded(child: Divider(color: theme.dividerColor)),
@@ -904,6 +988,90 @@ class _SocialLoginButton extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DownloadEmailNotice extends StatelessWidget {
+  const _DownloadEmailNotice({
+    required this.pendingEmail,
+    required this.resendCooldown,
+    required this.onResend,
+  });
+
+  final String? pendingEmail;
+  final int resendCooldown;
+  final VoidCallback? onResend;
+
+  bool get _hasPendingEmail =>
+      pendingEmail != null && pendingEmail!.trim().isNotEmpty;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = _hasPendingEmail
+        ? 'Confirme seu e-mail para continuar'
+        : 'Cadastre-se para liberar o APK';
+    final text = _hasPendingEmail
+        ? 'Enviamos um link de confirmacao para ${pendingEmail!.trim()}. Abra sua caixa de entrada ou spam, toque no link e volte aqui para liberar o download pelo MediaFire.'
+        : 'Se voce criar a conta com e-mail e senha, vamos enviar um link de confirmacao. Se preferir, entre direto com Google ou Microsoft e pule essa etapa.';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: OmnyaVisualTokens.cyan.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: OmnyaVisualTokens.cyan.withValues(alpha: 0.34),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.mark_email_read_outlined,
+                color: OmnyaVisualTokens.cyan,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(text),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (_hasPendingEmail) ...[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: resendCooldown > 0 ? null : onResend,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(
+                resendCooldown > 0
+                    ? 'Reenviar em ${resendCooldown}s'
+                    : 'Reenviar e-mail de confirmacao',
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Login com Google ou Microsoft nao precisa desse passo.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ],
       ),
     );
   }

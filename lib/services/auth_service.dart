@@ -66,6 +66,15 @@ class AuthService {
     );
   }
 
+  Future<void> resendSignupConfirmation({required String email}) async {
+    final activeClient = _requireClient();
+    await activeClient.auth.resend(
+      type: OtpType.signup,
+      email: email,
+      emailRedirectTo: _webEmailRedirectTo,
+    );
+  }
+
   Future<void> signInWithOAuth(OauthProviderOption provider) async {
     final activeClient = _requireClient();
 

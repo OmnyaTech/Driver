@@ -3,18 +3,15 @@
 ## Driver Android
 
 O Omnya Driver usa APK unico universal para distribuicao fora da Play Store.
-Esse e o formato esperado para publicacao manual no site ou no storage:
+Como o APK atual passa de 50 MB e o plano gratuito do Supabase limita upload a
+50 MB, o canal de download publico e o MediaFire.
 
 - APK versionado: `build/app/outputs/flutter-apk/driver-v1.0.17.apk`
-- Alias publico recomendado: `build/app/outputs/flutter-apk/driver-latest.apk`
-- Bucket Supabase: `driver-mobile-releases`
-- URL padrao da landing:
-  `https://cattokugqanpagleawpw.supabase.co/storage/v1/object/public/driver-mobile-releases/driver-latest.apk`
-- Link alternativo MediaFire:
+- Link MediaFire:
   `https://www.mediafire.com/file/cehfkctgxvhcqlu/driver-v1.0.17.apk/file`
 
 O APK nao deve ser versionado no Git. Depois de gerar a release, publique o
-arquivo no storage ou no provedor de download escolhido.
+arquivo no MediaFire e atualize a secret da Edge Function.
 
 ## Fluxo No Site
 
@@ -23,42 +20,32 @@ sistema, preserva o convite recebido e libera o download somente depois do
 cadastro/login. Isso permite vincular o indicado ao entregador que enviou o
 convite antes de entregar o APK.
 
-A URL real do APK pode ser alterada no build web por `DRIVER_APK_URL`. Sem essa
-variavel, a landing usa o bucket publico `driver-mobile-releases` e o arquivo
-`driver-latest.apk`.
-
-A tela de download tambem busca links dinamicos na Edge Function
-`driver-download-links`. O link do MediaFire deve ficar na secret
+A tela de download busca o link dinamico na Edge Function
+`driver-download-links`. O link do MediaFire fica na secret
 `DRIVER_MEDIAFIRE_APK_URL`; assim, quando o arquivo mudar, basta atualizar a
-secret e redeployar/reiniciar a funcao se necessario, sem alterar o codigo do
-Flutter. Opcionalmente, a URL oficial do APK tambem pode ser sobrescrita pela
-secret `DRIVER_OFFICIAL_APK_URL`.
+secret sem alterar o codigo do Flutter.
 
 ## Storage E Policies
 
-O bucket `driver-mobile-releases` fica publico para permitir download por
-caminho conhecido. Ele nao deve ter policy ampla de `SELECT` em
-`storage.objects`, porque isso permite listar todos os arquivos do bucket pelo
-cliente e gera alerta no painel do Supabase.
+O bucket `driver-mobile-releases` pode continuar existindo para historico de
+arquivos pequenos ou releases split, mas nao e mais o canal publico principal
+do APK universal.
+
+Ele nao deve ter policy ampla de `SELECT` em `storage.objects`, porque isso
+permite listar todos os arquivos do bucket pelo cliente e gera alerta no painel
+do Supabase.
 
 As policies de insert, update e delete devem permanecer restritas a usuarios
 autenticados com papel `developer` no schema `driver`.
 
-## Quando O Upload Automatico Falhar
+## Atualizacao Do Link
 
-O APK universal pode passar de 50 MB. Se o upload automatico pelo Supabase CLI
-ou painel falhar por limite do ambiente, suba manualmente o arquivo
-`driver-latest.apk`. Esse arquivo deve ser uma copia do APK universal versionado
-mais recente. Se o bucket ainda mostrar um `driver-latest.apk` com tamanho
-proximo de 25 MB, ele ainda e o split arm64 e deve ser substituido pelo APK
-universal de aproximadamente 67 MB.
+Para trocar o arquivo publicado:
 
-Uma alternativa futura, seguindo o modelo do OmnyaFinance, e usar uma camada de
-download/proxy em um Worker. Nesse modelo, o frontend chama uma URL propria do
-dominio, e o Worker busca o APK real no storage, responde com
-`Content-Disposition: attachment`, `Content-Type:
-application/vnd.android.package-archive` e CORS restrito ao dominio publico do
-Driver.
+1. Subir o novo APK no MediaFire.
+2. Copiar o link publico do arquivo.
+3. Atualizar a secret `DRIVER_MEDIAFIRE_APK_URL` no Supabase.
+4. Validar a tela `/download` autenticada.
 
 ## Validacao Manual
 
@@ -67,5 +54,5 @@ Driver.
 3. Entrar por um link `/convite/{slug}` e confirmar que o slug e preservado.
 4. Clicar em `Download`.
 5. Concluir cadastro ou login.
-6. Confirmar que o botao final baixa o APK configurado.
-7. Conferir que o bucket nao permite listagem ampla de arquivos pelo cliente.
+6. Confirmar que o botao final abre o MediaFire configurado.
+7. Conferir que o bucket do Supabase nao permite listagem ampla de arquivos pelo cliente.

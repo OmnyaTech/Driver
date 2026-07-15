@@ -10,8 +10,8 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "https://driver-57a.pages.dev",
 ];
 
-const DEFAULT_OFFICIAL_APK_URL =
-  "https://cattokugqanpagleawpw.supabase.co/storage/v1/object/public/driver-mobile-releases/driver-latest.apk";
+const DEFAULT_MEDIAFIRE_APK_URL =
+  "https://www.mediafire.com/file/cehfkctgxvhcqlu/driver-v1.0.17.apk/file";
 
 const isLocalhostOrigin = (origin: string) => {
   try {
@@ -102,8 +102,7 @@ Deno.serve((req) => {
 
   return json(req, {
     ok: true,
-    official_apk_url:
-      readUrl("DRIVER_OFFICIAL_APK_URL") ?? DEFAULT_OFFICIAL_APK_URL,
-    mediafire_apk_url: readUrl("DRIVER_MEDIAFIRE_APK_URL"),
+    mediafire_apk_url:
+      readUrl("DRIVER_MEDIAFIRE_APK_URL") ?? DEFAULT_MEDIAFIRE_APK_URL,
   });
 });

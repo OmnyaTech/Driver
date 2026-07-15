@@ -3,13 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
 
 class DriverDownloadLinks {
-  const DriverDownloadLinks({
-    required this.officialApkUrl,
-    required this.mediafireApkUrl,
-  });
+  const DriverDownloadLinks({required this.mediafireApkUrl});
 
-  final String officialApkUrl;
-  final String? mediafireApkUrl;
+  final String mediafireApkUrl;
 }
 
 class DownloadLinksService {
@@ -20,7 +16,6 @@ class DownloadLinksService {
 
   Future<DriverDownloadLinks> fetchLinks() async {
     final fallback = const DriverDownloadLinks(
-      officialApkUrl: SupabaseRuntimeConfig.driverApkUrl,
       mediafireApkUrl: _fallbackMediafireUrl,
     );
 
@@ -33,11 +28,9 @@ class DownloadLinksService {
       final data = response.data;
       if (data is! Map<String, dynamic>) return fallback;
 
-      final official = _readUrl(data['official_apk_url']);
       final mediafire = _readUrl(data['mediafire_apk_url']);
 
       return DriverDownloadLinks(
-        officialApkUrl: official ?? fallback.officialApkUrl,
         mediafireApkUrl: mediafire ?? fallback.mediafireApkUrl,
       );
     } catch (_) {

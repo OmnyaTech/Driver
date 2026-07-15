@@ -66,10 +66,10 @@ powershell -ExecutionPolicy Bypass -File scripts\build_driver_release.ps1
 O script le as configuracoes locais, injeta os `dart-define` necessarios e copia
 o APK final para `build/app/outputs/flutter-apk/`.
 
-Para o site publico, a URL do APK pode ser definida com `DRIVER_APK_URL`. Sem
-essa variavel, a landing usa o bucket publico `driver-mobile-releases` do
-Supabase, arquivo `driver-latest.apk`. O formato recomendado de distribuicao e
-um APK unico universal, publicado fora do Git.
+Para o site publico, o download do APK e servido pelo link MediaFire retornado
+pela Edge Function `driver-download-links`. Atualize a secret
+`DRIVER_MEDIAFIRE_APK_URL` sempre que trocar o arquivo publicado. O formato
+recomendado de distribuicao e um APK unico universal, publicado fora do Git.
 
 ## Cuidados
 
