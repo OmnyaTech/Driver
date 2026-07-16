@@ -55,6 +55,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
     final profile = context.watch<AppSession>().profile;
     final hasVerifiedTotp = _totpFactorId != null;
     final mfaActive = hasVerifiedTotp && profile?.totpMfaEnabled == true;
+    final lockMinutes = _lockDropdownValue(profile?.inactivityLockMinutes);
 
     return Scaffold(
       appBar: AppBar(title: Text(strings.securityData)),
@@ -151,7 +152,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   Text('Bloqueio do app', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
                   Text(
-                    'Proteja o Driver quando sair e voltar para o app.',
+                    'Proteja o Driver depois de muito tempo parado ou fora da tela.',
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 14),
@@ -159,7 +160,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Usar biometria ou senha do aparelho'),
                     subtitle: const Text(
-                      'Pede confirmacao para abrir o app de novo.',
+                      'Depois do limite de inatividade, desbloqueia com digital, rosto ou senha do aparelho.',
                     ),
                     value: profile?.biometricLockEnabled ?? false,
                     onChanged: _savingLock
@@ -171,7 +172,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Bloquear ao voltar para o app'),
                     subtitle: const Text(
-                      'Bom para quando o celular fica desbloqueado.',
+                      'So pede confirmacao se o app ficou parado pelo tempo configurado.',
                     ),
                     value: profile?.reauthOnResume ?? true,
                     onChanged: _savingLock
@@ -181,7 +182,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   ),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<int>(
-                    initialValue: profile?.inactivityLockMinutes ?? 15,
+                    initialValue: lockMinutes,
                     decoration: const InputDecoration(
                       labelText: 'Bloquear depois de inatividade',
                     ),
@@ -190,6 +191,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                       DropdownMenuItem(value: 15, child: Text('15 minutos')),
                       DropdownMenuItem(value: 30, child: Text('30 minutos')),
                       DropdownMenuItem(value: 60, child: Text('1 hora')),
+                      DropdownMenuItem(value: 240, child: Text('4 horas')),
                     ],
                     onChanged: _savingLock
                         ? null
@@ -325,6 +327,11 @@ class _SecurityScreenState extends State<SecurityScreen> {
     } finally {
       if (mounted) setState(() => _loadingMfa = false);
     }
+  }
+
+  int _lockDropdownValue(int? value) {
+    const allowed = [5, 15, 30, 60, 240];
+    return allowed.contains(value) ? value! : 240;
   }
 
   Future<void> _openMfaSetup() async {

@@ -5,6 +5,10 @@ import {
   jsonSecurityResponse,
 } from "../driver-verify-turnstile/securityHeaders.ts";
 import { safeLog } from "../driver-verify-turnstile/safeLogger.ts";
+import {
+  checkRateLimit,
+  rateLimitHeaders,
+} from "../_shared/rateLimit.ts";
 
 type AsaasWebhookPayload = {
   event?: string;
@@ -87,6 +91,23 @@ Deno.serve(async (req) => {
         message: "Metodo nao permitido.",
       },
       405,
+    );
+  }
+
+  const rateLimit = checkRateLimit(req, {
+    name: "driver-asaas-webhook",
+    ipLimit: 300,
+    ipWindowMs: 60_000,
+  });
+  if (!rateLimit.allowed) {
+    return jsonSecurityResponse(
+      req,
+      {
+        success: false,
+        message: "Muitas chamadas de webhook em pouco tempo.",
+      },
+      429,
+      rateLimitHeaders(rateLimit),
     );
   }
 

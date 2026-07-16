@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/supabase_config.dart';
@@ -36,6 +37,8 @@ class AppSession extends ChangeNotifier {
   final DeepLinkService _deepLinkService;
   final PushNotificationService _pushNotificationService;
   final DataPrivacyService _dataPrivacyService;
+  static const _sessionStartedAtKey = 'driver_session_started_at';
+  static const _maxSessionAge = Duration(days: 20);
   ThemeMode _themeMode = ThemeMode.dark;
   bool _authenticated = false;
   bool _isReady = false;
@@ -86,6 +89,7 @@ class AppSession extends ChangeNotifier {
         password: password,
         captchaToken: captchaToken,
       );
+      await _markSessionStarted();
       await _refreshFromSession();
       if (!_authenticated) {
         _errorMessage =
@@ -210,6 +214,7 @@ class AppSession extends ChangeNotifier {
 
     try {
       await _authService.signOut();
+      await _clearSessionStarted();
       _profile = null;
       _authenticated = false;
     } finally {
@@ -247,6 +252,18 @@ class AppSession extends ChangeNotifier {
 
     if (session == null) {
       _profile = null;
+      notifyListeners();
+      return;
+    }
+
+    final expired = await _sessionExceededMaxAge();
+    if (expired) {
+      await _authService.signOut();
+      await _clearSessionStarted();
+      _authenticated = false;
+      _profile = null;
+      _errorMessage =
+          'Sua sessao chegou ao limite de 20 dias. Entre novamente para continuar.';
       notifyListeners();
       return;
     }
@@ -289,7 +306,7 @@ class AppSession extends ChangeNotifier {
       biometricLockEnabled: data['biometric_lock_enabled'] as bool? ?? false,
       inactivityLockMinutes: _parseInt(
         data['inactivity_lock_minutes'],
-        fallback: 15,
+        fallback: 240,
       ),
       reauthOnResume: data['reauth_on_resume'] as bool? ?? true,
       totpMfaEnabled: data['totp_mfa_enabled'] as bool? ?? false,
@@ -357,7 +374,7 @@ class AppSession extends ChangeNotifier {
       languageCode: 'pt-BR',
       currencyCode: 'BRL',
       biometricLockEnabled: false,
-      inactivityLockMinutes: 15,
+      inactivityLockMinutes: 240,
       reauthOnResume: true,
       totpMfaEnabled: false,
       reservePreference: const DriverReservePreference(
@@ -389,5 +406,32 @@ class AppSession extends ChangeNotifier {
     if (value == null) return fallback;
     if (value is num) return value.toInt();
     return int.tryParse(value.toString()) ?? fallback;
+  }
+
+  Future<void> _markSessionStarted() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _sessionStartedAtKey,
+      DateTime.now().toUtc().toIso8601String(),
+    );
+  }
+
+  Future<void> _clearSessionStarted() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_sessionStartedAtKey);
+  }
+
+  Future<bool> _sessionExceededMaxAge() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawStartedAt = prefs.getString(_sessionStartedAtKey);
+    final startedAt = DateTime.tryParse(rawStartedAt ?? '');
+
+    if (startedAt == null) {
+      await _markSessionStarted();
+      return false;
+    }
+
+    return DateTime.now().toUtc().difference(startedAt.toUtc()) >=
+        _maxSessionAge;
   }
 }

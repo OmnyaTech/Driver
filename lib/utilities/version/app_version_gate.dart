@@ -36,14 +36,19 @@ class _AppVersionGateState extends State<AppVersionGate> {
         }
 
         final result = snapshot.data!;
+        if (!result.updateAvailable && result.canContinue) {
+          return widget.child;
+        }
+
+        if (result.canContinue && !_continuedWithOldVersion) {
+          return _SoftVersionScreen(
+            result: result,
+            onContinue: () => setState(() => _continuedWithOldVersion = true),
+            onRetry: () => setState(() => _future = _service.check()),
+          );
+        }
+
         if (result.canContinue) {
-          if (result.updateAvailable && !_continuedWithOldVersion) {
-            return _SoftVersionScreen(
-              result: result,
-              onContinue: () => setState(() => _continuedWithOldVersion = true),
-              onRetry: () => setState(() => _future = _service.check()),
-            );
-          }
           return widget.child;
         }
 
@@ -70,7 +75,7 @@ class _SoftVersionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final days = result.daysRemaining.clamp(0, 99);
+    final days = result.daysRemaining.clamp(1, 7);
     return Scaffold(
       body: DecoratedBox(
         decoration: const BoxDecoration(
@@ -95,12 +100,12 @@ class _SoftVersionScreen extends StatelessWidget {
                       const Icon(Icons.new_releases_outlined, size: 42),
                       const SizedBox(height: 18),
                       Text(
-                        'Tem uma atualizacao pronta',
+                        'Atualizacao disponivel',
                         style: theme.textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'Atualize quando puder para receber melhorias, seguranca e correcoes. Voce ainda pode usar o app por $days dias.',
+                        'Voce pode continuar por mais $days dias, mas precisa atualizar antes da versao atual ser descontinuada.',
                       ),
                       const SizedBox(height: 18),
                       Text('Versao instalada: ${result.installedVersion}'),
@@ -114,7 +119,7 @@ class _SoftVersionScreen extends StatelessWidget {
                                 mode: LaunchMode.externalApplication,
                               ),
                         icon: const Icon(Icons.open_in_new),
-                        label: const Text('Atualizar agora'),
+                        label: const Text('Atualizar aplicativo'),
                       ),
                       const SizedBox(height: 10),
                       OutlinedButton(
@@ -175,7 +180,7 @@ class _BlockedVersionScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'Sua versao ficou antiga e precisa ser atualizada para manter o app seguro e funcionando bem.',
+                        'O prazo de 7 dias terminou ou esta versao ficou abaixo da minima suportada. Baixe a atualizacao para continuar usando o app com seguranca.',
                       ),
                       const SizedBox(height: 18),
                       Text('Versao instalada: ${result.installedVersion}'),

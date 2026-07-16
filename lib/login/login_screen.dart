@@ -8,6 +8,8 @@ import '../config/supabase_config.dart';
 import '../funcionalidade/auth/captcha_service.dart';
 import '../models/oauth_provider_option.dart';
 import '../models/turnstile_flow.dart';
+import '../services/biometric_lock_service.dart';
+import '../services/saved_login_service.dart';
 import '../utilities/state/app_session.dart';
 import '../utilities/ui/omnya_visuals.dart';
 
@@ -34,6 +36,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _captchaService = const CaptchaService();
+  final _biometricLockService = BiometricLockService();
+  final _savedLoginService = SavedLoginService();
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -42,6 +46,10 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _pendingConfirmationEmail;
   bool _feedbackIsError = false;
   bool _obscurePassword = true;
+  bool _saveLogin = false;
+  bool _biometricLoginAvailable = false;
+  bool _biometricLoginBusy = false;
+  SavedLoginCredentials? _savedCredentials;
   int _resendCooldown = 0;
   Timer? _resendTimer;
 
@@ -54,6 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _mode = widget.startInSignUp
         ? _LoginPanelMode.signUp
         : _LoginPanelMode.signIn;
+    _loadSavedLogin();
   }
 
   @override
@@ -105,6 +114,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         downloadMode: widget.downloadMode,
                         obscurePassword: _obscurePassword,
                         onTogglePasswordVisibility: _togglePasswordVisibility,
+                        saveLogin: _saveLogin,
+                        onSaveLoginChanged: _setSaveLogin,
+                        biometricLoginAvailable: _biometricLoginAvailable,
+                        biometricLoginBusy: _biometricLoginBusy,
+                        onBiometricLogin: _signInWithBiometric,
                       )
                     : Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -134,6 +148,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               obscurePassword: _obscurePassword,
                               onTogglePasswordVisibility:
                                   _togglePasswordVisibility,
+                              saveLogin: _saveLogin,
+                              onSaveLoginChanged: _setSaveLogin,
+                              biometricLoginAvailable: _biometricLoginAvailable,
+                              biometricLoginBusy: _biometricLoginBusy,
+                              onBiometricLogin: _signInWithBiometric,
                             ),
                           ),
                         ],
@@ -159,6 +178,55 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _togglePasswordVisibility() {
     setState(() => _obscurePassword = !_obscurePassword);
+  }
+
+  void _setSaveLogin(bool? value) {
+    setState(() => _saveLogin = value ?? false);
+    if (_saveLogin) return;
+    setState(() {
+      _savedCredentials = null;
+      _biometricLoginAvailable = false;
+    });
+    unawaited(_savedLoginService.clear());
+  }
+
+  Future<void> _loadSavedLogin() async {
+    final credentials = await _savedLoginService.load();
+    if (!mounted || credentials == null || !credentials.isNotEmpty) return;
+    final canUseDeviceLock = await _biometricLockService.canUseDeviceLock();
+    if (!mounted) return;
+    setState(() {
+      _savedCredentials = credentials;
+      _emailController.text = credentials.email;
+      _passwordController.text = credentials.password;
+      _saveLogin = true;
+      _biometricLoginAvailable = canUseDeviceLock;
+    });
+  }
+
+  Future<void> _signInWithBiometric() async {
+    final credentials = _savedCredentials;
+    if (_biometricLoginBusy || credentials == null) return;
+
+    setState(() => _biometricLoginBusy = true);
+    final unlocked = await _biometricLockService.unlock();
+    if (!mounted) return;
+
+    if (!unlocked) {
+      setState(() => _biometricLoginBusy = false);
+      _setFeedback('Nao foi possivel confirmar sua identidade.');
+      return;
+    }
+
+    setState(() {
+      _mode = _LoginPanelMode.signIn;
+      _emailController.text = credentials.email;
+      _passwordController.text = credentials.password;
+      _saveLogin = true;
+    });
+
+    await _submit();
+    if (mounted) setState(() => _biometricLoginBusy = false);
   }
 
   Future<void> _submit() async {
@@ -241,6 +309,18 @@ class _LoginScreenState extends State<LoginScreen> {
     );
     if (!mounted) return;
     if (signedIn) {
+      if (_saveLogin) {
+        await _savedLoginService.save(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+        _savedCredentials = SavedLoginCredentials(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+      } else {
+        await _savedLoginService.clear();
+      }
       _setFeedback('Login bem sucedido. Abrindo o app...', isError: false);
       return;
     }
@@ -521,6 +601,11 @@ class _AccessCard extends StatelessWidget {
     this.downloadMode = false,
     required this.obscurePassword,
     required this.onTogglePasswordVisibility,
+    required this.saveLogin,
+    required this.onSaveLoginChanged,
+    required this.biometricLoginAvailable,
+    required this.biometricLoginBusy,
+    required this.onBiometricLogin,
   });
 
   final GlobalKey<FormState> formKey;
@@ -543,6 +628,11 @@ class _AccessCard extends StatelessWidget {
   final bool downloadMode;
   final bool obscurePassword;
   final VoidCallback onTogglePasswordVisibility;
+  final bool saveLogin;
+  final ValueChanged<bool?> onSaveLoginChanged;
+  final bool biometricLoginAvailable;
+  final bool biometricLoginBusy;
+  final VoidCallback onBiometricLogin;
 
   bool get isRegister => mode == _LoginPanelMode.signUp;
   bool get isRecovering => mode == _LoginPanelMode.recover;
@@ -726,6 +816,38 @@ class _AccessCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
+            if (mode == _LoginPanelMode.signIn) ...[
+              CheckboxListTile(
+                value: saveLogin,
+                onChanged: isBusy ? null : onSaveLoginChanged,
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: const Text('Salvar login neste aparelho'),
+                subtitle: const Text(
+                  'Deixa e-mail e senha preenchidos na proxima entrada.',
+                ),
+              ),
+              const SizedBox(height: 4),
+              if (biometricLoginAvailable) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: isBusy || biometricLoginBusy
+                        ? null
+                        : onBiometricLogin,
+                    icon: biometricLoginBusy
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.fingerprint),
+                    label: const Text('Entrar com biometria'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ],
             if (!isRegister)
               Align(
                 alignment: Alignment.centerRight,

@@ -6,6 +6,10 @@ import {
   jsonSecurityResponse,
 } from "../driver-verify-turnstile/securityHeaders.ts";
 import { safeLog } from "../driver-verify-turnstile/safeLogger.ts";
+import {
+  checkRateLimit,
+  rateLimitHeaders,
+} from "../_shared/rateLimit.ts";
 
 type ManageSubscriptionBody = {
   action?: "cancel" | "change_plan" | null;
@@ -103,6 +107,23 @@ Deno.serve(async (req) => {
     );
   }
 
+  const preAuthRateLimit = checkRateLimit(req, {
+    name: "driver-manage-asaas-subscription-preauth",
+    ipLimit: 30,
+    ipWindowMs: 60_000,
+    userLimit: 40,
+    userWindowMs: 60_000,
+    tokenFallback: true,
+  });
+  if (!preAuthRateLimit.allowed) {
+    return jsonSecurityResponse(
+      req,
+      { success: false, message: "Muitas tentativas. Aguarde e tente novamente." },
+      429,
+      rateLimitHeaders(preAuthRateLimit),
+    );
+  }
+
   try {
     const apiKey = resolveAsaasApiKey();
     const admin = resolveSupabaseAdmin();
@@ -127,6 +148,26 @@ Deno.serve(async (req) => {
         req,
         { success: false, message: "Sessao invalida para gerenciar assinatura." },
         401,
+      );
+    }
+
+    const userRateLimit = checkRateLimit(req, {
+      name: "driver-manage-asaas-subscription",
+      ipLimit: 20,
+      ipWindowMs: 60_000,
+      userId: user.id,
+      userLimit: 8,
+      userWindowMs: 60_000,
+    });
+    if (!userRateLimit.allowed) {
+      return jsonSecurityResponse(
+        req,
+        {
+          success: false,
+          message: "Muitas tentativas de assinatura. Aguarde e tente novamente.",
+        },
+        429,
+        rateLimitHeaders(userRateLimit),
       );
     }
 

@@ -24,6 +24,7 @@ class _AppSecurityGateState extends State<AppSecurityGate>
   final _mfaService = const MfaService();
   final _mfaCodeController = TextEditingController();
   Timer? _timer;
+  DateTime? _pausedAt;
   bool _locked = false;
   bool _unlocking = false;
   bool _checkingMfa = false;
@@ -49,14 +50,25 @@ class _AppSecurityGateState extends State<AppSecurityGate>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
+      _pausedAt = DateTime.now().toUtc();
+      _timer?.cancel();
+      return;
+    }
+
+    if (state == AppLifecycleState.resumed) {
       final profile = context.read<AppSession>().profile;
-      if (profile?.biometricLockEnabled == true &&
-          profile?.reauthOnResume == true) {
-        setState(() {
-          _locked = true;
-          _lastMfaCheckUserId = null;
-        });
+      if (profile?.reauthOnResume == true && _pausedExceededLimit(profile)) {
+        if (profile?.biometricLockEnabled == true) {
+          setState(() {
+            _locked = true;
+            _lastMfaCheckUserId = null;
+          });
+        } else {
+          unawaited(context.read<AppSession>().signOut());
+        }
       }
+      _pausedAt = null;
+      _schedule(profile);
     }
   }
 
@@ -65,10 +77,6 @@ class _AppSecurityGateState extends State<AppSecurityGate>
     final profile = context.watch<AppSession>().profile;
     _schedule(profile);
     _checkMfaRequirement(profile);
-
-    if (profile?.biometricLockEnabled != true && !_mfaRequired) {
-      return widget.child;
-    }
 
     return Listener(
       behavior: HitTestBehavior.translucent,
@@ -143,12 +151,25 @@ class _AppSecurityGateState extends State<AppSecurityGate>
 
   void _schedule(AppProfile? profile) {
     _timer?.cancel();
-    if (profile?.biometricLockEnabled != true) return;
+    if (profile == null) return;
 
-    final minutes = profile!.inactivityLockMinutes.clamp(1, 240);
+    final minutes = profile.inactivityLockMinutes.clamp(1, 240);
     _timer = Timer(Duration(minutes: minutes), () {
-      if (mounted) setState(() => _locked = true);
+      if (!mounted) return;
+      if (profile.biometricLockEnabled) {
+        setState(() => _locked = true);
+        return;
+      }
+      unawaited(context.read<AppSession>().signOut());
     });
+  }
+
+  bool _pausedExceededLimit(AppProfile? profile) {
+    final pausedAt = _pausedAt;
+    if (profile == null || pausedAt == null) return false;
+    final minutes = profile.inactivityLockMinutes.clamp(1, 240);
+    return DateTime.now().toUtc().difference(pausedAt) >=
+        Duration(minutes: minutes);
   }
 
   Future<void> _unlock() async {

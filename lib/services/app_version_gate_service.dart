@@ -50,7 +50,7 @@ class AppVersionGateService {
       );
       final latestVersion = (row['latest_version'] ?? installedVersion)
           .toString();
-      final graceDays = _asInt(row['grace_period_days'], fallback: 5);
+      final graceDays = _asInt(row['grace_period_days'], fallback: 7);
       final startedAt = DateTime.tryParse(
         (row['enforcement_started_at'] ?? '').toString(),
       );
@@ -60,6 +60,7 @@ class AppVersionGateService {
       final daysRemaining = (graceDays - elapsed).clamp(0, graceDays);
       final belowMinimum = installedBuild < minimumBuild;
       final updateAvailable = installedBuild < latestBuild || belowMinimum;
+      final updateUrl = await _resolveUpdateUrl(row['update_url']?.toString());
 
       return AppVersionGateResult(
         installedVersion: installedVersion,
@@ -67,10 +68,10 @@ class AppVersionGateService {
         latestVersion: latestVersion,
         latestBuildNumber: latestBuild,
         minimumBuildNumber: minimumBuild,
-        updateUrl: row['update_url'] as String?,
+        updateUrl: updateUrl,
         daysRemaining: daysRemaining,
         updateAvailable: updateAvailable,
-        blocked: belowMinimum && daysRemaining == 0,
+        blocked: belowMinimum || (updateAvailable && daysRemaining == 0),
       );
     } catch (_) {
       return _allow(
@@ -91,7 +92,7 @@ class AppVersionGateService {
       latestBuildNumber: installedBuild,
       minimumBuildNumber: installedBuild,
       updateUrl: null,
-      daysRemaining: 5,
+      daysRemaining: 7,
       updateAvailable: false,
       blocked: false,
     );
@@ -100,6 +101,33 @@ class AppVersionGateService {
   int _asInt(Object? value, {required int fallback}) {
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  Future<String?> _resolveUpdateUrl(String? configuredUrl) async {
+    final trimmedUrl = configuredUrl?.trim();
+    if (_isHttpUrl(trimmedUrl)) return trimmedUrl;
+
+    try {
+      final client = _authService.client;
+      if (client == null) return null;
+
+      final response = await client.functions.invoke('driver-download-links');
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final mediafireUrl = data['mediafire_apk_url']?.toString().trim();
+        if (_isHttpUrl(mediafireUrl)) return mediafireUrl;
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return null;
+  }
+
+  bool _isHttpUrl(String? value) {
+    if (value == null || value.isEmpty) return false;
+    final uri = Uri.tryParse(value);
+    return uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
   }
 
   String _platformName() {

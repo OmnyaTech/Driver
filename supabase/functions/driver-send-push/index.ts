@@ -1,5 +1,9 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { JWT } from "npm:google-auth-library@9";
+import {
+  checkRateLimit,
+  rateLimitHeaders,
+} from "../_shared/rateLimit.ts";
 
 type PushBody = {
   jobId?: string | null;
@@ -17,13 +21,18 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const json = (payload: unknown, status = 200) =>
+const json = (
+  payload: unknown,
+  status = 200,
+  headers: Record<string, string> = {},
+) =>
   new Response(JSON.stringify(payload), {
     status,
     headers: {
       ...corsHeaders,
       "Content-Type": "application/json",
       "X-Content-Type-Options": "nosniff",
+      ...headers,
     },
   });
 
@@ -310,6 +319,22 @@ Deno.serve(async (req) => {
     return json({ success: false, message: "Metodo nao permitido." }, 405);
   }
 
+  const preAuthRateLimit = checkRateLimit(req, {
+    name: "driver-send-push-preauth",
+    ipLimit: 120,
+    ipWindowMs: 60_000,
+    userLimit: 120,
+    userWindowMs: 60_000,
+    tokenFallback: true,
+  });
+  if (!preAuthRateLimit.allowed) {
+    return json(
+      { success: false, message: "Muitas tentativas. Aguarde e tente novamente." },
+      429,
+      rateLimitHeaders(preAuthRateLimit),
+    );
+  }
+
   const admin = resolveSupabaseAdmin();
   const serverKey = resolveServerKey();
   const serviceAccount = resolveFirebaseServiceAccount();
@@ -471,6 +496,25 @@ Deno.serve(async (req) => {
 
     if (error || !user) {
       return json({ success: false, message: "Sessao invalida." }, 401);
+    }
+
+    const userRateLimit = checkRateLimit(req, {
+      name: "driver-send-push",
+      ipLimit: 60,
+      ipWindowMs: 60_000,
+      userId: user.id,
+      userLimit: 20,
+      userWindowMs: 60_000,
+    });
+    if (!userRateLimit.allowed) {
+      return json(
+        {
+          success: false,
+          message: "Muitas tentativas de push. Aguarde e tente novamente.",
+        },
+        429,
+        rateLimitHeaders(userRateLimit),
+      );
     }
 
     targetUserId = user.id;

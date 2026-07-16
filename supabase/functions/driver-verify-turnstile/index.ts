@@ -12,6 +12,10 @@ import {
   jsonSecurityResponse,
 } from "./securityHeaders.ts";
 import { safeLog } from "./safeLogger.ts";
+import {
+  checkRateLimit,
+  rateLimitHeaders,
+} from "../_shared/rateLimit.ts";
 
 Deno.serve(async (req) => {
   if (!isAllowedOrigin(req.headers.get("origin"))) {
@@ -42,6 +46,27 @@ Deno.serve(async (req) => {
         message: "Metodo nao permitido.",
       },
       405,
+    );
+  }
+
+  const rateLimit = checkRateLimit(req, {
+    name: "driver-verify-turnstile",
+    ipLimit: 20,
+    ipWindowMs: 60_000,
+    userLimit: 30,
+    userWindowMs: 60_000,
+    tokenFallback: true,
+  });
+  if (!rateLimit.allowed) {
+    return jsonSecurityResponse(
+      req,
+      {
+        success: false,
+        code: "rate_limited",
+        message: "Muitas tentativas em pouco tempo. Aguarde e tente novamente.",
+      },
+      429,
+      rateLimitHeaders(rateLimit),
     );
   }
 

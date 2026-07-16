@@ -71,8 +71,12 @@ export const jsonSecurityResponse = (
   req: Request,
   body: Record<string, unknown>,
   status = 200,
+  headers: Record<string, string> = {},
 ) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: buildSecurityHeaders(req.headers.get("origin")),
+    headers: {
+      ...buildSecurityHeaders(req.headers.get("origin")),
+      ...headers,
+    },
   });

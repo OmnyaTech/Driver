@@ -1,3 +1,8 @@
+import {
+  checkRateLimit,
+  rateLimitHeaders,
+} from "../_shared/rateLimit.ts";
+
 const DEFAULT_ALLOWED_ORIGINS = [
   "http://localhost:3000",
   "http://localhost:5173",
@@ -62,10 +67,18 @@ const buildHeaders = (origin?: string | null) => ({
   "X-Content-Type-Options": "nosniff",
 });
 
-const json = (req: Request, body: Record<string, unknown>, status = 200) =>
+const json = (
+  req: Request,
+  body: Record<string, unknown>,
+  status = 200,
+  headers: Record<string, string> = {},
+) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: buildHeaders(req.headers.get("origin")),
+    headers: {
+      ...buildHeaders(req.headers.get("origin")),
+      ...headers,
+    },
   });
 
 const readUrl = (key: string) => {
@@ -98,6 +111,23 @@ Deno.serve((req) => {
 
   if (req.method !== "GET" && req.method !== "POST") {
     return json(req, { ok: false, message: "Metodo nao permitido." }, 405);
+  }
+
+  const rateLimit = checkRateLimit(req, {
+    name: "driver-download-links",
+    ipLimit: 120,
+    ipWindowMs: 60_000,
+    userLimit: 180,
+    userWindowMs: 60_000,
+    tokenFallback: true,
+  });
+  if (!rateLimit.allowed) {
+    return json(
+      req,
+      { ok: false, message: "Muitas tentativas. Aguarde e tente novamente." },
+      429,
+      rateLimitHeaders(rateLimit),
+    );
   }
 
   return json(req, {
