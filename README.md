@@ -1,5 +1,9 @@
 # Omnya Driver
 
+![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat-square&logo=flutter&logoColor=white) ![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat-square&logo=dart&logoColor=white) ![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white) ![Em produção](https://img.shields.io/badge/Em%20produ%C3%A7%C3%A3o-16a34a?style=flat-square)
+
+**Produto:** [driver.omnyatech.com.br](https://driver.omnyatech.com.br/)
+
 O Omnya Driver e um app Flutter da OmnyaTech feito para entregadores
 acompanharem a rotina sem depender de planilhas. Ele ajuda a registrar jornadas,
 ganhos, despesas, abastecimentos, manutencoes, metas financeiras e evolucao do
@@ -80,3 +84,8 @@ Supabase ou no provedor de CI/CD.
 O schema de banco usado pelo app e isolado para o Driver. Mudancas de banco
 devem ser feitas por SQL versionado em `sql/manual/` e aplicadas manualmente no
 ambiente correto.
+
+---
+
+<sub>Desenvolvido por <a href="https://github.com/Yan-Oliv">Yan Monteiro</a> · <a href="https://www.linkedin.com/in/yan-de-oliveira-gon%C3%A7alves-monteiro-a2886619a/">LinkedIn</a> · <a href="https://github.com/OmnyaTech">OmnyaTech</a></sub>
+
