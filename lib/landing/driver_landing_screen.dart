@@ -208,8 +208,8 @@ class _DriverDownloadGateScreenState extends State<DriverDownloadGateScreen> {
                       const SizedBox(height: 10),
                       Text(
                         profile == null
-                            ? 'Agora voce pode baixar o APK do Driver e continuar a configuracao pelo aplicativo.'
-                            : '${profile.displayName}, agora voce pode baixar o APK do Driver e continuar a configuracao pelo aplicativo.',
+                            ? 'Agora voce pode baixar o APK do Fluxi e continuar a configuracao pelo aplicativo.'
+                            : '${profile.displayName}, agora voce pode baixar o APK do Fluxi e continuar a configuracao pelo aplicativo.',
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 22),
@@ -331,7 +331,7 @@ class _LandingNav extends StatelessWidget {
           Image.asset(_driverLogoAsset, width: 38, height: 38),
           const SizedBox(width: 10),
           Text(
-            'Driver',
+            'Fluxi',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w900,
@@ -388,7 +388,7 @@ class _HeroSection extends StatelessWidget {
         FilledButton.icon(
           onPressed: onDownload,
           icon: const Icon(Icons.download_rounded),
-          label: const Text('Quero baixar o Driver'),
+          label: const Text('Quero baixar o Fluxi'),
           style: FilledButton.styleFrom(
             minimumSize: Size(compact ? double.infinity : 280, 58),
             backgroundColor: OmnyaVisualTokens.cyan,
@@ -657,7 +657,7 @@ class _HowItWorksSection extends StatelessWidget {
     final steps = const [
       _StepData(
         title: 'Voce roda',
-        text: 'Inicie automatico ou manual, o Driver acompanha tempo e km.',
+        text: 'Inicie automatico ou manual, o Fluxi acompanha tempo e km.',
         preview: 'Jornada iniciada - 00:42:10',
       ),
       _StepData(
@@ -666,7 +666,7 @@ class _HowItWorksSection extends StatelessWidget {
         preview: 'iFood R\$ 84 - 6 entregas\nUber R\$ 52 - 4 entregas',
       ),
       _StepData(
-        title: 'O Driver calcula',
+        title: 'O Fluxi calcula',
         text: 'Combustivel, manutencao e despesas entram no seu lucro liquido.',
         preview: 'Liquido do dia: R\$ 198,40',
       ),
@@ -683,7 +683,7 @@ class _HowItWorksSection extends StatelessWidget {
         const _SectionTitle(
           title: 'Um painel pra decidir melhor, nao so pra anotar',
           text:
-              'O Driver organiza o que hoje fica espalhado entre apps de entrega, comprovante de posto e memoria.',
+              'O Fluxi organiza o que hoje fica espalhado entre apps de entrega, comprovante de posto e memoria.',
         ),
         const SizedBox(height: 20),
         GridView.count(
@@ -1001,7 +1001,7 @@ class _LandingFooter extends StatelessWidget {
                   Image.asset(_driverLogoAsset, width: 28, height: 28),
                   const SizedBox(width: 8),
                   const Text(
-                    'Driver - Um produto OmnyaTech',
+                    'Fluxi - Um produto OmnyaTech',
                     style: TextStyle(color: Colors.white),
                   ),
                 ],

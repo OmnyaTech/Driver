@@ -301,7 +301,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    _setFeedback('Entrando no Driver...', isError: false);
+    _setFeedback('Entrando no Fluxi...', isError: false);
     final signedIn = await session.signInWithPassword(
       email: _emailController.text.trim(),
       password: _passwordController.text,
@@ -460,14 +460,14 @@ class _LoginHero extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Driver',
+                        'Fluxi',
                         style: theme.textTheme.titleLarge?.copyWith(
                           color: Colors.white,
                           fontSize: 24,
                         ),
                       ),
                       Text(
-                        'Driver',
+                        'Um produto OmnyaTech',
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: Colors.white.withValues(alpha: 0.7),
                         ),

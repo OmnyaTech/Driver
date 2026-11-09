@@ -157,9 +157,9 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                   onPressed: () async {
                     await SharePlus.instance.share(
                       ShareParams(
-                        subject: 'Convite para o Driver',
+                        subject: 'Convite para o Fluxi',
                         text:
-                            'Organize suas entregas comigo no Driver. Entre pelo convite @${profile.publicSlug}:\n${PublicProfileService.buildInviteUrl(profile.publicSlug)}',
+                            'Organize suas entregas comigo no Fluxi. Entre pelo convite @${profile.publicSlug}:\n${PublicProfileService.buildInviteUrl(profile.publicSlug)}',
                       ),
                     );
                     if (!context.mounted) return;
@@ -210,7 +210,7 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                 child: _PublicStatCard(
                   title: 'No app ha',
                   value: '${profile.accountDays} dias',
-                  subtitle: 'jornada com Driver',
+                  subtitle: 'jornada com Fluxi',
                 ),
               ),
             ],

@@ -16,7 +16,7 @@ class DataPrivacyService {
   Future<String> buildExportMarkdown() async {
     final export = await _buildExportMap();
     final buffer = StringBuffer()
-      ..writeln('# Backup LGPD - Driver')
+      ..writeln('# Backup LGPD - Fluxi')
       ..writeln()
       ..writeln('- Gerado em: ${export['exported_at']}')
       ..writeln('- Usuario: ${export['user_id']}')
@@ -62,7 +62,7 @@ class DataPrivacyService {
     }
 
     final export = <String, dynamic>{
-      'app': 'Driver',
+      'app': 'Fluxi',
       'exported_at': DateTime.now().toUtc().toIso8601String(),
       'user_id': user.id,
       'profile': await _selectProfile(user.id),

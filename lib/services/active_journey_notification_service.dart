@@ -65,7 +65,7 @@ class ActiveJourneyNotificationService {
         _channelName,
         icon: 'ic_stat_driver',
         channelDescription:
-            'Mostra que existe uma jornada em andamento no Driver.',
+            'Mostra que existe uma jornada em andamento no Fluxi.',
         importance: Importance.high,
         priority: Priority.high,
         ongoing: true,

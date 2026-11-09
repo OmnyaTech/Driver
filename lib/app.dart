@@ -23,7 +23,7 @@ class OmnyaDriverApp extends StatelessWidget {
       child: Consumer<AppSession>(
         builder: (context, session, _) {
           return MaterialApp(
-            title: 'Driver',
+            title: 'Fluxi',
             debugShowCheckedModeBanner: false,
             locale: session.locale,
             supportedLocales: const [

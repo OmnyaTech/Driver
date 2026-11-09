@@ -1,6 +1,6 @@
-# Omnya Driver
+# Fluxi
 
-O Omnya Driver e um app Flutter da OmnyaTech feito para entregadores
+O Fluxi (antigo Omnya Driver) e um app Flutter da OmnyaTech feito para entregadores
 acompanharem a rotina sem depender de planilhas. Ele ajuda a registrar jornadas,
 ganhos, despesas, abastecimentos, manutencoes, metas financeiras e evolucao do
 perfil em um so lugar.
@@ -26,6 +26,16 @@ trabalhar, quando revisar o veiculo e como acompanhar seu progresso.
 - Plano gratuito com plataformas ilimitadas e 1 veiculo ativo; Premium libera
   multiplos veiculos e recursos avancados.
 - Area administrativa para acesso developer e operacoes de suporte.
+
+## Identidade
+
+- Nome publico: **Fluxi**. Icone oficial em `src/driver_icon/` (fonte 1254px em
+  `driver_icon.png`); os icones de plataforma sao gerados com
+  `dart run flutter_launcher_icons`.
+- Identificadores tecnicos (`omnyadriver` no pacote Dart, bundle/application id
+  `br.com.omnyatech.omnyadriver`, deep link `omnyadriver://`, schema Supabase e
+  dominio `driver.omnyatech.com.br`) foram mantidos para nao quebrar instalacoes,
+  logins e links existentes.
 
 ## Documentacao
 
@@ -77,6 +87,6 @@ Nao coloque chaves, tokens, URLs privadas de ambiente, certificados ou segredos
 no repositorio. Configuracoes sensiveis devem ficar no ambiente local, no
 Supabase ou no provedor de CI/CD.
 
-O schema de banco usado pelo app e isolado para o Driver. Mudancas de banco
+O schema de banco usado pelo app e isolado para o Fluxi. Mudancas de banco
 devem ser feitas por SQL versionado em `sql/manual/` e aplicadas manualmente no
 ambiente correto.

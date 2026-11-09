@@ -15,7 +15,7 @@ class ReportExportService {
     final bytes = await _buildPdf(report: report, currency: currency);
     await SharePlus.instance.share(
       ShareParams(
-        text: 'Relatorio operacional do Driver',
+        text: 'Relatorio operacional do Fluxi',
         files: [
           XFile.fromData(
             bytes,
@@ -35,7 +35,7 @@ class ReportExportService {
     final bytes = _buildExcel(report: report, currency: currency);
     await SharePlus.instance.share(
       ShareParams(
-        text: 'Relatorio operacional do Driver',
+        text: 'Relatorio operacional do Fluxi',
         files: [
           XFile.fromData(
             bytes,
@@ -54,8 +54,8 @@ class ReportExportService {
     required String Function(double value) currency,
   }) async {
     final document = pw.Document(
-      title: 'Relatorio operacional Driver',
-      author: 'Driver',
+      title: 'Relatorio operacional Fluxi',
+      author: 'Fluxi',
     );
 
     document.addPage(
@@ -64,7 +64,7 @@ class ReportExportService {
         margin: const pw.EdgeInsets.all(32),
         build: (context) => [
           pw.Text(
-            'Driver',
+            'Fluxi',
             style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 4),
@@ -121,7 +121,7 @@ class ReportExportService {
     workbook.rename('Sheet1', 'Resumo');
 
     final summary = workbook['Resumo'];
-    summary.appendRow([TextCellValue('Driver')]);
+    summary.appendRow([TextCellValue('Fluxi')]);
     summary.appendRow([
       TextCellValue('Periodo'),
       TextCellValue(_periodLabel(report)),

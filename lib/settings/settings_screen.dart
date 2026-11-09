@@ -605,7 +605,7 @@ class _SettingsHeroCard extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   ProfileAvatar(
-                    displayName: profile?.displayName ?? 'Driver',
+                    displayName: profile?.displayName ?? 'Fluxi',
                     avatarUrl: profile?.avatarUrl,
                     radius: 28,
                     showBorder: true,
@@ -633,7 +633,7 @@ class _SettingsHeroCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Driver',
+                      'Fluxi',
                       style: theme.textTheme.titleLarge?.copyWith(
                         color: Colors.white,
                       ),
@@ -1447,9 +1447,9 @@ class _PublicProfileSheetState extends State<_PublicProfileSheet> {
                           controller: _slugController,
                           decoration: InputDecoration(
                             labelText: strings.pick(
-                              pt: 'Seu @ no Driver',
-                              en: 'Your @ on Driver',
-                              es: 'Tu @ en Driver',
+                              pt: 'Seu @ no Fluxi',
+                              en: 'Your @ on Fluxi',
+                              es: 'Tu @ en Fluxi',
                             ),
                             hintText: 'ex: yan-driver',
                           ),

@@ -262,14 +262,14 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
       await SharePlus.instance.share(
         ShareParams(
           subject: strings.pick(
-            pt: 'Convite para o Driver',
-            en: 'Driver invite',
-            es: 'Invitacion a Driver',
+            pt: 'Convite para o Fluxi',
+            en: 'Fluxi invite',
+            es: 'Invitacion a Fluxi',
           ),
           text: strings.pick(
-            pt: 'Organize suas entregas comigo no Driver. Entre pelo meu convite @$slug:\n$url',
-            en: 'Organize your deliveries with me on Driver. Join through my invite @$slug:\n$url',
-            es: 'Organiza tus entregas conmigo en Driver. Entra por mi invitacion @$slug:\n$url',
+            pt: 'Organize suas entregas comigo no Fluxi. Entre pelo meu convite @$slug:\n$url',
+            en: 'Organize your deliveries with me on Fluxi. Join through my invite @$slug:\n$url',
+            es: 'Organiza tus entregas conmigo en Fluxi. Entra por mi invitacion @$slug:\n$url',
           ),
         ),
       );

@@ -152,7 +152,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   Text('Bloqueio do app', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
                   Text(
-                    'Proteja o Driver depois de muito tempo parado ou fora da tela.',
+                    'Proteja o Fluxi depois de muito tempo parado ou fora da tela.',
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 14),
@@ -684,9 +684,9 @@ class _MfaSetupSheetState extends State<_MfaSetupSheet> {
                   const SizedBox(height: 8),
                   Text(
                     strings.pick(
-                      pt: 'Depois dessa confirmacao, o Driver vai gerar o QR Code para configurar um novo autenticador.',
-                      en: 'After this confirmation, Driver will generate the QR Code for a new authenticator.',
-                      es: 'Despues de esta confirmacion, Driver generara el QR Code para un nuevo autenticador.',
+                      pt: 'Depois dessa confirmacao, o Fluxi vai gerar o QR Code para configurar um novo autenticador.',
+                      en: 'After this confirmation, Fluxi will generate the QR Code for a new authenticator.',
+                      es: 'Despues de esta confirmacion, Fluxi generara el QR Code para un nuevo autenticador.',
                     ),
                     style: theme.textTheme.bodySmall,
                   ),

@@ -258,9 +258,9 @@ class AppStrings {
   );
 
   String get appPreferencesDescription => pick(
-    pt: 'Escolha como o Driver fala com voce e mostra seus valores.',
-    en: 'Choose how Driver talks to you and shows your values.',
-    es: 'Elige como Driver habla contigo y muestra tus valores.',
+    pt: 'Escolha como o Fluxi fala com voce e mostra seus valores.',
+    en: 'Choose how Fluxi talks to you and shows your values.',
+    es: 'Elige como Fluxi habla contigo y muestra tus valores.',
   );
 
   String languageLabel(String code) => switch (code) {
@@ -520,9 +520,9 @@ class AppStrings {
   ];
 
   String get helpCenterFooter => pick(
-    pt: 'Nao achou o que precisava? Fale com o suporte do Driver pelo app ou pelo e-mail suporte@omnyatech.com.',
-    en: 'Did not find what you need? Contact Driver support in the app or at suporte@omnyatech.com.',
-    es: 'No encontraste lo que necesitabas? Habla con soporte de Driver en la app o por suporte@omnyatech.com.',
+    pt: 'Nao achou o que precisava? Fale com o suporte do Fluxi pelo app ou pelo e-mail suporte@omnyatech.com.',
+    en: 'Did not find what you need? Contact Fluxi support in the app or at suporte@omnyatech.com.',
+    es: 'No encontraste lo que necesitabas? Habla con soporte de Fluxi en la app o por suporte@omnyatech.com.',
   );
 
   String get aboutOmnyaDriver =>
@@ -535,9 +535,9 @@ class AppStrings {
   );
 
   String get aboutOmnyaDriverBody => pick(
-    pt: 'O Driver foi criado para quem vive de entregas e precisa entender o lucro real no fim do dia.',
-    en: 'Driver was created for people who live from deliveries and need to understand real profit at the end of the day.',
-    es: 'Driver fue creado para quienes viven de entregas y necesitan entender la ganancia real al final del dia.',
+    pt: 'O Fluxi foi criado para quem vive de entregas e precisa entender o lucro real no fim do dia.',
+    en: 'Fluxi was created for people who live from deliveries and need to understand real profit at the end of the day.',
+    es: 'Fluxi fue creado para quienes viven de entregas y necesitan entender la ganancia real al final del dia.',
   );
 
   String get aboutOmnyaDriverWhy => pick(
@@ -559,9 +559,9 @@ class AppStrings {
   );
 
   String get aboutOmnyaDriverTech => pick(
-    pt: 'Driver foi criado para entregadores que querem organizar renda, custos, metas e progresso sem depender de planilha. Contato: suporte@omnyatech.com.',
-    en: 'Driver was built for delivery workers who want to organize income, costs, goals and progress without relying on spreadsheets. Contact: suporte@omnyatech.com.',
-    es: 'Driver fue creado para repartidores que quieren organizar ingresos, costos, metas y progreso sin depender de planillas. Contacto: suporte@omnyatech.com.',
+    pt: 'Fluxi foi criado para entregadores que querem organizar renda, custos, metas e progresso sem depender de planilha. Contato: suporte@omnyatech.com.',
+    en: 'Fluxi was built for delivery workers who want to organize income, costs, goals and progress without relying on spreadsheets. Contact: suporte@omnyatech.com.',
+    es: 'Fluxi fue creado para repartidores que quieren organizar ingresos, costos, metas y progreso sin depender de planillas. Contacto: suporte@omnyatech.com.',
   );
 
   List<String> get aboutSectionLabels => [
@@ -572,7 +572,7 @@ class AppStrings {
       es: 'Que controlas',
     ),
     pick(pt: 'Principios', en: 'Principles', es: 'Principios'),
-    pick(pt: 'Driver', en: 'Driver', es: 'Driver'),
+    pick(pt: 'Fluxi', en: 'Fluxi', es: 'Fluxi'),
   ];
 
   List<String> get aboutHighlights => [
@@ -591,9 +591,9 @@ class AppStrings {
   );
 
   String get termsOfUseBody => pick(
-    pt: 'Ao criar uma conta ou usar o Driver, voce concorda com estes termos. Se algo aqui nao fizer sentido para voce, fale com a gente antes de continuar.',
-    en: 'By creating an account or using Driver, you agree to these terms. If anything here does not make sense to you, talk to us before continuing.',
-    es: 'Al crear una cuenta o usar Driver, aceptas estos terminos. Si algo aqui no tiene sentido para ti, habla con nosotros antes de continuar.',
+    pt: 'Ao criar uma conta ou usar o Fluxi, voce concorda com estes termos. Se algo aqui nao fizer sentido para voce, fale com a gente antes de continuar.',
+    en: 'By creating an account or using Fluxi, you agree to these terms. If anything here does not make sense to you, talk to us before continuing.',
+    es: 'Al crear una cuenta o usar Fluxi, aceptas estos terminos. Si algo aqui no tiene sentido para ti, habla con nosotros antes de continuar.',
   );
 
   String get termsOfUseService => pick(
@@ -668,9 +668,9 @@ class AppStrings {
   );
 
   String get privacyPolicyBody => pick(
-    pt: 'O Driver respeita sua privacidade e trata seus dados para fazer o app funcionar com seguranca, clareza e conforme a LGPD.',
-    en: 'Driver respects your privacy and handles your data so the app works safely, clearly and in line with privacy laws.',
-    es: 'Driver respeta tu privacidad y trata tus datos para que la app funcione con seguridad, claridad y segun la ley.',
+    pt: 'O Fluxi respeita sua privacidade e trata seus dados para fazer o app funcionar com seguranca, clareza e conforme a LGPD.',
+    en: 'Fluxi respects your privacy and handles your data so the app works safely, clearly and in line with privacy laws.',
+    es: 'Fluxi respeta tu privacidad y trata tus datos para que la app funcione con seguridad, claridad y segun la ley.',
   );
 
   String get privacyPolicyCollected => pick(
@@ -733,9 +733,9 @@ class AppStrings {
   ];
 
   String get developerTools => pick(
-    pt: 'Ferramentas internas do Driver',
-    en: 'Driver internal tools',
-    es: 'Herramientas internas de Driver',
+    pt: 'Ferramentas internas do Fluxi',
+    en: 'Fluxi internal tools',
+    es: 'Herramientas internas de Fluxi',
   );
 
   String get signOut =>

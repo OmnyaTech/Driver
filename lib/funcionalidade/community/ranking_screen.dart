@@ -147,7 +147,7 @@ class _PodiumShowcase extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Temporada Omnya',
+                  'Temporada Fluxi',
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(color: Colors.white),

@@ -85,7 +85,7 @@ class MfaService {
     try {
       response = await _authService.requireClient().auth.mfa.enroll(
         factorType: FactorType.totp,
-        issuer: 'Driver',
+        issuer: 'Fluxi',
         friendlyName: 'Driver',
       );
     } on AuthException catch (error) {

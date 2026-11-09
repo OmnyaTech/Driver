@@ -31,7 +31,7 @@ class DeviceNotificationService {
     await androidPlugin?.createNotificationChannel(
       const AndroidNotificationChannel(
         _alertsChannelId,
-        'Avisos do Driver',
+        'Avisos do Fluxi',
         description: 'Avisos importantes sobre jornadas, metas e reservas.',
         importance: Importance.high,
       ),
@@ -78,7 +78,7 @@ class DeviceNotificationService {
     final details = NotificationDetails(
       android: AndroidNotificationDetails(
         _alertsChannelId,
-        'Avisos do Driver',
+        'Avisos do Fluxi',
         channelDescription:
             'Avisos importantes sobre jornadas, metas e reservas.',
         icon: 'ic_stat_driver',

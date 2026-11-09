@@ -19,7 +19,7 @@ class BiometricLockService {
   Future<bool> unlock() async {
     try {
       return _authentication.authenticate(
-        localizedReason: 'Confirme que e voce para voltar ao Driver.',
+        localizedReason: 'Confirme que e voce para voltar ao Fluxi.',
         biometricOnly: false,
         persistAcrossBackgrounding: true,
       );
