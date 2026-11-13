@@ -106,6 +106,22 @@ class ReportExportService {
                       .map((item) => [item.label, currency(item.amount)])
                       .toList(),
           ),
+          pw.SizedBox(height: 18),
+          _pdfSectionTitle('Comparativo por veiculo'),
+          _pdfTable(
+            report.vehicleComparison.isEmpty
+                ? [
+                    ['Sem dados', 'Nenhum veiculo no periodo'],
+                  ]
+                : report.vehicleComparison
+                      .map(
+                        (item) => [
+                          item.vehicleLabel,
+                          '${currency(item.income)} | ${item.deliveries} entregas | ${item.journeys} jornadas',
+                        ],
+                      )
+                      .toList(),
+          ),
         ],
       ),
     );
@@ -173,6 +189,24 @@ class ReportExportService {
       costs.appendRow([
         TextCellValue(item.label),
         DoubleCellValue(item.amount),
+      ]);
+    }
+
+    final vehicles = workbook['Veiculos'];
+    vehicles.appendRow([
+      TextCellValue('Veiculo'),
+      TextCellValue('Receita'),
+      TextCellValue('Entregas'),
+      TextCellValue('Jornadas'),
+      TextCellValue('Distancia km'),
+    ]);
+    for (final item in report.vehicleComparison) {
+      vehicles.appendRow([
+        TextCellValue(item.vehicleLabel),
+        DoubleCellValue(item.income),
+        IntCellValue(item.deliveries),
+        IntCellValue(item.journeys),
+        DoubleCellValue(item.distanceKm),
       ]);
     }
 

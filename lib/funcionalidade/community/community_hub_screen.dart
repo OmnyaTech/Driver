@@ -267,9 +267,9 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
             es: 'Invitacion a Fluxi',
           ),
           text: strings.pick(
-            pt: 'Organize suas entregas comigo no Fluxi. Entre pelo meu convite @$slug:\n$url',
-            en: 'Organize your deliveries with me on Fluxi. Join through my invite @$slug:\n$url',
-            es: 'Organiza tus entregas conmigo en Fluxi. Entra por mi invitacion @$slug:\n$url',
+            pt: 'Organize suas entregas comigo no Fluxi. Use meu convite ($slug):\n$url',
+            en: 'Organize your deliveries with me on Fluxi. Use my invite ($slug):\n$url',
+            es: 'Organiza tus entregas conmigo en Fluxi. Usa mi invitacion ($slug):\n$url',
           ),
         ),
       );

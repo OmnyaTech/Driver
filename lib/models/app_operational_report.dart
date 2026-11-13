@@ -10,6 +10,7 @@ class AppOperationalReport {
     required this.totalDistanceKm,
     required this.topPlatforms,
     required this.expenseBreakdown,
+    this.vehicleComparison = const [],
   });
 
   final DateTime? startAt;
@@ -22,6 +23,7 @@ class AppOperationalReport {
   final double totalDistanceKm;
   final List<PlatformPerformance> topPlatforms;
   final List<ExpenseBreakdownItem> expenseBreakdown;
+  final List<VehiclePerformance> vehicleComparison;
 }
 
 class PlatformPerformance {
@@ -41,4 +43,20 @@ class ExpenseBreakdownItem {
 
   final String label;
   final double amount;
+}
+
+class VehiclePerformance {
+  const VehiclePerformance({
+    required this.vehicleLabel,
+    required this.income,
+    required this.deliveries,
+    required this.journeys,
+    required this.distanceKm,
+  });
+
+  final String vehicleLabel;
+  final double income;
+  final int deliveries;
+  final int journeys;
+  final double distanceKm;
 }

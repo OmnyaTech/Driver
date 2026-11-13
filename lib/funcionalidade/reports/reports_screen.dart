@@ -3,8 +3,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/app_operational_intelligence.dart';
 import '../../models/app_operational_report.dart';
 import '../../models/plan_type.dart';
+import '../../services/operational_intelligence_service.dart';
 import '../../services/plan_access_service.dart';
 import '../../services/product_analytics_service.dart';
 import '../../services/report_export_service.dart';
@@ -14,7 +16,9 @@ import '../../utilities/localization/app_strings.dart';
 import '../../utilities/state/app_session.dart';
 
 class ReportsScreen extends StatefulWidget {
-  const ReportsScreen({super.key});
+  const ReportsScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   State<ReportsScreen> createState() => _ReportsScreenState();
@@ -22,6 +26,8 @@ class ReportsScreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<ReportsScreen> {
   final ReportingService _reportingService = ReportingService();
+  final OperationalIntelligenceService _intelligenceService =
+      OperationalIntelligenceService();
   final ReportExportService _reportExportService = ReportExportService();
   final PlanAccessService _planAccessService = const PlanAccessService();
   final ProductAnalyticsService _analyticsService =
@@ -30,7 +36,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
   bool _exporting = false;
   String? _errorMessage;
   DateTimeRange? _range;
+  _ReportPeriod _period = _ReportPeriod.month;
   AppOperationalReport? _report;
+  AppOperationalReport? _previousReport;
+  AppOperationalIntelligence? _intelligence;
 
   @override
   void initState() {
@@ -45,12 +54,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
     });
 
     try {
+      final range = _currentRange;
+      final previousRange = _previousRangeFor(range);
       final report = await _reportingService.loadOperationalReport(
-        startAt: _range?.start,
-        endAt: _range?.end,
+        startAt: range.start,
+        endAt: range.end,
+      );
+      final previousReport = await _reportingService.loadOperationalReport(
+        startAt: previousRange.start,
+        endAt: previousRange.end,
+      );
+      final intelligence = await _intelligenceService.load(
+        preset: _intelligencePreset,
+        customRange: range,
       );
       if (!mounted) return;
-      setState(() => _report = report);
+      setState(() {
+        _report = report;
+        _previousReport = previousReport;
+        _intelligence = intelligence;
+      });
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -70,6 +93,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
+    final currentPlan =
+        context.watch<AppSession>().profile?.planType ?? PlanType.free;
+    final canExport = _planAccessService.canAccessAdvancedOperations(
+      currentPlan,
+    );
+
+    if (!canExport) {
+      final locked = _LockedReportsView(strings: strings);
+      if (widget.embedded) return locked;
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            strings.pick(pt: 'Relatorios', en: 'Reports', es: 'Reportes'),
+          ),
+        ),
+        body: locked,
+      );
+    }
 
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
@@ -89,16 +130,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
           topPlatforms: [],
           expenseBreakdown: [],
         );
-    final currentPlan =
-        context.watch<AppSession>().profile?.planType ?? PlanType.free;
-    final canExport = _planAccessService.canAccessAdvancedOperations(
-      currentPlan,
-    );
+    final previousReport = _previousReport;
+    final intelligence = _intelligence;
 
-    return RefreshIndicator(
+    final content = RefreshIndicator(
       onRefresh: _loadReport,
       child: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.fromLTRB(20, 20, 20, widget.embedded ? 120 : 20),
         children: [
           LayoutBuilder(
             builder: (context, constraints) {
@@ -181,28 +219,23 @@ class _ReportsScreenState extends State<ReportsScreen> {
               padding: EdgeInsets.only(top: 10),
               child: LinearProgressIndicator(minHeight: 2),
             ),
+          const SizedBox(height: 12),
+          _PeriodSelector(
+            selected: _period,
+            onSelected: (period) async {
+              setState(() {
+                _period = period;
+                if (period != _ReportPeriod.custom) _range = null;
+              });
+              if (period == _ReportPeriod.custom) {
+                await _pickRange();
+              } else {
+                await _loadReport();
+              }
+            },
+          ),
           const SizedBox(height: 16),
-          if (!canExport)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.workspace_premium_outlined),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        strings.pick(
-                          pt: 'PDF e Excel fazem parte do Premium. Voce ainda consegue ver os relatorios por aqui.',
-                          en: 'PDF and Excel exports are Premium. You can still view reports here.',
-                          es: 'PDF y Excel son Premium. Aun puedes ver los reportes aqui.',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          if (!canExport) _PremiumOnlyNotice(strings: strings),
           if (!canExport) const SizedBox(height: 16),
           if (_errorMessage != null)
             Card(
@@ -243,6 +276,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ],
           ),
           const SizedBox(height: 16),
+          if (previousReport != null) ...[
+            _ComparisonReportCard(
+              current: report,
+              previous: previousReport,
+              currency: _currency,
+            ),
+            const SizedBox(height: 16),
+          ],
           _CashflowChartCard(
             income: report.totalIncome,
             costs: report.totalOperationalCosts,
@@ -256,8 +297,27 @@ class _ReportsScreenState extends State<ReportsScreen> {
             items: report.expenseBreakdown,
             currency: _currency,
           ),
+          const SizedBox(height: 16),
+          _VehicleComparisonCard(
+            items: report.vehicleComparison,
+            currency: _currency,
+          ),
+          if (intelligence != null) ...[
+            const SizedBox(height: 16),
+            _ReportInsightsCard(insights: intelligence.insights),
+          ],
         ],
       ),
+    );
+
+    if (widget.embedded) return content;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          strings.pick(pt: 'Relatorios', en: 'Reports', es: 'Reportes'),
+        ),
+      ),
+      body: content,
     );
   }
 
@@ -272,7 +332,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
           DateTimeRange(start: DateTime(now.year, now.month, 1), end: now),
     );
     if (picked == null || !mounted) return;
-    setState(() => _range = picked);
+    setState(() {
+      _range = picked;
+      _period = _ReportPeriod.custom;
+    });
     await _loadReport();
   }
 
@@ -334,8 +397,48 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   String get _rangeLabel {
+    if (_period != _ReportPeriod.custom) return _period.label(context);
     if (_range == null) return AppStrings.of(context).period;
     return '${_formatDate(_range!.start)} - ${_formatDate(_range!.end)}';
+  }
+
+  DateTimeRange get _currentRange {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return switch (_period) {
+      _ReportPeriod.week => DateTimeRange(
+        start: today.subtract(Duration(days: today.weekday - 1)),
+        end: now,
+      ),
+      _ReportPeriod.month => DateTimeRange(
+        start: DateTime(now.year, now.month, 1),
+        end: now,
+      ),
+      _ReportPeriod.year => DateTimeRange(
+        start: DateTime(now.year, 1, 1),
+        end: now,
+      ),
+      _ReportPeriod.custom =>
+        _range ??
+            DateTimeRange(start: DateTime(now.year, now.month, 1), end: now),
+    };
+  }
+
+  DateTimeRange _previousRangeFor(DateTimeRange range) {
+    final duration = range.duration;
+    return DateTimeRange(
+      start: range.start.subtract(duration),
+      end: range.start,
+    );
+  }
+
+  OperationalRangePreset get _intelligencePreset {
+    return switch (_period) {
+      _ReportPeriod.week => OperationalRangePreset.week,
+      _ReportPeriod.month => OperationalRangePreset.month,
+      _ReportPeriod.year => OperationalRangePreset.year,
+      _ReportPeriod.custom => OperationalRangePreset.custom,
+    };
   }
 
   String _formatDate(DateTime value) {
@@ -344,6 +447,360 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   String _currency(double value) => AppFormat.of(context).currency(value);
+}
+
+enum _ReportPeriod { week, month, year, custom }
+
+extension _ReportPeriodLabel on _ReportPeriod {
+  String label(BuildContext context) {
+    final strings = AppStrings.of(context);
+    return switch (this) {
+      _ReportPeriod.week => strings.week,
+      _ReportPeriod.month => strings.month,
+      _ReportPeriod.year => strings.pick(pt: 'Ano', en: 'Year', es: 'Ano'),
+      _ReportPeriod.custom => strings.custom,
+    };
+  }
+}
+
+class _PeriodSelector extends StatelessWidget {
+  const _PeriodSelector({required this.selected, required this.onSelected});
+
+  final _ReportPeriod selected;
+  final ValueChanged<_ReportPeriod> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _ReportPeriod.values.map((period) {
+        return ChoiceChip(
+          selected: selected == period,
+          label: Text(period.label(context)),
+          onSelected: (_) => onSelected(period),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _PremiumOnlyNotice extends StatelessWidget {
+  const _PremiumOnlyNotice({required this.strings});
+
+  final AppStrings strings;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const Icon(Icons.workspace_premium_outlined),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                strings.pick(
+                  pt: 'Relatorios completos, comparativos e exportacoes fazem parte do Premium.',
+                  en: 'Complete reports, comparisons and exports are Premium features.',
+                  es: 'Reportes completos, comparativos y exportaciones son Premium.',
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LockedReportsView extends StatelessWidget {
+  const _LockedReportsView({required this.strings});
+
+  final AppStrings strings;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.workspace_premium_outlined, size: 32),
+                const SizedBox(height: 14),
+                Text(
+                  strings.pick(
+                    pt: 'Relatorios Premium',
+                    en: 'Premium reports',
+                    es: 'Reportes Premium',
+                  ),
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  strings.pick(
+                    pt: 'Comparativos semanais, mensais e anuais, graficos completos, insights, comparacao entre veiculos e exportacao PDF/Excel ficam disponiveis para Premium e Gift.',
+                    en: 'Weekly, monthly and yearly comparisons, complete charts, insights, vehicle comparison and PDF/Excel export are available for Premium and Gift.',
+                    es: 'Comparativos semanales, mensuales y anuales, graficos completos, insights, comparacion entre vehiculos y exportacion PDF/Excel estan disponibles para Premium y Gift.',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ComparisonReportCard extends StatelessWidget {
+  const _ComparisonReportCard({
+    required this.current,
+    required this.previous,
+    required this.currency,
+  });
+
+  final AppOperationalReport current;
+  final AppOperationalReport previous;
+  final String Function(double value) currency;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final rows = [
+      _ComparisonRowData(
+        label: strings.income,
+        current: currency(current.totalIncome),
+        previous: currency(previous.totalIncome),
+        delta: _moneyDelta(current.totalIncome, previous.totalIncome),
+      ),
+      _ComparisonRowData(
+        label: strings.costs,
+        current: currency(current.totalOperationalCosts),
+        previous: currency(previous.totalOperationalCosts),
+        delta: _moneyDelta(
+          current.totalOperationalCosts,
+          previous.totalOperationalCosts,
+        ),
+      ),
+      _ComparisonRowData(
+        label: strings.leftOver,
+        current: currency(current.netResult),
+        previous: currency(previous.netResult),
+        delta: _moneyDelta(current.netResult, previous.netResult),
+      ),
+      _ComparisonRowData(
+        label: strings.deliveries,
+        current: '${current.totalDeliveries}',
+        previous: '${previous.totalDeliveries}',
+        delta: _countDelta(current.totalDeliveries, previous.totalDeliveries),
+      ),
+      _ComparisonRowData(
+        label: strings.distance,
+        current: '${current.totalDistanceKm.toStringAsFixed(1)} km',
+        previous: '${previous.totalDistanceKm.toStringAsFixed(1)} km',
+        delta: _moneyDelta(current.totalDistanceKm, previous.totalDistanceKm),
+      ),
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              strings.pick(
+                pt: 'Comparativo avancado',
+                en: 'Advanced comparison',
+                es: 'Comparativo avanzado',
+              ),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            ...rows.map((row) => _ComparisonRow(data: row)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _moneyDelta(double current, double previous) {
+    if (previous == 0) return current == 0 ? '0%' : '+100%';
+    final value = ((current - previous) / previous.abs()) * 100;
+    return '${value >= 0 ? '+' : ''}${value.toStringAsFixed(0)}%';
+  }
+
+  String _countDelta(int current, int previous) {
+    if (previous == 0) return current == 0 ? '0%' : '+100%';
+    final value = ((current - previous) / previous.abs()) * 100;
+    return '${value >= 0 ? '+' : ''}${value.toStringAsFixed(0)}%';
+  }
+}
+
+class _ComparisonRowData {
+  const _ComparisonRowData({
+    required this.label,
+    required this.current,
+    required this.previous,
+    required this.delta,
+  });
+
+  final String label;
+  final String current;
+  final String previous;
+  final String delta;
+}
+
+class _ComparisonRow extends StatelessWidget {
+  const _ComparisonRow({required this.data});
+
+  final _ComparisonRowData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final positive = !data.delta.startsWith('-');
+    final color = positive ? const Color(0xFF39E58C) : const Color(0xFFFF6F6F);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              data.label,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(data.current, style: Theme.of(context).textTheme.labelLarge),
+              Text(
+                'Antes: ${data.previous}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              data.delta,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VehicleComparisonCard extends StatelessWidget {
+  const _VehicleComparisonCard({required this.items, required this.currency});
+
+  final List<VehiclePerformance> items;
+  final String Function(double value) currency;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final maxIncome = items.isEmpty
+        ? 1.0
+        : items
+              .map((item) => item.income)
+              .reduce(math.max)
+              .clamp(1.0, double.infinity);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              strings.pick(
+                pt: 'Comparacao entre veiculos',
+                en: 'Vehicle comparison',
+                es: 'Comparacion entre vehiculos',
+              ),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            if (items.isEmpty)
+              Text(
+                strings.pick(
+                  pt: 'Nenhuma jornada vinculada a veiculos nesse periodo.',
+                  en: 'No journeys linked to vehicles in this period.',
+                  es: 'No hay jornadas vinculadas a vehiculos en este periodo.',
+                ),
+              ),
+            ...items.map(
+              (item) => _ProgressRow(
+                label: item.vehicleLabel,
+                detail:
+                    '${strings.deliveriesCount(item.deliveries)} | ${strings.journeysCount(item.journeys)} | ${item.distanceKm.toStringAsFixed(1)} km',
+                value: currency(item.income),
+                factor: (item.income / maxIncome).clamp(0.04, 1.0),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReportInsightsCard extends StatelessWidget {
+  const _ReportInsightsCard({required this.insights});
+
+  final List<OperationalInsight> insights;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              strings.pick(
+                pt: 'Insights inteligentes',
+                en: 'Smart insights',
+                es: 'Insights inteligentes',
+              ),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            ...insights.map(
+              (item) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(item.title),
+                subtitle: Text(item.description),
+                trailing: Text(
+                  item.value,
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _ReportMetricData {

@@ -8,7 +8,7 @@ import 'driver_preference_service.dart';
 import 'goal_service.dart';
 import 'journey_service.dart';
 
-enum OperationalRangePreset { today, week, month, custom }
+enum OperationalRangePreset { today, week, month, year, custom }
 
 class OperationalIntelligenceService {
   OperationalIntelligenceService({
@@ -105,6 +105,10 @@ class OperationalIntelligenceService {
         start: DateTime(now.year, now.month, 1),
         end: now,
       ),
+      OperationalRangePreset.year => DateTimeRange(
+        start: DateTime(now.year, 1, 1),
+        end: now,
+      ),
       OperationalRangePreset.custom =>
         customRange ??
             DateTimeRange(start: DateTime(now.year, now.month, 1), end: now),
@@ -120,6 +124,31 @@ class OperationalIntelligenceService {
     Iterable<AppJourney> journeys,
     DateTimeRange range,
   ) {
+    if (_isSameDay(range.start, range.end)) {
+      final hourBuckets = <int, double>{};
+      for (var hour = range.start.hour; hour <= range.end.hour; hour++) {
+        hourBuckets[hour] = 0;
+      }
+
+      for (final journey in journeys) {
+        final startedAt = journey.startedAt.toLocal();
+        hourBuckets.update(
+          startedAt.hour,
+          (value) => value + journey.totalIncome,
+          ifAbsent: () => journey.totalIncome,
+        );
+      }
+
+      return hourBuckets.entries
+          .map(
+            (entry) => OperationalTrendPoint(
+              label: '${entry.key.toString().padLeft(2, '0')}h',
+              value: entry.value,
+            ),
+          )
+          .toList();
+    }
+
     final dayBuckets = <DateTime, double>{};
     var cursor = DateTime(range.start.year, range.start.month, range.start.day);
     final end = DateTime(range.end.year, range.end.month, range.end.day);
@@ -150,6 +179,10 @@ class OperationalIntelligenceService {
           ),
         )
         .toList();
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   List<OperationalInsight> _buildInsights(
@@ -240,6 +273,7 @@ class OperationalIntelligenceService {
       OperationalRangePreset.today => 'Hoje',
       OperationalRangePreset.week => 'Semana atual',
       OperationalRangePreset.month => 'Mes atual',
+      OperationalRangePreset.year => 'Ano atual',
       OperationalRangePreset.custom =>
         '${range.start.day.toString().padLeft(2, '0')}/${range.start.month.toString().padLeft(2, '0')} - ${range.end.day.toString().padLeft(2, '0')}/${range.end.month.toString().padLeft(2, '0')}',
     };
@@ -250,6 +284,7 @@ class OperationalIntelligenceService {
       OperationalRangePreset.today => 'hoje',
       OperationalRangePreset.week => 'esta semana',
       OperationalRangePreset.month => 'este mes',
+      OperationalRangePreset.year => 'este ano',
       OperationalRangePreset.custom => 'no periodo selecionado',
     };
   }

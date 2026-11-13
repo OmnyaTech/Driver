@@ -2,9 +2,9 @@
 
 ## Referencias adotadas
 
-- Organizacao Flutter baseada no estilo do `B:\Projeto Cia\Frontend\ciacat`.
+- Organizacao Flutter baseada no estilo do `B:\OmnyaTech\Projetos\OmnyaLog\Frontend\ciacat`.
 - Regras de autenticacao, captcha, developer access, assinatura e gifts
-  inspiradas no `B:\OmnyaTech Project's\omnyafinance`.
+  inspiradas no `B:\OmnyaTech\omnyafinance`.
 
 ## Estrutura do app
 

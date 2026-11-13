@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -9,13 +11,14 @@ import '../funcionalidade/goals/goals_screen.dart';
 import '../funcionalidade/journeys/journeys_screen.dart';
 import '../funcionalidade/notifications/notifications_screen.dart';
 import '../funcionalidade/platforms/platforms_screen.dart';
+import '../funcionalidade/reports/reports_screen.dart';
 import '../funcionalidade/vehicles/vehicles_screen.dart';
 import '../models/app_dashboard_metrics.dart';
 import '../models/app_operational_intelligence.dart';
 import '../models/app_operational_report.dart';
 import '../services/engagement_notification_service.dart';
 import '../services/operational_intelligence_service.dart';
-import '../services/reporting_service.dart';
+import '../services/plan_access_service.dart';
 import '../settings/settings_screen.dart';
 import '../utilities/localization/app_format.dart';
 import '../utilities/localization/app_strings.dart';
@@ -36,6 +39,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final EngagementNotificationService _notificationService =
       EngagementNotificationService();
+  final PlanAccessService _planAccessService = const PlanAccessService();
   int _currentIndex = 0;
   int _unreadNotifications = 0;
   final ScreenActionController _journeyController = ScreenActionController();
@@ -66,66 +70,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final session = context.watch<AppSession>();
     final strings = AppStrings.of(context);
     final compactNavigation = MediaQuery.sizeOf(context).width < 720;
+    final canAccessReports =
+        session.profile != null &&
+        _planAccessService.canAccessAdvancedOperations(
+          session.profile!.planType,
+        );
 
-    final tabs = [
-      _DashboardTab(
-        title: strings.overview,
-        page: _OverviewTab(
-          session: session,
-          onNotificationsChanged: _loadUnreadNotifications,
-        ),
-        icon: Icons.dashboard_outlined,
-        selectedIcon: Icons.dashboard,
-        label: strings.home,
-      ),
-      _DashboardTab(
-        title: strings.journeys,
-        page: JourneysScreen(
-          showCreateButton: false,
-          actionController: _journeyController,
-          embedded: true,
-        ),
-        icon: Icons.route_outlined,
-        selectedIcon: Icons.route,
-        label: compactNavigation ? strings.journeysShort : strings.journeys,
-      ),
-      _DashboardTab(
-        title: strings.goals,
-        page: GoalsScreen(
-          showCreateButton: false,
-          actionController: _goalController,
-          embedded: true,
-        ),
-        icon: Icons.savings_outlined,
-        selectedIcon: Icons.savings,
-        label: compactNavigation ? strings.goalsShort : strings.goals,
-      ),
-      _DashboardTab(
-        title: strings.finance,
-        page: FinanceHubScreen(
-          expenseController: _expenseController,
-          fuelingController: _fuelingController,
-          maintenanceController: _maintenanceController,
-        ),
-        icon: Icons.account_balance_wallet_outlined,
-        selectedIcon: Icons.account_balance_wallet,
-        label: compactNavigation ? strings.financeShort : strings.finance,
-      ),
-      _DashboardTab(
-        title: strings.community,
-        page: const CommunityHubScreen(),
-        icon: Icons.groups_outlined,
-        selectedIcon: Icons.groups,
-        label: compactNavigation ? 'Social' : strings.community,
-      ),
-      _DashboardTab(
-        title: strings.settingsTitle,
-        page: const SettingsScreen(),
-        icon: Icons.settings_outlined,
-        selectedIcon: Icons.settings,
-        label: strings.settingsShort,
-      ),
-    ];
+    final tabs = _buildTabs(
+      session: session,
+      strings: strings,
+      compactNavigation: compactNavigation,
+      canAccessReports: canAccessReports,
+    );
+    if (_currentIndex >= tabs.length) {
+      _currentIndex = tabs.length - 1;
+    }
 
     final actions = _buildFabActions();
 
@@ -181,8 +140,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   List<OmnyaFabAction> _buildFabActions() {
     final strings = AppStrings.of(context);
-    switch (_currentIndex) {
-      case 0:
+    final session = context.read<AppSession>();
+    final canAccessReports =
+        session.profile != null &&
+        _planAccessService.canAccessAdvancedOperations(
+          session.profile!.planType,
+        );
+    final tabs = _buildTabs(
+      session: session,
+      strings: strings,
+      compactNavigation: MediaQuery.sizeOf(context).width < 720,
+      canAccessReports: canAccessReports,
+    );
+    if (_currentIndex >= tabs.length) return const [];
+
+    switch (tabs[_currentIndex].kind) {
+      case _DashboardTabKind.home:
         return [
           OmnyaFabAction(
             label: strings.newJourney,
@@ -200,7 +173,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onTap: _expenseController.openCreate,
           ),
         ];
-      case 1:
+      case _DashboardTabKind.journeys:
         return [
           OmnyaFabAction(
             label: strings.newJourney,
@@ -208,7 +181,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onTap: _journeyController.openCreate,
           ),
         ];
-      case 2:
+      case _DashboardTabKind.goals:
         return [
           OmnyaFabAction(
             label: strings.newGoal,
@@ -216,7 +189,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onTap: _goalController.openCreate,
           ),
         ];
-      case 3:
+      case _DashboardTabKind.finance:
         return [
           OmnyaFabAction(
             label: strings.newExpense,
@@ -234,7 +207,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onTap: _maintenanceController.openCreate,
           ),
         ];
-      case 5:
+      case _DashboardTabKind.settings:
         return [
           OmnyaFabAction(
             label: strings.newVehicle,
@@ -260,6 +233,90 @@ class _DashboardScreenState extends State<DashboardScreen> {
       default:
         return const [];
     }
+  }
+
+  List<_DashboardTab> _buildTabs({
+    required AppSession session,
+    required AppStrings strings,
+    required bool compactNavigation,
+    required bool canAccessReports,
+  }) {
+    return [
+      _DashboardTab(
+        kind: _DashboardTabKind.home,
+        title: strings.overview,
+        page: _OverviewTab(
+          session: session,
+          onNotificationsChanged: _loadUnreadNotifications,
+        ),
+        icon: Icons.dashboard_outlined,
+        selectedIcon: Icons.dashboard,
+        label: strings.home,
+      ),
+      _DashboardTab(
+        kind: _DashboardTabKind.journeys,
+        title: strings.journeys,
+        page: JourneysScreen(
+          showCreateButton: false,
+          actionController: _journeyController,
+          embedded: true,
+        ),
+        icon: Icons.route_outlined,
+        selectedIcon: Icons.route,
+        label: compactNavigation ? strings.journeysShort : strings.journeys,
+      ),
+      _DashboardTab(
+        kind: _DashboardTabKind.goals,
+        title: strings.goals,
+        page: GoalsScreen(
+          showCreateButton: false,
+          actionController: _goalController,
+          embedded: true,
+        ),
+        icon: Icons.savings_outlined,
+        selectedIcon: Icons.savings,
+        label: compactNavigation ? strings.goalsShort : strings.goals,
+      ),
+      _DashboardTab(
+        kind: _DashboardTabKind.finance,
+        title: strings.finance,
+        page: FinanceHubScreen(
+          expenseController: _expenseController,
+          fuelingController: _fuelingController,
+          maintenanceController: _maintenanceController,
+        ),
+        icon: Icons.account_balance_wallet_outlined,
+        selectedIcon: Icons.account_balance_wallet,
+        label: compactNavigation ? strings.financeShort : strings.finance,
+      ),
+      _DashboardTab(
+        kind: _DashboardTabKind.community,
+        title: strings.community,
+        page: const CommunityHubScreen(),
+        icon: Icons.groups_outlined,
+        selectedIcon: Icons.groups,
+        label: compactNavigation ? 'Social' : strings.community,
+      ),
+      if (canAccessReports)
+        _DashboardTab(
+          kind: _DashboardTabKind.reports,
+          title: strings.pick(pt: 'Relatorios', en: 'Reports', es: 'Reportes'),
+          page: const ReportsScreen(embedded: true),
+          icon: Icons.analytics_outlined,
+          selectedIcon: Icons.analytics,
+          label: compactNavigation
+              ? strings.pick(pt: 'Rel.', en: 'Rep.', es: 'Rep.')
+              : strings.pick(pt: 'Relatorios', en: 'Reports', es: 'Reportes'),
+        ),
+      _DashboardTab(
+        kind: _DashboardTabKind.settings,
+        title: strings.settingsTitle,
+        page: const SettingsScreen(),
+        icon: Icons.settings_outlined,
+        selectedIcon: Icons.settings,
+        label: strings.settingsShort,
+      ),
+    ];
   }
 
   Future<void> _pushManagedCreate(
@@ -297,6 +354,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 class _DashboardTab {
   const _DashboardTab({
+    required this.kind,
     required this.title,
     required this.page,
     required this.icon,
@@ -304,11 +362,22 @@ class _DashboardTab {
     required this.label,
   });
 
+  final _DashboardTabKind kind;
   final String title;
   final Widget page;
   final IconData icon;
   final IconData selectedIcon;
   final String label;
+}
+
+enum _DashboardTabKind {
+  home,
+  journeys,
+  goals,
+  finance,
+  community,
+  reports,
+  settings,
 }
 
 class _OmnyaBottomTabBar extends StatelessWidget {
@@ -509,10 +578,8 @@ class _OverviewTab extends StatefulWidget {
 class _OverviewTabState extends State<_OverviewTab> {
   final OperationalIntelligenceService _intelligenceService =
       OperationalIntelligenceService();
-  final ReportingService _reportingService = ReportingService();
   bool _loading = true;
   AppOperationalIntelligence? _intelligence;
-  AppOperationalReport? _report;
   String? _errorMessage;
   OperationalRangePreset _preset = OperationalRangePreset.today;
   DateTimeRange? _range;
@@ -534,19 +601,9 @@ class _OverviewTabState extends State<_OverviewTab> {
         preset: _preset,
         customRange: _range,
       );
-      AppOperationalReport? report;
-      try {
-        report = await _reportingService.loadOperationalReport(
-          startAt: intelligence.periodStart,
-          endAt: intelligence.periodEnd,
-        );
-      } catch (_) {
-        report = null;
-      }
       if (!mounted) return;
       setState(() {
         _intelligence = intelligence;
-        _report = report;
       });
       await widget.onNotificationsChanged();
     } catch (_) {
@@ -617,7 +674,6 @@ class _OverviewTabState extends State<_OverviewTab> {
           suggestedReserveLabel: '',
         );
     final metrics = intelligence.currentMetrics;
-    final report = _report;
 
     return RefreshIndicator(
       onRefresh: _loadMetrics,
@@ -792,11 +848,6 @@ class _OverviewTabState extends State<_OverviewTab> {
             current: metrics,
             previous: intelligence.previousMetrics,
           ),
-          const SizedBox(height: 18),
-          if (report != null) ...[
-            _HomeReportCards(report: report, currency: _currency),
-            const SizedBox(height: 18),
-          ],
           _MetricGrid(
             metrics: [
               _MetricData(
@@ -890,8 +941,6 @@ class _OverviewTabState extends State<_OverviewTab> {
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          _InsightBoard(intelligence: intelligence),
         ],
       ),
     );
@@ -914,6 +963,11 @@ class _OverviewTabState extends State<_OverviewTab> {
       OperationalRangePreset.today => strings.today,
       OperationalRangePreset.week => strings.week,
       OperationalRangePreset.month => strings.month,
+      OperationalRangePreset.year => strings.pick(
+        pt: 'Ano',
+        en: 'Year',
+        es: 'Ano',
+      ),
       OperationalRangePreset.custom => _rangeLabel,
     };
   }
@@ -1283,7 +1337,7 @@ class _SparklineChart extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxLabels = constraints.maxWidth < 420 ? 5 : 8;
+        final maxLabels = constraints.maxWidth < 420 ? 4 : 7;
         final step = (points.length / maxLabels).ceil().clamp(1, points.length);
         return CustomPaint(
           painter: _SparklinePainter(
@@ -1301,14 +1355,20 @@ class _SparklineChart extends StatelessWidget {
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 98),
-                  child: Text(
-                    showLabel ? _compactTrendLabel(point.label) : '',
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.visible,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelSmall?.copyWith(fontSize: 10),
+                  child: OverflowBox(
+                    minWidth: 0,
+                    maxWidth: 52,
+                    alignment: Alignment.center,
+                    child: Text(
+                      showLabel ? _compactTrendLabel(point.label) : '',
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelSmall?.copyWith(fontSize: 10),
+                    ),
                   ),
                 ),
               );
@@ -1320,8 +1380,12 @@ class _SparklineChart extends StatelessWidget {
   }
 
   String _compactTrendLabel(String label) {
+    if (label.endsWith('h')) return label;
     final parts = label.split('/');
-    if (parts.length >= 2) return '${parts[0]}/${parts[1]}';
+    if (parts.length >= 2) {
+      final month = int.tryParse(parts[1])?.toString() ?? parts[1];
+      return '${parts[0]}/$month';
+    }
     return label.length > 5 ? label.substring(0, 5) : label;
   }
 }

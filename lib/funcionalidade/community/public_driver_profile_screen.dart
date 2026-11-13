@@ -159,7 +159,7 @@ class _PublicDriverProfileScreenState extends State<PublicDriverProfileScreen> {
                       ShareParams(
                         subject: 'Convite para o Fluxi',
                         text:
-                            'Organize suas entregas comigo no Fluxi. Entre pelo convite @${profile.publicSlug}:\n${PublicProfileService.buildInviteUrl(profile.publicSlug)}',
+                            'Organize suas entregas comigo no Fluxi. Use meu convite (${profile.publicSlug}):\n${PublicProfileService.buildInviteUrl(profile.publicSlug)}',
                       ),
                     );
                     if (!context.mounted) return;
